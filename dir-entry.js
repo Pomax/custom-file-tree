@@ -241,13 +241,9 @@ export /*async*/ function getFileContent(file) {
 /**
  * ...
  */
-function inThisDir(dir, el) {
-  if (el === dir) return true;
-  if (dir.contains(el)) {
-    // make sure this element is not inside *another* dir
-    return el.parentDir === dir;
-  }
-  return false;
+function inThisDir(dir, entry) {
+  if (entry === dir) return true; // if you squint
+  return entry.parentDir === dir;
 }
 
 /**
