@@ -190,7 +190,7 @@ export class DirEntry extends LocalCustomElement {
   }
 
   checkEmpty() {
-    if (this.root.getAttribute(`remove-empty`)) return;
+    if (!this.root.getAttribute(`remove-empty`)) return;
     if (!find(`file-entry`, this)) {
       dispatchEvent(
         this,
