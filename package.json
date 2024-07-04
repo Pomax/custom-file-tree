@@ -1,0 +1,24 @@
+{
+  "name": "custom-file-tree",
+  "version": "1.0.0",
+  "description": "Add the custom element to your page context using plain old HTML:",
+  "type": "module",
+  "main": "file-tree.js",
+  "scripts": {
+    "test": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pomax/custom-file-tree.git"
+  },
+  "author": "",
+  "license": "",
+  "bugs": {
+    "url": "https://github.com/Pomax/custom-file-tree/issues"
+  },
+  "homepage": "https://github.com/Pomax/custom-file-tree#readme",
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "prettier": "^3.3.2"
+  }
+}
