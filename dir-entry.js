@@ -1,5 +1,12 @@
 import { FileEntry } from "./file-entry.js";
-import { create, registry, LocalCustomElement, dispatchEvent } from "./deps.js";
+import {
+  create,
+  registry,
+  LocalCustomElement,
+  dispatchEvent,
+  find,
+  findAll,
+} from "./utils.js";
 
 /**
  * ...
@@ -24,7 +31,7 @@ export class DirEntry extends LocalCustomElement {
   setNameAndPath(name, fullPath) {
     this.setAttribute(`name`, name);
     this.setAttribute(`path`, fullPath);
-    let heading = this.querySelector(`dir-heading`);
+    let heading = find(`dir-heading`, this);
     if (!heading || heading.parentNode !== this) {
       heading = this.heading = create(`dir-heading`);
       this.appendChild(heading);
@@ -93,7 +100,7 @@ export class DirEntry extends LocalCustomElement {
     }
     const dirName = fileName.substring(0, fileName.indexOf(`/`) + 1);
     const dirPath = fullPath.substring(0, fullPath.lastIndexOf(`/`) + 1);
-    let dir = this.querySelector(`& > dir-entry[name="${dirName}"]`);
+    let dir = find(`& > dir-entry[name="${dirName}"]`, this);
     if (!dir) {
       dir = new DirEntry();
       dir.init(dirName, dirPath);
@@ -103,7 +110,7 @@ export class DirEntry extends LocalCustomElement {
   }
 
   addFile(fileName, fullPath) {
-    let file = this.querySelector(`& > file-entry[name="${fileName}"]`);
+    let file = find(`& > file-entry[name="${fileName}"]`, this);
     if (!file) {
       file = new FileEntry();
       file.init(fileName, fullPath);
@@ -166,7 +173,7 @@ export class DirEntry extends LocalCustomElement {
     children.forEach((c) => this.appendChild(c));
 
     if (recursive) {
-      this.querySelectorAll(`dir-entry`).forEach((d) => d.sort(recursive));
+      findAll(`dir-entry`, this).forEach((d) => d.sort(recursive));
     }
   }
 
@@ -184,7 +191,7 @@ export class DirEntry extends LocalCustomElement {
 
   checkEmpty() {
     if (this.root.getAttribute(`remove-empty`)) return;
-    if (!this.querySelector(`file-entry`)) {
+    if (!find(`file-entry`, this)) {
       dispatchEvent(
         this,
         `filetree:dir:delete`,
@@ -206,12 +213,8 @@ export class DirEntry extends LocalCustomElement {
 
   toValue() {
     return [
-      Array.from(this.querySelectorAll(`& > dir-entry`)).map((d) =>
-        d.toValue()
-      ),
-      Array.from(this.querySelectorAll(`& > file-entry`)).map((f) =>
-        f.toValue()
-      ),
+      Array.from(findAll(`& > dir-entry`, this)).map((d) => d.toValue()),
+      Array.from(findAll(`& > file-entry`, this)).map((f) => f.toValue()),
     ].flat(Infinity);
   }
 }
@@ -442,7 +445,7 @@ function deleteDir(dirEntry) {
 }
 
 function processRelocation(dirEntry, entryId) {
-  const entry = document.querySelector(`[data-id="${entryId}"]`);
+  const entry = find(`[data-id="${entryId}"]`);
   delete entry.dataset.id;
   entry.classList.remove(`dragging`);
 
@@ -455,7 +458,7 @@ function processRelocation(dirEntry, entryId) {
       oldPath.substring(oldPath.lastIndexOf(`/`) + 1);
 
     if (oldPath !== newPath) {
-      const exists = dirEntry.root.querySelector(`[path="${newPath}"]`);
+      const exists = find(`[path="${newPath}"]`, dirEntry.root);
       if (exists) return alert(`File ${newPath} already exists.`);
       dispatchEvent(
         dirEntry,
@@ -474,10 +477,10 @@ function processRelocation(dirEntry, entryId) {
     const newPath =
       (dirPath !== `.` ? dirPath : ``) + entry.heading.textContent + `/`;
     if (oldPath !== newPath) {
-      const exists = dirEntry.root.querySelector(`[path="${newPath}"]`);
+      const exists = find(`[path="${newPath}"]`, dirEntry.root);
       if (exists) return alert(`Dir ${newPath} already exists.`);
       dispatchEvent(dirEntry, `filetree:dir:move`, { oldPath, newPath }, () => {
-        entry.querySelectorAll(`[path]`).forEach((e) => {
+        findAll(`[path]`, entry).forEach((e) => {
           e.setAttribute(
             `path`,
             e.getAttribute(`path`).replace(oldPath, newPath)

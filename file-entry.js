@@ -1,4 +1,10 @@
-import { create, registry, LocalCustomElement, dispatchEvent } from "./deps.js";
+import {
+  create,
+  registry,
+  LocalCustomElement,
+  dispatchEvent,
+  findAll,
+} from "./utils.js";
 
 /**
  * ...
@@ -72,9 +78,9 @@ export class FileEntry extends LocalCustomElement {
         `filetree:file:click`,
         { fullPath: this.getAttribute(`path`) },
         () => {
-          this.root
-            .querySelectorAll(`.selected`)
-            .forEach((e) => e.classList.remove(`selected`));
+          findAll(`.selected`, this.root).forEach((e) =>
+            e.classList.remove(`selected`)
+          );
           this.classList.add(`selected`);
         }
       );

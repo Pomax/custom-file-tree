@@ -1,3 +1,5 @@
+export const find = (qs, root = document) => root.querySelector(qs);
+export const findAll = (qs, root = document) => root.querySelectorAll(qs);
 export const create = (tag) => document.createElement(tag);
 
 export const registry = globalThis.customElements;

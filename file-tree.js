@@ -1,9 +1,9 @@
 import { DirEntry } from "./dir-entry.js";
-import { registry, LocalCustomElement } from "./deps.js";
+import { registry, LocalCustomElement } from "./utils.js";
 
 /**
  * Not much going on here, just entry points into the tree.
- * Most of the code lives in the DirTree class, instead.
+ * Most of the code lives in the DirEntry class, instead.
  */
 export class FileTree extends LocalCustomElement {
   setFiles(files = []) {
