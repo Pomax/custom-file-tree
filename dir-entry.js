@@ -213,8 +213,8 @@ export class DirEntry extends LocalCustomElement {
 
   toValue() {
     return [
-      Array.from(findAll(`& > dir-entry`, this)).map((d) => d.toValue()),
-      Array.from(findAll(`& > file-entry`, this)).map((f) => f.toValue()),
+      findAll(`& > dir-entry`, this).map((d) => d.toValue()),
+      findAll(`& > file-entry`, this).map((f) => f.toValue()),
     ].flat(Infinity);
   }
 }
