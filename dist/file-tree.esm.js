@@ -154,6 +154,8 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
       evt.stopPropagation();
       evt.preventDefault();
       if (this.path === `.`) return;
+      const tag = evt.target.tagName;
+      if (tag !== `DIR-ENTRY` && tag !== `DIR-HEADING`) return;
       const closed = this.classList.contains(`closed`);
       this.emit(
         `dir:click`,
@@ -191,20 +193,14 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     const add = create(`button`);
     add.title = `add new file`;
     add.textContent = `+`;
-    add.addEventListener(`click`, (evt) => {
-      evt.stopPropagation();
-      addEntryToDir(this, fullPath);
-    });
+    add.addEventListener(`click`, () => addEntryToDir(this, fullPath));
     this.appendChild(add);
   }
   addUploadButton(name, fullPath) {
     const upload = create(`button`);
     upload.title = `upload files from your device`;
     upload.textContent = `\u{1F4BB}`;
-    upload.addEventListener(`click`, (evt) => {
-      evt.stopPropagation();
-      uploadFilesFromDevice(this);
-    });
+    upload.addEventListener(`click`, () => uploadFilesFromDevice(this));
     this.appendChild(upload);
   }
   addRenameButton(name, fullPath) {
@@ -213,10 +209,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
       rename.title = `rename dir`;
       rename.textContent = `\u270F\uFE0F`;
       this.appendChild(rename);
-      rename.addEventListener(`click`, (evt) => {
-        evt.stopPropagation();
-        renameDir(this);
-      });
+      rename.addEventListener(`click`, () => renameDir(this));
     }
   }
   addDeleteButton(name, fullPath) {
@@ -224,10 +217,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     remove.title = `delete dir`;
     remove.textContent = `\u{1F5D1}\uFE0F`;
     this.appendChild(remove);
-    remove.addEventListener(`click`, (evt) => {
-      evt.stopPropagation();
-      deleteDir(this);
-    });
+    remove.addEventListener(`click`, () => deleteDir(this));
   }
   setFiles(files = []) {
     for (let fileName of files) this.addEntry(fileName, fileName);

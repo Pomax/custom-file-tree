@@ -15,6 +15,8 @@ export class DirEntry extends LocalCustomElement {
       evt.stopPropagation();
       evt.preventDefault();
       if (this.path === `.`) return;
+      const tag = evt.target.tagName;
+      if (tag !== `DIR-ENTRY` && tag !== `DIR-HEADING`) return;
       const closed = this.classList.contains(`closed`);
       this.emit(
         `dir:click`,
@@ -58,10 +60,7 @@ export class DirEntry extends LocalCustomElement {
     add.title = `add new file`;
     add.textContent = `+`;
     // FIXME: add this in connectedCallback, and remove in disconnectedCallback
-    add.addEventListener(`click`, (evt) => {
-      evt.stopPropagation();
-      addEntryToDir(this, fullPath);
-    });
+    add.addEventListener(`click`, () => addEntryToDir(this, fullPath));
     this.appendChild(add);
   }
 
@@ -70,10 +69,7 @@ export class DirEntry extends LocalCustomElement {
     upload.title = `upload files from your device`;
     upload.textContent = `💻`;
     // FIXME: add this in connectedCallback, and remove in disconnectedCallback
-    upload.addEventListener(`click`, (evt) => {
-      evt.stopPropagation();
-      uploadFilesFromDevice(this);
-    });
+    upload.addEventListener(`click`, () => uploadFilesFromDevice(this));
     this.appendChild(upload);
   }
 
@@ -84,10 +80,7 @@ export class DirEntry extends LocalCustomElement {
       rename.textContent = `✏️`;
       this.appendChild(rename);
       // FIXME: add this in connectedCallback, and remove in disconnectedCallback
-      rename.addEventListener(`click`, (evt) => {
-        evt.stopPropagation();
-        renameDir(this);
-      });
+      rename.addEventListener(`click`, () => renameDir(this));
     }
   }
 
@@ -97,10 +90,7 @@ export class DirEntry extends LocalCustomElement {
     remove.textContent = `🗑️`;
     this.appendChild(remove);
     // FIXME: add this in connectedCallback, and remove in disconnectedCallback
-    remove.addEventListener(`click`, (evt) => {
-      evt.stopPropagation();
-      deleteDir(this);
-    });
+    remove.addEventListener(`click`, () => deleteDir(this));
   }
 
   setFiles(files = []) {
