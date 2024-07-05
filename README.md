@@ -2,6 +2,7 @@ Add the custom element to your page context using plain old HTML:
 
 ```html
 <script src="somewhere/file-tree.esm.js" type="module" async></script>
+<link rel="stylesheet" href="somewhere/file-tree.css" async>
 ```
 
 And then you can load content into any `<file-tree>` using
