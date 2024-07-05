@@ -21,6 +21,7 @@ var LocalCustomElement = class extends HTMLElement {
     this.setAttribute(`path`, path);
   }
   get root() {
+    if (this.tagName === `FILE-TREE`) return this;
     return this.closest(`file-tree`);
   }
   get parentDir() {
