@@ -23,7 +23,7 @@ fileTree.setFiles([
 
 ## Some Details
 
-[There's even a live demo](https://pomax.github.io/custom-file-tree/public/).
+### [For instance, a live demo](https://pomax.github.io/custom-file-tree/public/).
 
 The file tree will emit events based on the _intent_ of performing operations. All events come with an `event.detail.grant` that is a function that must be called to allow the filetree to perform the operation it wanted to perform. For example, a file rename will not "just happen" and then you get told about it, instead a `file:rename` event gets generated, and your own code will be responsible for deciding whether that rename is allowed. If it is, you call `evt.detail.grant()` to tell the file tree to go ahead with that operation.
 
