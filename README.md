@@ -55,3 +55,9 @@ Events relating to directories:
   - `dir:delete`, dispatched when a directory gets deleted.
 
 File tree tags may also specify a "remove-empty" attribute, i.e. `<file-tree remove-empty></file-tree>`, in which case deleting the last file in a directory removes that directory.
+
+## Why do I want this, it doesn't _do_ anything!
+
+That's the whole point. It _shoulnd't_ do anything, it should reflect whatever filesystem you're making it present to your users. By using this element and listening for its permission events you forward user actions to your _real_ file system API (be that an in-memory one, a RESTful API, an OT processor, a Samba server, S3, it doesn't matter: you're running the show). When users manipulate the file tree, your code checks whether those manipulations are permitted or not. Your code then does whatever it should do to determine whether to let the file tree know that this was an acceptable manipulation and you've pushed the associated changes through in your _real_ file system.
+
+Imagine running a browser based code editor: you have an API that listens for file operations, but if a user only has viewing rights, not editing rights, then you don't want the file tree element to allow things like renaming files or moving entire directories. Instead, the file tree generates a permission event, your page JS calls your server JS to see if the rename, or dir move, etc. are allowed, the server goes "this user's session says absolutely not", and so your page JS does not call the `grant()` function, and the file tree doesn't change because nothing _actually_ happened to the files it's visualizing.
