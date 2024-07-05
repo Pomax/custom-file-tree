@@ -16,10 +16,23 @@ class FileTree extends LocalCustomElement {
     rootDir.setFiles(files);
   }
 
+  // create or upload
   addEntry(path) {
-    this.rootDir.addEntry(path);
+    const exists = find(`[path="${path}"]`);
+    if (exists) {
+      return alert(`${path} already exists. Overwrite?`);
+    }
+    return this.rootDir.addEntry(path);
   }
 
+  // rename and move
+  relocateEntry(oldPath, newPath) {
+    let exists = find(`[path="${newPath}"]`);
+    if (exists && !prompt(`${newPath} already exists. Overwrite?`)) return;
+    // create new entries instead of trying to move things.
+  }
+
+  // delete might require
   removeEntry(path) {
     this.rootDir.removeEntry(path);
   }

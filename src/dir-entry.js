@@ -274,6 +274,7 @@ function addDropZone(dirEntry) {
     `dragenter`,
     (evt) => {
       evt.preventDefault();
+      findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
       dirEntry.classList.add(`drop`);
     },
     { signal: abort.signal },
@@ -287,6 +288,7 @@ function addDropZone(dirEntry) {
 
       if (inThisDir(dirEntry, el)) {
         evt.preventDefault();
+        findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
         dirEntry.classList.add(`drop`);
       }
     },
@@ -298,7 +300,7 @@ function addDropZone(dirEntry) {
     `dragleave`,
     (evt) => {
       evt.preventDefault();
-      dirEntry.classList.remove(`drop`);
+      findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
     },
     { signal: abort.signal },
   );
@@ -309,7 +311,7 @@ function addDropZone(dirEntry) {
     async (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      dirEntry.classList.remove(`drop`);
+      findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
 
       // Is this a file/dir relocation?
       const entryId = evt.dataTransfer.getData(`id`);
