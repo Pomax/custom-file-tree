@@ -107,10 +107,12 @@ export class DirEntry extends LocalCustomElement {
         return this.addDirectory(fileName + `/`, fullPath + `/`);
       }
     }
+
     const dirName = fileName.substring(0, fileName.indexOf(`/`) + 1);
-    const dirPath = fullPath.substring(0, fullPath.lastIndexOf(`/`) + 1);
+    const dirPath = (this.path === `.` ? `` : this.path) + dirName;
     let dir = this.find(`& > dir-entry[name="${dirName}"]`);
     if (!dir) {
+      console.log(`creating ${dirName} / ${dirPath}, fullPath=${fullPath}`);
       dir = new DirEntry();
       dir.init(dirName, dirPath);
       this.appendChild(dir);

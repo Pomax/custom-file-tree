@@ -21,6 +21,7 @@ app.use((req, res, next) => {
 });
 
 // static routes
+app.get(`/`, (req, res) => res.redirect(`/public`));
 app.use(`/`, express.static(`.`));
 app.use((req, res) => {
   if (req.query.preview) {

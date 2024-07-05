@@ -233,9 +233,10 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
       }
     }
     const dirName = fileName.substring(0, fileName.indexOf(`/`) + 1);
-    const dirPath = fullPath.substring(0, fullPath.lastIndexOf(`/`) + 1);
+    const dirPath = (this.path === `.` ? `` : this.path) + dirName;
     let dir = this.find(`& > dir-entry[name="${dirName}"]`);
     if (!dir) {
+      console.log(`creating ${dirName} / ${dirPath}, fullPath=${fullPath}`);
       dir = new _DirEntry();
       dir.init(dirName, dirPath);
       this.appendChild(dir);
@@ -580,8 +581,9 @@ var FileTree = class extends LocalCustomElement {
       const list = dirEntry.toValue();
       list.forEach((removePath) => {
         const addPath = removePath.replace(oldPath, newPath);
-        this.rootDir.addEntry(addPath);
         this.removeEntry(removePath);
+        console.log(`adding ${addPath}`);
+        this.rootDir.addEntry(addPath);
       });
       this.removeEntry(oldPath);
       this.rootDir.sort();
