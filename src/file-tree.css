@@ -1,0 +1,95 @@
+file-tree {
+  display: block;
+  padding: 0.5em !important;
+
+  button {
+    min-width: 1.5em;
+    padding: 2px 1px;
+  }
+
+  dir-entry {
+    display: block;
+
+    dir-heading {
+      margin-left: 0.25em;
+      cursor: pointer;
+    }
+
+    &.dragging {
+      opacity: 0.2;
+    }
+
+    &.drop {
+      background: #e3fff4;
+    }
+
+    &[path] {
+      --padding: 1em;
+      padding-left: var(--padding);
+
+      /*
+        the root dir is a bit special: it shoudl have buttons for
+        creating or uploading files, but should not offer buttons
+        to rename or delete it:
+      */
+      &[path="."] {
+        height: 100%;
+        cursor: auto;
+
+        dir-heading {
+          cursor: auto;
+        }
+
+        &:before {
+          cursor: auto;
+        }
+
+        & > button {
+          display: none;
+          &[title="add new file"],
+          &[title="upload files from your device"] {
+            display: inline-block;
+          }
+        }
+      }
+
+      button[title="upload files from your device"] {
+        display: none;
+      }
+
+      &:before {
+        content: "📁";
+        cursor: pointer;
+        margin-left: calc(0px - var(--padding));
+      }
+    }
+  }
+
+  file-entry {
+    display: block;
+    white-space: nowrap;
+
+    file-heading {
+      cursor: pointer;
+    }
+
+    &:before {
+      content: "📄";
+      cursor: pointer;
+      margin-right: 0.25em;
+    }
+
+    &.dragging {
+      opacity: 0.2;
+    }
+
+    &.selected {
+      background: #e3f6ff;
+      border: 1px solid blue;
+      padding-left: 0.25em;
+      box-sizing: border-box;
+      margin: -1px;
+      margin-left: calc(-1px - 0.25em);
+    }
+  }
+}

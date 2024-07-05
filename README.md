@@ -15,7 +15,7 @@ filetree.setFiles([
 ]);
 ```
 
-The filetree will emit events based on the _intent_ of performing operations. All events come with an `event.detail.commit` that is a function that must be called to allow the filetree to perform the operation it wanted to perform. For example, a file rename will not "just happen" and then you get told about it, instead a `filetree:file:rename` event gets generated, and your own code will be responsible for deciding whether that rename is allowed. If it is, you call `evt.detail.commit()` to tell the file tree to go ahead with that operation.
+The file tree will emit events based on the _intent_ of performing operations. All events come with an `event.detail.commit` that is a function that must be called to allow the filetree to perform the operation it wanted to perform. For example, a file rename will not "just happen" and then you get told about it, instead a `filetree:file:rename` event gets generated, and your own code will be responsible for deciding whether that rename is allowed. If it is, you call `evt.detail.commit()` to tell the file tree to go ahead with that operation.
 
 Events relating to files:
 

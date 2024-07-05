@@ -5,7 +5,7 @@ import { registry, LocalCustomElement } from "./utils.js";
  * Not much going on here, just entry points into the tree.
  * Most of the code lives in the DirEntry class, instead.
  */
-export class FileTree extends LocalCustomElement {
+class FileTree extends LocalCustomElement {
   setFiles(files = []) {
     let rootDir = this.querySelector(`dir-tree[path="."]`);
     if (!rootDir) {

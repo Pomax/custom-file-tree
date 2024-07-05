@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>File-tree demo</title>
+    <link rel="stylesheet" href="../dist/file-tree.css" async />
+    <script src="index.js" type="module" async></script>
+    <link rel="stylesheet" href="index.css" async />
+  </head>
+
+  <body>
+    <header>
+      <h1>This is a <code>&lt;file-tree&gt;</code></h1>
+      <p>
+        It shows off a dummy file tree with blanket "do everything" permissions
+        (there are no real files backing this tree, it's <em>just</em> the file
+        tree interface, generating permission events that we just blanket allow
+        in order to show off the interface).
+      </p>
+    </header>
+
+    <h2>The element:</h2>
+
+    <file-tree></file-tree>
+
+    <p>
+      You can click files, drag files and directories around, create, rename,
+      and delete files and directories, and you can upload files or entire
+      folders from your device (which, because this file tree isn't backed by
+      anything, just means you see your filenames show up in the tree, there is
+      no data associated with them on this page).
+    </p>
+
+    <h2>The HTML that made the above work:</h2>
+
+    <p>
+      It's an HTML element. The code is literally just
+      <code>&lt;file-tree&gt;&lt;/file-tree&gt;</code> and that's all you need.
+      The rest is on the JS side, but that part's also <em>pretty</em> minimal.
+    </p>
+
+    <h2>The JS that made the above work:</h2>
+
+    <p>
+      The JS just gets our file tree element, and passes it a bunch of file
+      names as an array. Then in order to make sure the tree "works", every
+      permission event is immediately granted:
+    </p>
+
+    <pre><code>// Add &lt;file-tree&gt; to our page and grab the element
+import "../dist/file-tree.esm.min.js";
+const fileTree = document.querySelector(`file-tree`);
+
+// Set some files
+const demoList = [
+  `README.md`,
+  `package.json`,
+  `dist/file-tree.esm.js`,
+  `dist/file-tree.esm.min.js`,
+  `public/index.html`,
+  `public/index.js`,
+  `src/file-tree.js`,
+  `src/file-entry.js`,
+  `src/dir-entry.js`,
+  `src/utils.js`,
+  `src/file-tree.css`,
+];
+
+fileTree.setFiles(demoList);
+
+// Listen for, and grant every, file tree event
+const eventList = [
+  `file:click`,
+  `file:create`,
+  `file:rename`,
+  `file:upload`,
+  `file:move`,
+  `file:delete`,
+  `dir:create`,
+  `dir:rename`,
+  `dir:move`,
+  `dir:delete`,
+];
+
+eventList.forEach((name) =>
+  fileTree.addEventListener(`filetree:${name}`, (evt) => evt.detail.grant())
+);</code></pre>
+
+    <h2>See for yourself</h2>
+
+    <p>
+      View-source this page, and <a href="index.js">the page JS</a>. It's about
+      as dumb as I could make it. Dumb is good. Dumb gets work done.
+    </p>
+  </body>
+</html>

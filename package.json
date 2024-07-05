@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "Add the custom element to your page context using plain old HTML:",
   "type": "module",
-  "main": "file-tree.js",
+  "main": "src/file-tree.js",
   "scripts": {
-    "test": ""
+    "test": "npm run build",
+    "build": "npm run build:esm && npm run build:min && cp ./src/file-tree.css ./dist",
+    "build:base": "esbuild --bundle --format=esm ./src/file-tree.js",
+    "build:esm": "npm run build:base -- --outfile=dist/file-tree.esm.js",
+    "build:min": "npm run build:base -- --minify --outfile=dist/file-tree.esm.min.js"
   },
   "repository": {
     "type": "git",
