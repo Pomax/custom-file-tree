@@ -1,13 +1,16 @@
 Add the custom element to your page context using plain old HTML:
 
 ```html
-<script src="somewhere/file-tree/index.js" type="module" async></script>
+<script src="somewhere/file-tree.esm.js" type="module" async></script>
 ```
 
 And then you can load content into any `<file-tree>` using
 
 ```js
-const filetree = get a reference to your element
+// query select, or really any normal way to get an element handle:
+const filetree = document.querySeletor(`file-tree`);
+
+// Tell the file tree which files exist
 filetree.setFiles([
   `some.array`,
   `of/files.with`,
