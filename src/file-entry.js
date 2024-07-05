@@ -1,18 +1,12 @@
-import {
-  create,
-  registry,
-  LocalCustomElement,
-  dispatchEvent,
-  findAll,
-} from "./utils.js";
+import { create, registry, LocalCustomElement } from "./utils.js";
 
 /**
  * ...
  */
 export class FileEntry extends LocalCustomElement {
   init(fileName, fullPath) {
-    this.setAttribute(`name`, fileName);
-    this.setAttribute(`path`, fullPath);
+    this.name = fileName;
+    this.path = fullPath;
 
     const heading = (this.heading = create(`file-heading`));
     heading.textContent = fileName;
@@ -27,25 +21,23 @@ export class FileEntry extends LocalCustomElement {
       evt.stopPropagation();
       const newFileName = prompt(
         `New file name?`,
-        this.heading.textContent
+        this.heading.textContent,
       )?.trim();
       if (newFileName) {
-        const oldName = this.getAttribute(`path`);
+        if (newFileName.includes(`/`)) {
+          return alert(`If you want to relocate a file, just move it.`);
+        }
+        const oldName = this.path;
         const newName = oldName.replace(this.heading.textContent, newFileName);
-        const currentPath = this.getAttribute(`path`);
-        dispatchEvent(
-          this,
-          `filetree:file:rename`,
-          { oldName, newName },
-          () => {
-            this.setAttribute(
-              `path`,
-              currentPath.replace(this.heading.textContent, newFileName)
-            );
-            this.setAttribute(`name`, newFileName);
-            this.heading.textContent = newFileName;
-          }
-        );
+        const currentPath = this.path;
+        this.emit(`file:rename`, { oldName, newName }, () => {
+          this.path = currentPath.replace(
+            this.heading.textContent,
+            newFileName,
+          );
+          this.name = newFileName;
+          this.heading.textContent = newFileName;
+        });
       }
     });
 
@@ -58,32 +50,20 @@ export class FileEntry extends LocalCustomElement {
       evt.stopPropagation();
       if (confirm(`are you sure you want to delete this file?`)) {
         const dirEntry = this.parentDir;
-        dispatchEvent(
-          this,
-          `filetree:file:delete`,
-          { path: this.getAttribute(`path`) },
-          () => {
-            dirEntry.removeChild(this);
-            if (this.root?.getAttribute(`remove-empty`)) {
-              dirEntry.checkEmpty();
-            }
-          }
-        );
+        this.emit(`file:delete`, { path: this.path }, () => {
+          dirEntry.removeChild(this);
+          if (this.removeEmpty) dirEntry.checkEmpty();
+        });
       }
     });
 
     this.addEventListener(`click`, () => {
-      dispatchEvent(
-        this,
-        `filetree:file:click`,
-        { fullPath: this.getAttribute(`path`) },
-        () => {
-          findAll(`.selected`, this.root).forEach((e) =>
-            e.classList.remove(`selected`)
-          );
-          this.classList.add(`selected`);
-        }
-      );
+      this.emit(`file:click`, { path: this.path }, () => {
+        this.findAllInTree(`.selected`).forEach((e) =>
+          e.classList.remove(`selected`),
+        );
+        this.classList.add(`selected`);
+      });
     });
 
     // allow this file to be moved from one dir to another
@@ -100,22 +80,19 @@ export class FileEntry extends LocalCustomElement {
     // TODO: check if this is safe? (e.g. is there already an entry with this name in the tree?
     this.heading.textContent = this.heading.textContent.replace(
       oldPath,
-      newPath
+      newPath,
     );
-    this.setAttribute(
-      `path`,
-      this.getAttribute(`path`).replace(oldPath, newPath)
-    );
+    this.path = this.path.replace(oldPath, newPath);
   }
 
   removeEntry(path) {
-    if (this.getAttribute(`path`) === path) {
+    if (this.path === path) {
       this.remove();
     }
   }
 
   selectEntry(path) {
-    this.classList.toggle(`selected`, path === this.getAttribute(`path`));
+    this.classList.toggle(`selected`, path === this.path);
   }
 
   toJSON() {
@@ -123,7 +100,7 @@ export class FileEntry extends LocalCustomElement {
   }
 
   toString() {
-    return this.getAttribute(`path`);
+    return this.path;
   }
 
   toValue() {

@@ -35,12 +35,18 @@ const eventList = [
   `file:move`,
   `file:delete`,
   // Directory events you care about
+  `dir:click`,
   `dir:create`,
   `dir:rename`,
   `dir:move`,
   `dir:delete`,
 ];
 
-eventList.forEach((name) =>
-  fileTree.addEventListener(`filetree:${name}`, (evt) => evt.detail.grant())
+eventList.forEach((type) =>
+  fileTree.addEventListener(type, (evt) => {
+    const { type, detail } = evt;
+    delete detail.content; // if we're uploading files, don't log their content: we don't care.
+    console.log(type, detail);
+    detail.grant();
+  })
 );

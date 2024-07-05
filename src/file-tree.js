@@ -1,11 +1,18 @@
 import { DirEntry } from "./dir-entry.js";
-import { registry, LocalCustomElement } from "./utils.js";
+import { registry, LocalCustomElement, isFile } from "./utils.js";
 
 /**
  * Not much going on here, just entry points into the tree.
  * Most of the code lives in the DirEntry class, instead.
  */
 class FileTree extends LocalCustomElement {
+  get root() {
+    return this;
+  }
+  get parentDir() {
+    return this.rootDir;
+  }
+
   setFiles(files = []) {
     let rootDir = this.querySelector(`dir-tree[path="."]`);
     if (!rootDir) {
@@ -18,7 +25,7 @@ class FileTree extends LocalCustomElement {
 
   // create or upload
   addEntry(path) {
-    const exists = find(`[path="${path}"]`);
+    const exists = this.find(`[path="${path}"]`);
     if (exists) {
       return alert(`${path} already exists. Overwrite?`);
     }
@@ -27,12 +34,35 @@ class FileTree extends LocalCustomElement {
 
   // rename and move
   relocateEntry(oldPath, newPath) {
-    let exists = find(`[path="${newPath}"]`);
-    if (exists && !prompt(`${newPath} already exists. Overwrite?`)) return;
-    // create new entries instead of trying to move things.
+    const exists = this.find(`[path="${newPath}"]`);
+    if (exists) return alert(`${newPath} already exists.`);
+    if (isFile(oldPath)) return this.relocateFile(oldPath, newPath);
+    return this.relocateDir(oldPath, newPath);
   }
 
-  // delete might require
+  relocateFile(oldPath, newPath) {
+    return () => {
+      const added = this.rootDir.addEntry(newPath);
+      const removed = this.find(`[path="${oldPath}"]`);
+      added.setAttribute(`class`, removed.getAttribute(`class`));
+      this.removeEntry(oldPath);
+    };
+  }
+
+  relocateDir(oldPath, newPath) {
+    const dirEntry = this.find(`[path="${oldPath}"]`, this.rootDir);
+    return () => {
+      const list = dirEntry.toValue();
+      list.forEach((removePath) => {
+        const addPath = removePath.replace(oldPath, newPath);
+        this.rootDir.addEntry(addPath);
+        this.removeEntry(removePath);
+      });
+      this.removeEntry(oldPath);
+      this.rootDir.sort();
+    };
+  }
+
   removeEntry(path) {
     this.rootDir.removeEntry(path);
   }

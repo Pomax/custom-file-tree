@@ -19,7 +19,7 @@ file-tree {
       opacity: 0.2;
     }
 
-    &.drop {
+    &.drop-target {
       background: #e3fff4;
     }
 
@@ -58,9 +58,17 @@ file-tree {
       }
 
       &:before {
-        content: "📁";
+        content: "📒";
         cursor: pointer;
         margin-left: calc(0px - var(--padding));
+      }
+      &.closed {
+        &:before {
+          content: "📕";
+        }
+        dir-entry, file-entry {
+          display: none;
+        }
       }
     }
   }

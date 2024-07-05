@@ -5,13 +5,14 @@
   "type": "module",
   "main": "src/file-tree.js",
   "scripts": {
-    "start": "npm test",
+    "start": "npm run server",
     "test": "npm run lint && npm run build",
     "build": "npm run build:esm && npm run build:min && cp ./src/file-tree.css ./dist",
     "build:base": "esbuild --bundle --format=esm ./src/file-tree.js",
     "build:esm": "npm run build:base -- --outfile=dist/file-tree.esm.js",
     "build:min": "npm run build:base -- --minify --outfile=dist/file-tree.esm.min.js",
-    "lint": "prettier -w src/**/*.js"
+    "lint": "prettier -w src/**/*.js",
+    "server": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   "homepage": "https://github.com/Pomax/custom-file-tree#readme",
   "devDependencies": {
     "esbuild": "^0.23.0",
+    "express": "^4.19.2",
     "prettier": "^3.3.2"
   }
 }

@@ -1,29 +1,55 @@
 // src/utils.js
-var find = (qs, root = document) => root.querySelector(qs);
-var findAll = (qs, root = document) => Array.from(root.querySelectorAll(qs));
 var create = (tag) => document.createElement(tag);
+var isFile = (path) => path.split(`/`).at(-1).includes(`.`);
 var registry = globalThis.customElements;
 var HTMLElement = globalThis.HTMLElement ?? class Dummy {
 };
 var LocalCustomElement = class extends HTMLElement {
+  get removeEmpty() {
+    return this.root.getAttribute(`remove-empty`);
+  }
+  get name() {
+    return this.getAttribute(`name`);
+  }
+  set name(name) {
+    this.setAttribute(`name`, name);
+  }
+  get path() {
+    return this.getAttribute(`path`);
+  }
+  set path(path) {
+    this.setAttribute(`path`, path);
+  }
   get root() {
     return this.closest(`file-tree`);
   }
   get parentDir() {
     return this.closest(`dir-entry`);
   }
+  emit(name, detail = {}, grant = () => {
+  }) {
+    detail.grant = grant;
+    this.root.dispatchEvent(new CustomEvent(name, { detail }));
+  }
+  find(qs) {
+    return this.querySelector(qs);
+  }
+  findInTree(qs) {
+    return this.root.querySelector(qs);
+  }
+  findAll(qs) {
+    return Array.from(this.querySelectorAll(qs));
+  }
+  findAllInTree(qs) {
+    return Array.from(this.root.querySelectorAll(qs));
+  }
 };
-function dispatchEvent(from, name, detail = {}, grant = () => {
-}) {
-  detail.grant = grant;
-  from.root?.dispatchEvent(new CustomEvent(name, { detail }));
-}
 
 // src/file-entry.js
 var FileEntry = class extends LocalCustomElement {
   init(fileName, fullPath) {
-    this.setAttribute(`name`, fileName);
-    this.setAttribute(`path`, fullPath);
+    this.name = fileName;
+    this.path = fullPath;
     const heading = this.heading = create(`file-heading`);
     heading.textContent = fileName;
     this.appendChild(heading);
@@ -39,22 +65,20 @@ var FileEntry = class extends LocalCustomElement {
         this.heading.textContent
       )?.trim();
       if (newFileName) {
-        const oldName = this.getAttribute(`path`);
+        if (newFileName.includes(`/`)) {
+          return alert(`If you want to relocate a file, just move it.`);
+        }
+        const oldName = this.path;
         const newName = oldName.replace(this.heading.textContent, newFileName);
-        const currentPath = this.getAttribute(`path`);
-        dispatchEvent(
-          this,
-          `filetree:file:rename`,
-          { oldName, newName },
-          () => {
-            this.setAttribute(
-              `path`,
-              currentPath.replace(this.heading.textContent, newFileName)
-            );
-            this.setAttribute(`name`, newFileName);
-            this.heading.textContent = newFileName;
-          }
-        );
+        const currentPath = this.path;
+        this.emit(`file:rename`, { oldName, newName }, () => {
+          this.path = currentPath.replace(
+            this.heading.textContent,
+            newFileName
+          );
+          this.name = newFileName;
+          this.heading.textContent = newFileName;
+        });
       }
     });
     const remove = create(`button`);
@@ -66,31 +90,19 @@ var FileEntry = class extends LocalCustomElement {
       evt.stopPropagation();
       if (confirm(`are you sure you want to delete this file?`)) {
         const dirEntry = this.parentDir;
-        dispatchEvent(
-          this,
-          `filetree:file:delete`,
-          { path: this.getAttribute(`path`) },
-          () => {
-            dirEntry.removeChild(this);
-            if (this.root?.getAttribute(`remove-empty`)) {
-              dirEntry.checkEmpty();
-            }
-          }
-        );
+        this.emit(`file:delete`, { path: this.path }, () => {
+          dirEntry.removeChild(this);
+          if (this.removeEmpty) dirEntry.checkEmpty();
+        });
       }
     });
     this.addEventListener(`click`, () => {
-      dispatchEvent(
-        this,
-        `filetree:file:click`,
-        { fullPath: this.getAttribute(`path`) },
-        () => {
-          findAll(`.selected`, this.root).forEach(
-            (e) => e.classList.remove(`selected`)
-          );
-          this.classList.add(`selected`);
-        }
-      );
+      this.emit(`file:click`, { path: this.path }, () => {
+        this.findAllInTree(`.selected`).forEach(
+          (e) => e.classList.remove(`selected`)
+        );
+        this.classList.add(`selected`);
+      });
     });
     this.draggable = true;
     this.addEventListener(`dragstart`, (evt) => {
@@ -105,27 +117,24 @@ var FileEntry = class extends LocalCustomElement {
       oldPath,
       newPath
     );
-    this.setAttribute(
-      `path`,
-      this.getAttribute(`path`).replace(oldPath, newPath)
-    );
+    this.path = this.path.replace(oldPath, newPath);
   }
   removeEntry(path) {
-    if (this.getAttribute(`path`) === path) {
+    if (this.path === path) {
       this.remove();
     }
   }
   selectEntry(path) {
-    this.classList.toggle(`selected`, path === this.getAttribute(`path`));
+    this.classList.toggle(`selected`, path === this.path);
   }
   toJSON() {
-    return `"${this.toValue()}"`;
+    return JSON.stringify(this.toValue());
   }
   toString() {
-    return this.toValue();
+    return this.path;
   }
   toValue() {
-    return this.getAttribute(`path`);
+    return [this.toString()];
   }
 };
 var FileHeading = class extends LocalCustomElement {
@@ -141,18 +150,31 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     this.addButtons(name, fullPath);
   }
   connectedCallback() {
+    this.clickListener = (evt) => {
+      evt.stopPropagation();
+      evt.preventDefault();
+      if (this.path === `.`) return;
+      const closed = this.classList.contains(`closed`);
+      this.emit(
+        `dir:click`,
+        { path: this.path, currentState: closed ? `closed` : `open` },
+        () => this.classList.toggle(`closed`)
+      );
+    };
+    this.addEventListener(`click`, this.clickListener);
     this.removeListener = addDropZone(this);
-    if (this.getAttribute(`path`) === `.`) {
+    if (this.path === `.`) {
       this.draggable = false;
     }
   }
   disconnectedCallback() {
     this.removeListener();
+    this.removeEventListener(`click`, this.clickListener);
   }
   setNameAndPath(name, fullPath) {
-    this.setAttribute(`name`, name);
-    this.setAttribute(`path`, fullPath);
-    let heading = find(`dir-heading`, this);
+    this.name = name;
+    this.path = fullPath;
+    let heading = this.find(`dir-heading`);
     if (!heading || heading.parentNode !== this) {
       heading = this.heading = create(`dir-heading`);
       this.appendChild(heading);
@@ -169,23 +191,32 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     const add = create(`button`);
     add.title = `add new file`;
     add.textContent = `+`;
-    add.addEventListener(`click`, () => addEntryToDir(this, fullPath));
+    add.addEventListener(`click`, (evt) => {
+      evt.stopPropagation();
+      addEntryToDir(this, fullPath);
+    });
     this.appendChild(add);
   }
   addUploadButton(name, fullPath) {
     const upload = create(`button`);
     upload.title = `upload files from your device`;
     upload.textContent = `\u{1F4BB}`;
-    upload.addEventListener(`click`, () => uploadFilesFromDevice(this));
+    upload.addEventListener(`click`, (evt) => {
+      evt.stopPropagation();
+      uploadFilesFromDevice(this);
+    });
     this.appendChild(upload);
   }
   addRenameButton(name, fullPath) {
-    if (this.getAttribute(`path`) !== `.`) {
+    if (this.path !== `.`) {
       const rename = create(`button`);
       rename.title = `rename dir`;
       rename.textContent = `\u270F\uFE0F`;
       this.appendChild(rename);
-      rename.addEventListener(`click`, () => renameDir(this));
+      rename.addEventListener(`click`, (evt) => {
+        evt.stopPropagation();
+        renameDir(this);
+      });
     }
   }
   addDeleteButton(name, fullPath) {
@@ -193,7 +224,10 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     remove.title = `delete dir`;
     remove.textContent = `\u{1F5D1}\uFE0F`;
     this.appendChild(remove);
-    remove.addEventListener(`click`, () => deleteDir(this));
+    remove.addEventListener(`click`, (evt) => {
+      evt.stopPropagation();
+      deleteDir(this);
+    });
   }
   setFiles(files = []) {
     for (let fileName of files) this.addEntry(fileName, fileName);
@@ -209,7 +243,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     }
     const dirName = fileName.substring(0, fileName.indexOf(`/`) + 1);
     const dirPath = fullPath.substring(0, fullPath.lastIndexOf(`/`) + 1);
-    let dir = find(`& > dir-entry[name="${dirName}"]`, this);
+    let dir = this.find(`& > dir-entry[name="${dirName}"]`);
     if (!dir) {
       dir = new _DirEntry();
       dir.init(dirName, dirPath);
@@ -218,7 +252,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     return dir.addEntry(fileName.replace(dirName, ``), fullPath);
   }
   addFile(fileName, fullPath) {
-    let file = find(`& > file-entry[name="${fileName}"]`, this);
+    let file = this.find(`& > file-entry[name="${fileName}"]`);
     if (!file) {
       file = new FileEntry();
       file.init(fileName, fullPath);
@@ -228,20 +262,15 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     return file;
   }
   addFileFromUpload(fileName, content) {
-    const localPath = this.getAttribute(`path`);
+    const localPath = this.path;
     const fullPath = (localPath !== `.` ? localPath : ``) + fileName;
-    dispatchEvent(
-      this,
-      `filetree:file:upload`,
-      { fileName: fullPath, content },
-      () => {
-        this.addEntry(fileName, fullPath);
-        this.sort();
-      }
-    );
+    this.emit(`file:upload`, { fileName: fullPath, content }, () => {
+      this.addEntry(fileName, fullPath);
+      this.sort();
+    });
   }
   addDirectory(dirName, fullPath) {
-    let dir = find(`& > dir-entry[name="${dirName}"]`, this);
+    let dir = this.find(`& > dir-entry[name="${dirName}"]`);
     if (!dir) {
       dir = new _DirEntry();
       dir.init(dirName, fullPath);
@@ -258,43 +287,41 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
       if (a.tagName === `BUTTON`) return -1;
       if (b.tagName === `BUTTON`) return 1;
       if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
-        a = a.getAttribute(`path`);
-        b = b.getAttribute(`path`);
+        a = a.path;
+        b = b.path;
         return a < b ? -1 : 1;
       } else if (a.tagName === `DIR-ENTRY`) {
         return -1;
       } else if (b.tagName === `DIR-ENTRY`) {
         return 1;
       }
-      a = a.getAttribute(`path`);
-      b = b.getAttribute(`path`);
+      a = a.path;
+      b = b.path;
       return a < b ? -1 : 1;
     });
     children.forEach((c) => this.appendChild(c));
     if (recursive) {
-      findAll(`dir-entry`, this).forEach((d) => d.sort(recursive));
+      this.findAll(`& > dir-entry`).forEach((d) => d.sort(recursive));
     }
   }
   relocateContent(oldPath, newPath) {
     for (let c of this.children) c.relocateContent?.(oldPath, newPath);
   }
   removeEntry(path) {
+    if (path === this.path) {
+      return this.remove();
+    }
     for (let c of this.children) c.removeEntry?.(path);
   }
   selectEntry(filePath) {
     for (let c of this.children) c.selectEntry?.(filePath);
   }
   checkEmpty() {
-    if (!this.root.getAttribute(`remove-empty`)) return;
-    if (!find(`file-entry`, this)) {
-      dispatchEvent(
-        this,
-        `filetree:dir:delete`,
-        { path: this.getAttribute(`path`) },
-        () => {
-          this.parentNode.removeChild(this);
-        }
-      );
+    if (!this.removeEmpty) return;
+    if (!this.find(`file-entry`)) {
+      this.emit(`dir:delete`, { path: this.path }, () => {
+        this.parentNode.removeChild(this);
+      });
     }
   }
   toJSON() {
@@ -305,8 +332,8 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
   }
   toValue() {
     return [
-      findAll(`& > dir-entry`, this).map((d) => d.toValue()),
-      findAll(`& > file-entry`, this).map((f) => f.toValue())
+      this.findAll(`& > dir-entry`).map((d) => d.toValue()),
+      this.findAll(`& > file-entry`).map((f) => f.toValue())
     ].flat(Infinity);
   }
 };
@@ -330,6 +357,9 @@ function inThisDir(dir, entry) {
 function addDropZone(dirEntry) {
   const abort = new AbortController();
   dirEntry.draggable = true;
+  const unmark = () => {
+    dirEntry.findAllInTree(`.drop-target`).forEach((d) => d.classList.remove(`drop-target`));
+  };
   dirEntry.addEventListener(
     `dragstart`,
     (evt) => {
@@ -344,8 +374,8 @@ function addDropZone(dirEntry) {
     `dragenter`,
     (evt) => {
       evt.preventDefault();
-      findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
-      dirEntry.classList.add(`drop`);
+      unmark();
+      dirEntry.classList.add(`drop-target`);
     },
     { signal: abort.signal }
   );
@@ -355,8 +385,8 @@ function addDropZone(dirEntry) {
       const el = evt.target;
       if (inThisDir(dirEntry, el)) {
         evt.preventDefault();
-        findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
-        dirEntry.classList.add(`drop`);
+        unmark();
+        dirEntry.classList.add(`drop-target`);
       }
     },
     { signal: abort.signal }
@@ -365,7 +395,7 @@ function addDropZone(dirEntry) {
     `dragleave`,
     (evt) => {
       evt.preventDefault();
-      findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
+      unmark();
     },
     { signal: abort.signal }
   );
@@ -374,11 +404,9 @@ function addDropZone(dirEntry) {
     async (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      findAll(`.drop`).forEach((d) => d.classList.remove(`drop`));
+      unmark();
       const entryId = evt.dataTransfer.getData(`id`);
-      if (entryId) {
-        return processRelocation(dirEntry, entryId);
-      }
+      if (entryId) return processRelocation(dirEntry, entryId);
       await processUpload(dirEntry, evt.dataTransfer.items);
     },
     { signal: abort.signal }
@@ -386,30 +414,28 @@ function addDropZone(dirEntry) {
   return () => abort.abort();
 }
 function addEntryToDir(dirEntry, dir) {
-  let fileName = prompt(
-    "Please specify a filename.\nUse / as directory delimiter (e.g. cake/yum.js)"
-  )?.trim();
+  let fileName = prompt("Please specify a filename.")?.trim();
   if (fileName) {
+    if (fileName.includes(`/`)) {
+      return alert(
+        `Just add new files directly to the directory where they should live.`
+      );
+    }
     let prompted = fileName;
     if (dir !== `.`) {
       fileName = dir + fileName;
     }
-    const exists = find(`[path="${fileName}"]`, dirEntry.root);
+    const exists = dirEntry.findInTree(`[path="${fileName}"]`);
     if (exists) return;
     if (fileName.includes(`.`)) {
-      dispatchEvent(dirEntry, `filetree:file:create`, { fileName }, () => {
+      dirEntry.emit(`file:create`, { fileName }, () => {
         return dirEntry.addEntry(prompted, fileName);
       });
     } else {
       if (confirm(`Did you mean to create a new directory ${fileName}?`)) {
-        dispatchEvent(
-          dirEntry,
-          `filetree:dir:create`,
-          { dirName: fileName },
-          () => {
-            dirEntry.addDirectory(prompted + `/`, fileName + `/`);
-          }
-        );
+        dirEntry.emit(`dir:create`, { dirName: fileName }, () => {
+          dirEntry.addDirectory(prompted + `/`, fileName + `/`);
+        });
       }
     }
   }
@@ -418,20 +444,18 @@ function uploadFilesFromDevice(dirEntry) {
   const upload = create(`input`);
   upload.type = `file`;
   upload.multiple = true;
-  const which = confirm(
+  const uploadFiles = confirm(
     `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`
   );
-  if (!which) upload.webkitdirectory = true;
+  if (!uploadFiles) upload.webkitdirectory = true;
   upload.addEventListener(`change`, () => {
     const { files } = upload;
     if (!files) return;
-    console.log(files);
     processUpload(dirEntry, files);
   });
   upload.click();
 }
 async function processUpload(dirEntry, items) {
-  console.log(items);
   async function iterate(item, path = ``) {
     if (item instanceof File) {
       const content = await getFileContent(item);
@@ -444,16 +468,19 @@ async function processUpload(dirEntry, items) {
         dirEntry.addFileFromUpload(fileName, content);
       });
     } else if (item.isDirectory) {
+      const updatedPath = path + item.name + "/";
       item.createReader().readEntries(async (entries) => {
-        for (let entry of entries) await iterate(entry, path + item.name + "/");
+        for (let entry of entries) await iterate(entry, updatedPath);
       });
     }
   }
-  await Promise.all(
-    [...items].map(
-      async (item) => await iterate(item instanceof File ? item : item.webkitGetAsEntry())
-    )
-  );
+  for await (let item of items) {
+    try {
+      await iterate(item instanceof File ? item : item.webkitGetAsEntry());
+    } catch (e) {
+      return alert(`Unfortunately, a ${item.kind} is not a file or folder.`);
+    }
+  }
 }
 function renameDir(dirEntry) {
   const newName = prompt(
@@ -461,90 +488,68 @@ function renameDir(dirEntry) {
     dirEntry.heading.textContent
   )?.trim();
   if (newName) {
+    if (newName.includes(`/`)) {
+      return alert(`If you want to relocate a dir, just move it.`);
+    }
     const oldName = dirEntry.heading.textContent;
-    const oldPath = dirEntry.getAttribute(`path`);
+    const oldPath = dirEntry.path;
     const newPath = oldPath.replace(oldName, newName);
-    const dir = find(`dir-entry[path="${newPath}"]`, dirEntry.root);
+    const dir = dirEntry.findInTree(`dir-entry[path="${newPath}"]`);
     if (dir && confirm(`That directory already exists. Move all the content?`)) {
-      dispatchEvent(
-        dirEntry,
-        `filetree:dir:rename`,
-        { oldPath, newPath },
-        () => {
-          const oldPath2 = dirEntry.getAttribute(`path`);
-          dirEntry.heading.textContent = newName;
-          dirEntry.setAttribute(`name`, newName);
-          dirEntry.setAttribute(`path`, newPath);
-          dirEntry.relocateContent(oldPath2, newPath);
-          return { oldPath: oldPath2, newPath };
-        }
-      );
+      dirEntry.emit(`dir:rename`, { oldPath, newPath }, () => {
+        const oldPath2 = dirEntry.path;
+        dirEntry.heading.textContent = newName;
+        dirEntry.name = newName;
+        dirEntry.path = newPath;
+        dirEntry.relocateContent(oldPath2, newPath);
+        return { oldPath: oldPath2, newPath };
+      });
     }
   }
 }
 function deleteDir(dirEntry) {
   const msg = `Are you *sure* you want to delete this directory and everything in it?`;
   if (confirm(msg)) {
-    dispatchEvent(
-      dirEntry,
-      `filetree:dir:delete`,
-      { path: dirEntry.getAttribute(`path`) },
-      () => {
-        dirEntry.remove();
-      }
-    );
+    dirEntry.emit(`dir:delete`, { path: dirEntry.path }, () => {
+      dirEntry.remove();
+    });
   }
 }
 function processRelocation(dirEntry, entryId) {
-  const entry = find(`[data-id="${entryId}"]`);
+  const entry = dirEntry.findInTree(`[data-id="${entryId}"]`);
   delete entry.dataset.id;
   entry.classList.remove(`dragging`);
   if (entry === dirEntry) return;
-  const oldPath = entry.getAttribute(`path`);
-  const dirPath = dirEntry.getAttribute(`path`);
+  const oldPath = entry.path;
+  const dirPath = dirEntry.path;
   if (entry instanceof FileEntry) {
     const newPath = (dirPath !== `.` ? dirPath : ``) + oldPath.substring(oldPath.lastIndexOf(`/`) + 1);
     if (oldPath !== newPath) {
-      const exists = find(`[path="${newPath}"]`, dirEntry.root);
-      if (exists) return alert(`File ${newPath} already exists.`);
-      dispatchEvent(
-        dirEntry,
-        `filetree:file:move`,
-        { oldPath, newPath },
-        () => {
-          entry.setAttribute(`path`, newPath);
-          dirEntry.appendChild(entry);
-          dirEntry.sort();
-        }
-      );
+      const grant = dirEntry.root.relocateEntry(oldPath, newPath);
+      if (grant) {
+        dirEntry.emit(`file:move`, { oldPath, newPath }, grant);
+      }
     }
   }
   if (entry instanceof DirEntry) {
     const newPath = (dirPath !== `.` ? dirPath : ``) + entry.heading.textContent + `/`;
     if (oldPath !== newPath) {
-      const exists = find(`[path="${newPath}"]`, dirEntry.root);
-      if (exists) return alert(`Dir ${newPath} already exists.`);
-      dispatchEvent(dirEntry, `filetree:dir:move`, { oldPath, newPath }, () => {
-        findAll(`[path]`, entry).forEach((e) => {
-          e.setAttribute(
-            `path`,
-            e.getAttribute(`path`).replace(oldPath, newPath)
-          );
-        });
-        entry.setAttribute(
-          `path`,
-          entry.getAttribute(`path`).replace(oldPath, newPath)
-        );
-        dirEntry.appendChild(entry);
-        dirEntry.sort();
-        return { oldPath, newPath };
-      });
+      const grant = dirEntry.root.relocateEntry(oldPath, newPath);
+      if (grant) {
+        dirEntry.emit(`dir:move`, { oldPath, newPath }, grant);
+      }
     }
   }
 }
 
 // src/file-tree.js
 var FileTree = class extends LocalCustomElement {
+  get root() {
+    return this;
+  }
+  get parentDir() {
+    return this.rootDir;
+  }
   setFiles(files = []) {
     let rootDir = this.querySelector(`dir-tree[path="."]`);
     if (!rootDir) {
@@ -554,8 +559,41 @@ var FileTree = class extends LocalCustomElement {
     }
     rootDir.setFiles(files);
   }
+  // create or upload
   addEntry(path) {
-    this.rootDir.addEntry(path);
+    const exists = this.find(`[path="${path}"]`);
+    if (exists) {
+      return alert(`${path} already exists. Overwrite?`);
+    }
+    return this.rootDir.addEntry(path);
+  }
+  // rename and move
+  relocateEntry(oldPath, newPath) {
+    const exists = this.find(`[path="${newPath}"]`);
+    if (exists) return alert(`${newPath} already exists.`);
+    if (isFile(oldPath)) return this.relocateFile(oldPath, newPath);
+    return this.relocateDir(oldPath, newPath);
+  }
+  relocateFile(oldPath, newPath) {
+    return () => {
+      const added = this.rootDir.addEntry(newPath);
+      const removed = this.find(`[path="${oldPath}"]`);
+      added.setAttribute(`class`, removed.getAttribute(`class`));
+      this.removeEntry(oldPath);
+    };
+  }
+  relocateDir(oldPath, newPath) {
+    const dirEntry = this.find(`[path="${oldPath}"]`, this.rootDir);
+    return () => {
+      const list = dirEntry.toValue();
+      list.forEach((removePath) => {
+        const addPath = removePath.replace(oldPath, newPath);
+        this.rootDir.addEntry(addPath);
+        this.removeEntry(removePath);
+      });
+      this.removeEntry(oldPath);
+      this.rootDir.sort();
+    };
   }
   removeEntry(path) {
     this.rootDir.removeEntry(path);
