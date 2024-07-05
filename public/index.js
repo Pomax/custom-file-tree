@@ -2,18 +2,23 @@
 import "../dist/file-tree.esm.min.js";
 const fileTree = document.querySelector(`file-tree`);
 
-// Set some files
+// Set some files. Intentionally terribly sorted.
 const demoList = [
-  `README.md`,
-  `package.json`,
-  `dist/file-tree.esm.js`,
-  `dist/file-tree.esm.min.js`,
-  `public/index.html`,
-  `public/index.js`,
-  `src/file-tree.js`,
-  `src/file-entry.js`,
-  `src/dir-entry.js`,
   `src/utils.js`,
+  `README.md`,
+  `dist/README.md`,
+  `dist/file-tree.esm.js`,
+  `test/README.md`,
+  `public/index.html`,
+  `src/file-entry.js`,
+  `public/README.md`,
+  `src/dir-entry.js`,
+  `package.json`,
+  `public/index.js`,
+  `src/README.md`,
+  `dist/file-tree.esm.min.js`,
+  `test/cake.because.why.not`,
+  `src/file-tree.js`,
   `src/file-tree.css`,
 ];
 
@@ -21,12 +26,15 @@ fileTree.setFiles(demoList);
 
 // Listen for, and grant every, file tree event
 const eventList = [
+  // The main event your users care about
   `file:click`,
+  // File events you care about
   `file:create`,
   `file:rename`,
   `file:upload`,
   `file:move`,
   `file:delete`,
+  // Directory events you care about
   `dir:create`,
   `dir:rename`,
   `dir:move`,

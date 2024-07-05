@@ -36,7 +36,7 @@ file-tree {
         height: 100%;
         cursor: auto;
 
-        dir-heading {
+        & > dir-heading {
           cursor: auto;
         }
 

@@ -27,7 +27,7 @@ export class FileEntry extends LocalCustomElement {
       evt.stopPropagation();
       const newFileName = prompt(
         `New file name?`,
-        this.heading.textContent
+        this.heading.textContent,
       )?.trim();
       if (newFileName) {
         const oldName = this.getAttribute(`path`);
@@ -40,11 +40,11 @@ export class FileEntry extends LocalCustomElement {
           () => {
             this.setAttribute(
               `path`,
-              currentPath.replace(this.heading.textContent, newFileName)
+              currentPath.replace(this.heading.textContent, newFileName),
             );
             this.setAttribute(`name`, newFileName);
             this.heading.textContent = newFileName;
-          }
+          },
         );
       }
     });
@@ -67,7 +67,7 @@ export class FileEntry extends LocalCustomElement {
             if (this.root?.getAttribute(`remove-empty`)) {
               dirEntry.checkEmpty();
             }
-          }
+          },
         );
       }
     });
@@ -79,10 +79,10 @@ export class FileEntry extends LocalCustomElement {
         { fullPath: this.getAttribute(`path`) },
         () => {
           findAll(`.selected`, this.root).forEach((e) =>
-            e.classList.remove(`selected`)
+            e.classList.remove(`selected`),
           );
           this.classList.add(`selected`);
-        }
+        },
       );
     });
 
@@ -100,11 +100,11 @@ export class FileEntry extends LocalCustomElement {
     // TODO: check if this is safe? (e.g. is there already an entry with this name in the tree?
     this.heading.textContent = this.heading.textContent.replace(
       oldPath,
-      newPath
+      newPath,
     );
     this.setAttribute(
       `path`,
-      this.getAttribute(`path`).replace(oldPath, newPath)
+      this.getAttribute(`path`).replace(oldPath, newPath),
     );
   }
 

@@ -169,7 +169,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     const add = create(`button`);
     add.title = `add new file`;
     add.textContent = `+`;
-    add.addEventListener(`click`, () => addFileToDir(this, fullPath));
+    add.addEventListener(`click`, () => addEntryToDir(this, fullPath));
     this.appendChild(add);
   }
   addUploadButton(name, fullPath) {
@@ -241,10 +241,13 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     );
   }
   addDirectory(dirName, fullPath) {
-    const dir = new _DirEntry();
-    dir.init(dirName, fullPath);
-    this.appendChild(dir);
-    this.sort(false);
+    let dir = find(`& > dir-entry[name="${dirName}"]`, this);
+    if (!dir) {
+      dir = new _DirEntry();
+      dir.init(dirName, fullPath);
+      this.appendChild(dir);
+      this.sort(false);
+    }
     return dir;
   }
   sort(recursive = true) {
@@ -380,7 +383,7 @@ function addDropZone(dirEntry) {
   );
   return () => abort.abort();
 }
-function addFileToDir(dirEntry, dir) {
+function addEntryToDir(dirEntry, dir) {
   let fileName = prompt(
     "Please specify a filename.\nUse / as directory delimiter (e.g. cake/yum.js)"
   )?.trim();
@@ -389,6 +392,8 @@ function addFileToDir(dirEntry, dir) {
     if (dir !== `.`) {
       fileName = dir + fileName;
     }
+    const exists = find(`[path="${fileName}"]`, dirEntry.root);
+    if (exists) return;
     if (fileName.includes(`.`)) {
       dispatchEvent(dirEntry, `filetree:file:create`, { fileName }, () => {
         return dirEntry.addEntry(prompted, fileName);
@@ -457,14 +462,22 @@ function renameDir(dirEntry) {
     const oldName = dirEntry.heading.textContent;
     const oldPath = dirEntry.getAttribute(`path`);
     const newPath = oldPath.replace(oldName, newName);
-    dispatchEvent(dirEntry, `filetree:dir:rename`, { oldPath, newPath }, () => {
-      const oldPath2 = dirEntry.getAttribute(`path`);
-      dirEntry.heading.textContent = newName;
-      dirEntry.setAttribute(`name`, newName);
-      dirEntry.setAttribute(`path`, newPath);
-      dirEntry.relocateContent(oldPath2, newPath);
-      return { oldPath: oldPath2, newPath };
-    });
+    const dir = find(`dir-entry[path="${newPath}"]`, dirEntry.root);
+    if (dir && confirm(`That directory already exists. Move all the content?`)) {
+      dispatchEvent(
+        dirEntry,
+        `filetree:dir:rename`,
+        { oldPath, newPath },
+        () => {
+          const oldPath2 = dirEntry.getAttribute(`path`);
+          dirEntry.heading.textContent = newName;
+          dirEntry.setAttribute(`name`, newName);
+          dirEntry.setAttribute(`path`, newPath);
+          dirEntry.relocateContent(oldPath2, newPath);
+          return { oldPath: oldPath2, newPath };
+        }
+      );
+    }
   }
 }
 function deleteDir(dirEntry) {
@@ -484,6 +497,7 @@ function processRelocation(dirEntry, entryId) {
   const entry = find(`[data-id="${entryId}"]`);
   delete entry.dataset.id;
   entry.classList.remove(`dragging`);
+  if (entry === dirEntry) return;
   const oldPath = entry.getAttribute(`path`);
   const dirPath = dirEntry.getAttribute(`path`);
   if (entry instanceof FileEntry) {

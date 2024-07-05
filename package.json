@@ -6,11 +6,12 @@
   "main": "src/file-tree.js",
   "scripts": {
     "start": "npm test",
-    "test": "npm run build",
+    "test": "npm run lint && npm run build",
     "build": "npm run build:esm && npm run build:min && cp ./src/file-tree.css ./dist",
     "build:base": "esbuild --bundle --format=esm ./src/file-tree.js",
     "build:esm": "npm run build:base -- --outfile=dist/file-tree.esm.js",
-    "build:min": "npm run build:base -- --minify --outfile=dist/file-tree.esm.min.js"
+    "build:min": "npm run build:base -- --minify --outfile=dist/file-tree.esm.min.js",
+    "lint": "prettier -w src/**/*.js"
   },
   "repository": {
     "type": "git",
