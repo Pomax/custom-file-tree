@@ -9,10 +9,10 @@ And then you can load content into any `<file-tree>` using
 
 ```js
 // query select, or really any normal way to get an element handle:
-const filetree = document.querySeletor(`file-tree`);
+const fileTree = document.querySelector(`file-tree`);
 
 // Tell the file tree which files exist
-filetree.setFiles([
+fileTree.setFiles([
   `some.array`,
   `of/files.with`,
   `arbitrarily/deep.nesting`
