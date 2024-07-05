@@ -93,7 +93,7 @@ var FileEntry = class extends LocalCustomElement {
         const dirEntry = this.parentDir;
         this.emit(`file:delete`, { path: this.path }, () => {
           dirEntry.removeChild(this);
-          if (this.removeEmpty) dirEntry.checkEmpty();
+          dirEntry.checkEmpty();
         });
       }
     });
