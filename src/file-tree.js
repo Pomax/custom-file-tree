@@ -71,6 +71,10 @@ class FileTree extends LocalCustomElement {
     this.rootDir.selectEntry(path);
   }
 
+  sort() {
+    this.rootDir.sort();
+  }
+
   toJSON() {
     return this.rootDir.toJSON();
   }

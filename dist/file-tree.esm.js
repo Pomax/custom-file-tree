@@ -239,6 +239,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
       dir.init(dirName, dirPath);
       this.appendChild(dir);
     }
+    this.sort();
     return dir.addEntry(fileName.replace(dirName, ``), fullPath);
   }
   addFile(fileName, fullPath) {
@@ -337,7 +338,7 @@ function getFileContent(file) {
     const reader = new FileReader();
     reader.onloadend = ({ target }) => resolve(target.result);
     reader.onerror = reject;
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 function inThisDir(dir, entry) {
@@ -590,6 +591,9 @@ var FileTree = class extends LocalCustomElement {
   }
   selectEntry(path) {
     this.rootDir.selectEntry(path);
+  }
+  sort() {
+    this.rootDir.sort();
   }
   toJSON() {
     return this.rootDir.toJSON();

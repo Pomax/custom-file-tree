@@ -115,6 +115,7 @@ export class DirEntry extends LocalCustomElement {
       dir.init(dirName, dirPath);
       this.appendChild(dir);
     }
+    this.sort();
     return dir.addEntry(fileName.replace(dirName, ``), fullPath);
   }
 
@@ -239,7 +240,7 @@ export /*async*/ function getFileContent(file) {
     const reader = new FileReader();
     reader.onloadend = ({ target }) => resolve(target.result);
     reader.onerror = reject;
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 
