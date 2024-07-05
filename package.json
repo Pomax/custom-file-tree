@@ -5,6 +5,7 @@
   "type": "module",
   "main": "src/file-tree.js",
   "scripts": {
+    "start": "npm test",
     "test": "npm run build",
     "build": "npm run build:esm && npm run build:min && cp ./src/file-tree.css ./dist",
     "build:base": "esbuild --bundle --format=esm ./src/file-tree.js",
