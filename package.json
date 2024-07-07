@@ -18,8 +18,8 @@
     "type": "git",
     "url": "git+https://github.com/Pomax/custom-file-tree.git"
   },
-  "author": "",
-  "license": "",
+  "author": "Pomax <pomax@nihongoresources.com>",
+  "license": "PUBLIC DOMAIN",
   "bugs": {
     "url": "https://github.com/Pomax/custom-file-tree/issues"
   },
@@ -28,5 +28,13 @@
     "esbuild": "^0.23.0",
     "express": "^4.19.2",
     "prettier": "^3.3.2"
-  }
+  },
+  "keywords": [
+    "html",
+    "custom element",
+    "file tree",
+    "filetree",
+    "folder",
+    "treeview"
+  ]
 }
