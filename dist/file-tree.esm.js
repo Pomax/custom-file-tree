@@ -21,11 +21,14 @@ var LocalCustomElement = class extends HTMLElement {
     this.setAttribute(`path`, path);
   }
   get root() {
-    if (this.tagName === `FILE-TREE`) return this;
     return this.closest(`file-tree`);
   }
   get parentDir() {
-    return this.closest(`dir-entry`);
+    let element = this;
+    if (element.tagName === `DIR-ENTRY`) {
+      element = element.parentNode;
+    }
+    return element.closest(`dir-entry`);
   }
   emit(name, detail = {}, grant = () => {
   }) {
@@ -236,7 +239,6 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     const dirPath = (this.path === `.` ? `` : this.path) + dirName;
     let dir = this.find(`& > dir-entry[name="${dirName}"]`);
     if (!dir) {
-      console.log(`creating ${dirName} / ${dirPath}, fullPath=${fullPath}`);
       dir = new _DirEntry();
       dir.init(dirName, dirPath);
       this.appendChild(dir);
@@ -257,7 +259,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
   addFileFromUpload(fileName, content) {
     const localPath = this.path;
     const fullPath = (localPath !== `.` ? localPath : ``) + fileName;
-    this.emit(`file:upload`, { fileName: fullPath, content }, () => {
+    this.emit(`file:upload`, { path: fullPath, content }, () => {
       this.addEntry(fileName, fullPath);
       this.sort();
     });
@@ -312,9 +314,7 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
   checkEmpty() {
     if (!this.removeEmpty) return;
     if (!this.find(`file-entry`)) {
-      this.emit(`dir:delete`, { path: this.path }, () => {
-        this.parentNode.removeChild(this);
-      });
+      this.emit(`dir:delete`, { path: this.path }, () => this.remove());
     }
   }
   toJSON() {
@@ -421,12 +421,12 @@ function addEntryToDir(dirEntry, dir) {
     const exists = dirEntry.findInTree(`[path="${fileName}"]`);
     if (exists) return;
     if (fileName.includes(`.`)) {
-      dirEntry.emit(`file:create`, { fileName }, () => {
+      dirEntry.emit(`file:create`, { path: fileName }, () => {
         return dirEntry.addEntry(prompted, fileName);
       });
     } else {
       if (confirm(`Did you mean to create a new directory ${fileName}?`)) {
-        dirEntry.emit(`dir:create`, { dirName: fileName }, () => {
+        dirEntry.emit(`dir:create`, { path: fileName }, () => {
           dirEntry.addDirectory(prompted + `/`, fileName + `/`);
         });
       }
@@ -582,7 +582,6 @@ var FileTree = class extends LocalCustomElement {
       list.forEach((removePath) => {
         const addPath = removePath.replace(oldPath, newPath);
         this.removeEntry(removePath);
-        console.log(`adding ${addPath}`);
         this.rootDir.addEntry(addPath);
       });
       this.removeEntry(oldPath);

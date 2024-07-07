@@ -4,9 +4,17 @@
   --radius: 0.25em;
 }
 
+:root,
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
 body {
   width: 800px;
-  margin: auto;
+  margin: 0 auto;
+  font-family: Verdana;
 
   code {
     display: inline-block;

@@ -56,7 +56,6 @@ class FileTree extends LocalCustomElement {
       list.forEach((removePath) => {
         const addPath = removePath.replace(oldPath, newPath);
         this.removeEntry(removePath);
-        console.log(`adding ${addPath}`);
         this.rootDir.addEntry(addPath);
       });
       this.removeEntry(oldPath);

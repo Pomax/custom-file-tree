@@ -45,8 +45,8 @@ const eventList = [
 eventList.forEach((type) =>
   fileTree.addEventListener(type, (evt) => {
     const { type, detail } = evt;
-    // delete detail.content; // if we're uploading files, don't log their content: we don't care.
-    console.log(type, detail);
-    detail.grant();
+    const { content, grant, ...rest } = detail;
+    console.log(type, { ...rest });
+    grant();
   })
 );

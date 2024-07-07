@@ -43,17 +43,19 @@
     <h2>The HTML that made the above work:</h2>
 
     <p>
-      It's an HTML element. The code is literally just
-      <code>&lt;file-tree&gt;&lt;/file-tree&gt;</code> and that's all you need.
-      The rest is on the JS side, but that part's also <em>pretty</em> minimal.
+      It's an HTML element. The code is identical to other HTML elements, in
+      that you just write <code>&lt;file-tree&gt;&lt;/file-tree&gt;</code> (or
+      generate a `file-tree` element) and that's all you need as far as the page
+      code is concerned.
     </p>
 
     <h2>The JS that made the above work:</h2>
 
     <p>
-      The JS just gets our file tree element, and passes it a bunch of file
-      names as an array. Then in order to make sure the tree "works", every
-      permission event is immediately granted:
+      On th JS side, we get a reference to our file tree element, and then pass
+      it a list of file paths, as an array of strings. Then, in order to make
+      sure that you can see the tree "working", we set up event listeners for
+      all permission events the file tree generates, granting them immediately.
     </p>
 
     <pre><code>// Add &lt;file-tree&gt; to our page and grab the element
@@ -112,8 +114,18 @@ eventList.forEach((type) =>
     <h2>See for yourself</h2>
 
     <p>
-      View-source this page, and <a href="index.js">the page JS</a>. It's about
-      as dumb as I could make it. Dumb is good. Dumb gets work done.
+      If you `view-source` this page, you'll see there's nothing special going
+      on in the HTML, and viewing the <a href="index.js">page JS</a> should show
+      the same code as listed above.
     </p>
+
+    <p>
+      For more information, head on over to its
+      <a href="https://github.com/Pomax/custom-file-tree">project page</a> on
+      GitHub, which has more detailed instructions on how to use this element,
+      and how to work with th events it generates.
+    </p>
+
+    <p>&mdash; <a href="https://mastodon.social/@TheRealPomax">Pomax</a></p>
   </body>
 </html>

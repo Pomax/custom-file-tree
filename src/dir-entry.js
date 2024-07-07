@@ -21,7 +21,7 @@ export class DirEntry extends LocalCustomElement {
       this.emit(
         `dir:click`,
         { path: this.path, currentState: closed ? `closed` : `open` },
-        () => this.classList.toggle(`closed`),
+        () => this.classList.toggle(`closed`)
       );
     };
     this.addEventListener(`click`, this.clickListener);
@@ -112,7 +112,6 @@ export class DirEntry extends LocalCustomElement {
     const dirPath = (this.path === `.` ? `` : this.path) + dirName;
     let dir = this.find(`& > dir-entry[name="${dirName}"]`);
     if (!dir) {
-      console.log(`creating ${dirName} / ${dirPath}, fullPath=${fullPath}`);
       dir = new DirEntry();
       dir.init(dirName, dirPath);
       this.appendChild(dir);
@@ -135,7 +134,7 @@ export class DirEntry extends LocalCustomElement {
   addFileFromUpload(fileName, content) {
     const localPath = this.path;
     const fullPath = (localPath !== `.` ? localPath : ``) + fileName;
-    this.emit(`file:upload`, { fileName: fullPath, content }, () => {
+    this.emit(`file:upload`, { path: fullPath, content }, () => {
       this.addEntry(fileName, fullPath);
       this.sort();
     });
@@ -205,9 +204,7 @@ export class DirEntry extends LocalCustomElement {
   checkEmpty() {
     if (!this.removeEmpty) return;
     if (!this.find(`file-entry`)) {
-      this.emit(`dir:delete`, { path: this.path }, () => {
-        this.parentNode.removeChild(this);
-      });
+      this.emit(`dir:delete`, { path: this.path }, () => this.remove());
     }
   }
 
@@ -277,7 +274,7 @@ function addDropZone(dirEntry) {
       dirEntry.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", dirEntry.dataset.id);
     },
-    { signal: abort.signal },
+    { signal: abort.signal }
   );
 
   // drag enter: mark element as being dragged
@@ -288,7 +285,7 @@ function addDropZone(dirEntry) {
       unmark();
       dirEntry.classList.add(`drop-target`);
     },
-    { signal: abort.signal },
+    { signal: abort.signal }
   );
 
   // drag over: highlight this specific directory
@@ -303,7 +300,7 @@ function addDropZone(dirEntry) {
         dirEntry.classList.add(`drop-target`);
       }
     },
-    { signal: abort.signal },
+    { signal: abort.signal }
   );
 
   // drag leave: stop highlighting this specific directory
@@ -313,7 +310,7 @@ function addDropZone(dirEntry) {
       evt.preventDefault();
       unmark();
     },
-    { signal: abort.signal },
+    { signal: abort.signal }
   );
 
   // drop: what is being dropped here?
@@ -331,7 +328,7 @@ function addDropZone(dirEntry) {
       // If not, it's a file/dir upload from device.
       await processUpload(dirEntry, evt.dataTransfer.items);
     },
-    { signal: abort.signal },
+    { signal: abort.signal }
   );
 
   return () => abort.abort();
@@ -342,7 +339,7 @@ function addEntryToDir(dirEntry, dir) {
   if (fileName) {
     if (fileName.includes(`/`)) {
       return alert(
-        `Just add new files directly to the directory where they should live.`,
+        `Just add new files directly to the directory where they should live.`
       );
     }
 
@@ -356,12 +353,12 @@ function addEntryToDir(dirEntry, dir) {
     if (exists) return;
 
     if (fileName.includes(`.`)) {
-      dirEntry.emit(`file:create`, { fileName }, () => {
+      dirEntry.emit(`file:create`, { path: fileName }, () => {
         return dirEntry.addEntry(prompted, fileName);
       });
     } else {
       if (confirm(`Did you mean to create a new directory ${fileName}?`)) {
-        dirEntry.emit(`dir:create`, { dirName: fileName }, () => {
+        dirEntry.emit(`dir:create`, { path: fileName }, () => {
           dirEntry.addDirectory(prompted + `/`, fileName + `/`);
         });
       }
@@ -374,7 +371,7 @@ function uploadFilesFromDevice(dirEntry) {
   upload.type = `file`;
   upload.multiple = true;
   const uploadFiles = confirm(
-    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`,
+    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`
   );
   if (!uploadFiles) upload.webkitdirectory = true;
   upload.addEventListener(`change`, () => {
@@ -420,7 +417,7 @@ async function processUpload(dirEntry, items) {
 function renameDir(dirEntry) {
   const newName = prompt(
     `Choose a new directory name`,
-    dirEntry.heading.textContent,
+    dirEntry.heading.textContent
   )?.trim();
   if (newName) {
     if (newName.includes(`/`)) {
