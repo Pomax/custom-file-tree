@@ -72,10 +72,10 @@ var FileEntry = class extends LocalCustomElement {
         if (newFileName.includes(`/`)) {
           return alert(`If you want to relocate a file, just move it.`);
         }
-        const oldName = this.path;
-        const newName = oldName.replace(this.heading.textContent, newFileName);
+        const oldPath = this.path;
+        const newPath = oldPath.replace(this.heading.textContent, newFileName);
         const currentPath = this.path;
-        this.emit(`file:rename`, { oldName, newName }, () => {
+        this.emit(`file:rename`, { oldPath, newPath }, () => {
           this.path = currentPath.replace(
             this.heading.textContent,
             newFileName

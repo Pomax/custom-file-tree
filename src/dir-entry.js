@@ -21,7 +21,7 @@ export class DirEntry extends LocalCustomElement {
       this.emit(
         `dir:click`,
         { path: this.path, currentState: closed ? `closed` : `open` },
-        () => this.classList.toggle(`closed`)
+        () => this.classList.toggle(`closed`),
       );
     };
     this.addEventListener(`click`, this.clickListener);
@@ -274,7 +274,7 @@ function addDropZone(dirEntry) {
       dirEntry.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", dirEntry.dataset.id);
     },
-    { signal: abort.signal }
+    { signal: abort.signal },
   );
 
   // drag enter: mark element as being dragged
@@ -285,7 +285,7 @@ function addDropZone(dirEntry) {
       unmark();
       dirEntry.classList.add(`drop-target`);
     },
-    { signal: abort.signal }
+    { signal: abort.signal },
   );
 
   // drag over: highlight this specific directory
@@ -300,7 +300,7 @@ function addDropZone(dirEntry) {
         dirEntry.classList.add(`drop-target`);
       }
     },
-    { signal: abort.signal }
+    { signal: abort.signal },
   );
 
   // drag leave: stop highlighting this specific directory
@@ -310,7 +310,7 @@ function addDropZone(dirEntry) {
       evt.preventDefault();
       unmark();
     },
-    { signal: abort.signal }
+    { signal: abort.signal },
   );
 
   // drop: what is being dropped here?
@@ -328,7 +328,7 @@ function addDropZone(dirEntry) {
       // If not, it's a file/dir upload from device.
       await processUpload(dirEntry, evt.dataTransfer.items);
     },
-    { signal: abort.signal }
+    { signal: abort.signal },
   );
 
   return () => abort.abort();
@@ -339,7 +339,7 @@ function addEntryToDir(dirEntry, dir) {
   if (fileName) {
     if (fileName.includes(`/`)) {
       return alert(
-        `Just add new files directly to the directory where they should live.`
+        `Just add new files directly to the directory where they should live.`,
       );
     }
 
@@ -371,7 +371,7 @@ function uploadFilesFromDevice(dirEntry) {
   upload.type = `file`;
   upload.multiple = true;
   const uploadFiles = confirm(
-    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`
+    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`,
   );
   if (!uploadFiles) upload.webkitdirectory = true;
   upload.addEventListener(`change`, () => {
@@ -417,7 +417,7 @@ async function processUpload(dirEntry, items) {
 function renameDir(dirEntry) {
   const newName = prompt(
     `Choose a new directory name`,
-    dirEntry.heading.textContent
+    dirEntry.heading.textContent,
   )?.trim();
   if (newName) {
     if (newName.includes(`/`)) {

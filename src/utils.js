@@ -1,7 +1,7 @@
 export const create = (tag) => document.createElement(tag);
 export const isFile = (path) => path.split(`/`).at(-1).includes(`.`);
 export const registry = globalThis.customElements;
-export const HTMLElement = globalThis.HTMLElement ?? class Dummy { };
+export const HTMLElement = globalThis.HTMLElement ?? class Dummy {};
 export class LocalCustomElement extends HTMLElement {
   get removeEmpty() {
     return this.root.getAttribute(`remove-empty`);
@@ -28,7 +28,7 @@ export class LocalCustomElement extends HTMLElement {
     }
     return element.closest(`dir-entry`);
   }
-  emit(name, detail = {}, grant = () => { }) {
+  emit(name, detail = {}, grant = () => {}) {
     detail.grant = grant;
     this.root.dispatchEvent(new CustomEvent(name, { detail }));
   }
