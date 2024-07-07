@@ -103,9 +103,11 @@ File tree tags may also specify a "remove-empty" attribute, i.e.
 
 Setting this attribute tells the file tree that it may delete directories that become empty due to file move/delete operations.
 
-## Warning: file tree content is not persistent
+## Warning: file tree content is (_for now_) not guaranteed to be persistent
 
 While `<file-tree>` elements themselves are persistent, the same is not true for _any_ child content, which may get removed and rebuilt from scratch depending on user actions. This means that if you set a class on a file or directory entry, that class may seem to "get unset" or "disappear" when in reality the entire file or directory entry got deleted and a new one was generated in its place. A good example of this is moving files or directories: nothing gets moved, the entries get removed from the DOM in their old position, and new entries are inserted into the DOM in their new positions.
+
+I intend to change that in the near future, but getting the library released and in your hands for playing with was more important =)
 
 # Contributing
 
