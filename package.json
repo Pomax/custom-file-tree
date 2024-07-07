@@ -23,7 +23,7 @@
   "bugs": {
     "url": "https://github.com/Pomax/custom-file-tree/issues"
   },
-  "homepage": "https://github.com/Pomax/custom-file-tree#readme",
+  "homepage": "https://pomax.github.io/custom-file-tree/public/",
   "devDependencies": {
     "esbuild": "^0.23.0",
     "express": "^4.19.2",
