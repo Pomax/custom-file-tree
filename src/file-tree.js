@@ -6,14 +6,31 @@ import { registry, LocalCustomElement, isFile } from "./utils.js";
  * Most of the code lives in the DirEntry class, instead.
  */
 class FileTree extends LocalCustomElement {
+  constructor() {
+    super();
+    this.clearDraggingState = () => {
+      this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`));
+    };
+  }
+
   get root() {
     return this;
   }
+
   get parentDir() {
     return this.rootDir;
   }
 
+  connectedCallback() {
+    document.addEventListener(`dragend`, this.clearDraggingState);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener(`dragend`, this.clearDraggingState);
+  }
+
   setFiles(files = []) {
+    // TODO: do we merge, or reset?
     let rootDir = this.querySelector(`dir-tree[path="."]`);
     if (!rootDir) {
       rootDir = this.rootDir = new DirEntry();

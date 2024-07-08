@@ -537,11 +537,23 @@ function processRelocation(dirEntry, entryId) {
 
 // src/file-tree.js
 var FileTree = class extends LocalCustomElement {
+  constructor() {
+    super();
+    this.clearDraggingState = () => {
+      this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`));
+    };
+  }
   get root() {
     return this;
   }
   get parentDir() {
     return this.rootDir;
+  }
+  connectedCallback() {
+    document.addEventListener(`dragend`, this.clearDraggingState);
+  }
+  disconnectedCallback() {
+    document.removeEventListener(`dragend`, this.clearDraggingState);
   }
   setFiles(files = []) {
     let rootDir = this.querySelector(`dir-tree[path="."]`);
