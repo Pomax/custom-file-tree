@@ -154,13 +154,14 @@ export class DirEntry extends LocalCustomElement {
   sort(recursive = true) {
     const children = [...this.children];
     children.sort((a, b) => {
-      // dir heading goes first
+      // dir heading goes first, and there can only be one.
       if (a.tagName === `DIR-HEADING`) return -1;
       if (b.tagName === `DIR-HEADING`) return 1;
 
-      // then the buttons
-      if (a.tagName === `BUTTON`) return -1;
-      if (b.tagName === `BUTTON`) return 1;
+      // then the buttons, and there are several.
+      if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
+      else if (a.tagName === `BUTTON`) return -1;
+      else if (b.tagName === `BUTTON`) return 1;
 
       // then dirs, sorted by name, if there are any
       if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {

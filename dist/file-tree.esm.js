@@ -279,8 +279,9 @@ var DirEntry = class _DirEntry extends LocalCustomElement {
     children.sort((a, b) => {
       if (a.tagName === `DIR-HEADING`) return -1;
       if (b.tagName === `DIR-HEADING`) return 1;
-      if (a.tagName === `BUTTON`) return -1;
-      if (b.tagName === `BUTTON`) return 1;
+      if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
+      else if (a.tagName === `BUTTON`) return -1;
+      else if (b.tagName === `BUTTON`) return 1;
       if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
         a = a.path;
         b = b.path;
