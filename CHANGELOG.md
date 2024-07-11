@@ -10,6 +10,12 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v1.1.0
+
+- added auto-scrolling of file trees that are taller than the viewport when dragging items around.
+
+# Previous versions
+
 ## v1.0.x (July 7, 2024)
 
 initial release with a flurry of patch versions for fast-follow-up bug fixes and typos.

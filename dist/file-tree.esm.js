@@ -551,10 +551,66 @@ var FileTree = class extends LocalCustomElement {
     return this.rootDir;
   }
   connectedCallback() {
-    document.addEventListener(`dragend`, this.clearDraggingState);
+    this.addEventListener(`dragover`, this.scrollTree);
+    this._dragEndHandler = (evt) => {
+      this.stopScrolling();
+      this.clearDraggingState(evt);
+    };
+    document.addEventListener(`dragend`, this._dragEndHandler);
   }
   disconnectedCallback() {
-    document.removeEventListener(`dragend`, this.clearDraggingState);
+    document.removeEventListener(`dragend`, this._dragEndHandler);
+  }
+  keepTouchMoving(evt) {
+    console.log(`jitter`);
+    const jitter = new Event("touchmove");
+    Object.assign(jitter, evt);
+    this.dispatchEvent(jitter);
+    if (this.shouldJitter) setTimeout(() => this.keepTouchMoving(), 50);
+  }
+  // check if we need to scroll the page up/down  during drag operations
+  scrollTree(evt) {
+    const { clientY } = evt;
+    if (!this.find(`.dragging`)) return;
+    if (!this.shouldJitter) {
+      this.shouldJitter = true;
+      this.keepTouchMoving(evt);
+    }
+    const { innerHeight } = window;
+    const { top, bottom } = this.getBoundingClientRect();
+    if (top >= 0 && bottom < innerHeight) return;
+    const scrollPad = 100;
+    const yOffset = Math.max(0, top);
+    const treeHeight = Math.min(bottom, innerHeight);
+    const ratio = (clientY - yOffset) / (treeHeight - yOffset);
+    if (!this.scrolling && ratio < 0.25) {
+      if (top < scrollPad) {
+        console.log(`top hidden, ratio=${ratio.toFixed(2)}`);
+        this.scrollPage(-5, innerHeight, scrollPad);
+      }
+    } else if (!this.scrolling && ratio > 0.75) {
+      if (bottom + scrollPad > innerHeight) {
+        console.log(`bottom hidden, ratio=${ratio.toFixed(2)}`);
+        this.scrollPage(5, innerHeight, scrollPad);
+      }
+    } else if (this.scrolling && ratio > 0.3 && ratio < 0.6) {
+      console.log(
+        `scrolling but ratio is ${ratio.toFixed(2)}, stop scrolling.`
+      );
+      this.stopScrolling();
+    }
+  }
+  scrollPage(step, innerHeight, scrollPad) {
+    if (this.scrolling) return;
+    this.scrolling = setInterval(() => {
+      window.scrollBy(0, step);
+    }, 10);
+  }
+  stopScrolling() {
+    console.log(`stop`);
+    this.shouldJitter = true;
+    clearInterval(this.scrolling);
+    this.scrolling = false;
   }
   setFiles(files = []) {
     let rootDir = this.querySelector(`dir-tree[path="."]`);

@@ -22,11 +22,93 @@ class FileTree extends LocalCustomElement {
   }
 
   connectedCallback() {
-    document.addEventListener(`dragend`, this.clearDraggingState);
+    this.addEventListener(`dragover`, this.scrollTree);
+
+    this._dragEndHandler = (evt) => {
+      this.stopScrolling();
+      this.clearDraggingState(evt);
+    };
+
+    document.addEventListener(`dragend`, this._dragEndHandler);
   }
 
   disconnectedCallback() {
-    document.removeEventListener(`dragend`, this.clearDraggingState);
+    document.removeEventListener(`dragend`, this._dragEndHandler);
+  }
+
+  keepTouchMoving(evt) {
+    // This is the stupidest thing, but without it the browser will
+    // go "this finger hasn't moved, so it's time to end this touch
+    // event" without a way to tell it not to. So: fake it.
+    console.log(`jitter`);
+    const jitter = new Event("touchmove");
+    Object.assign(jitter, evt);
+    this.dispatchEvent(jitter);
+    if (this.shouldJitter) setTimeout(() => this.keepTouchMoving(), 50);
+  }
+
+  // check if we need to scroll the page up/down  during drag operations
+  scrollTree(evt) {
+    const { clientY } = evt;
+
+    // are we dragging?
+    if (!this.find(`.dragging`)) return;
+
+    if (!this.shouldJitter) {
+      this.shouldJitter = true;
+      this.keepTouchMoving(evt);
+    }
+
+    // does the tree even need scrolling?
+    const { innerHeight } = window;
+    const { top, bottom } = this.getBoundingClientRect();
+    if (top >= 0 && bottom < innerHeight) return;
+
+    // is the event at a verticality that warrants scrolling?
+    const scrollPad = 100;
+    const yOffset = Math.max(0, top);
+    const treeHeight = Math.min(bottom, innerHeight);
+    const ratio = (clientY - yOffset) / (treeHeight - yOffset);
+
+    // Scroll up?
+    if (!this.scrolling && ratio < 0.25) {
+      if (top < scrollPad) {
+        console.log(`top hidden, ratio=${ratio.toFixed(2)}`);
+        this.scrollPage(-5, innerHeight, scrollPad);
+      }
+    }
+
+    // Scroll down?
+    else if (!this.scrolling && ratio > 0.75) {
+      if (bottom + scrollPad > innerHeight) {
+        console.log(`bottom hidden, ratio=${ratio.toFixed(2)}`);
+        this.scrollPage(5, innerHeight, scrollPad);
+      }
+    }
+
+    // Stop scrolling? Note that these values don't match the
+    // "hot regions" because we don't want the boundary to
+    // jitter while scroll is happening.
+    else if (this.scrolling && ratio > 0.3 && ratio < 0.6) {
+      console.log(
+        `scrolling but ratio is ${ratio.toFixed(2)}, stop scrolling.`
+      );
+      this.stopScrolling();
+    }
+  }
+
+  scrollPage(step, innerHeight, scrollPad) {
+    if (this.scrolling) return;
+    this.scrolling = setInterval(() => {
+      window.scrollBy(0, step);
+    }, 10);
+  }
+
+  stopScrolling() {
+    console.log(`stop`);
+    this.shouldJitter = true;
+    clearInterval(this.scrolling);
+    this.scrolling = false;
   }
 
   setFiles(files = []) {
