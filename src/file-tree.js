@@ -21,7 +21,7 @@ class FileTree extends LocalCustomElement {
     return this.rootDir;
   }
 
-  connectedCallback() {
+  connectedCallback() {git
     this.addEventListener(`dragover`, this.scrollTree);
 
     this._dragEndHandler = (evt) => {
