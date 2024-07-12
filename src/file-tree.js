@@ -1,4 +1,5 @@
 import { DirEntry } from "./dir-entry.js";
+import { FileEntry } from "./file-entry.js";
 import { registry, LocalCustomElement, isFile } from "./utils.js";
 
 /**
@@ -6,6 +7,8 @@ import { registry, LocalCustomElement, isFile } from "./utils.js";
  * Most of the code lives in the DirEntry class, instead.
  */
 class FileTree extends LocalCustomElement {
+  entries = {};
+
   constructor() {
     super();
     this.clearDraggingState = () => {
@@ -30,62 +33,82 @@ class FileTree extends LocalCustomElement {
   }
 
   setFiles(files = []) {
-    // TODO: do we merge, or reset?
     let rootDir = this.querySelector(`dir-tree[path="."]`);
     if (!rootDir) {
       rootDir = this.rootDir = new DirEntry();
       rootDir.init(`.`);
       this.appendChild(rootDir);
     }
-    rootDir.setFiles(files);
+    files.forEach((path) => this.addPath(path, undefined, undefined, true));
   }
 
   // create or upload
-  addEntry(path) {
-    const exists = this.find(`[path="${path}"]`);
-    if (exists) {
-      return alert(`${path} already exists. Overwrite?`);
+  createEntry(path, content = undefined) {
+    let eventType = (entry instanceof FileEntry ? `file` : `dir`) + `:create`;
+    this.addPath(path, content, eventType);
+  }
+
+  addPath(path, content = undefined, eventType, immediate = false) {
+    const grant = () => (this.entries[path] = this.rootDir.addPath(path));
+    if (this.entries[path]) {
+      throw new Error(`${path} already exists.`);
     }
-    return this.rootDir.addEntry(path);
+    if (immediate) return grant();
+    this.dispatchEvent(
+      new CustomEvent(eventType, { detail: { path, content, grant } })
+    );
   }
 
-  // rename and move
-  relocateEntry(oldPath, newPath) {
-    const exists = this.find(`[path="${newPath}"]`);
-    if (exists) return alert(`${newPath} already exists.`);
-    if (isFile(oldPath)) return this.relocateFile(oldPath, newPath);
-    return this.relocateDir(oldPath, newPath);
+  // rename
+  renameEntry(entry, newName) {
+    const oldPath = entry.path;
+    const newPath = oldPath.replace(new RegExp(`${entry.name}$`), newName);
+    const eventType = (entry instanceof FileEntry ? `file` : `dir`) + `:rename`;
+    this.relocateEntry(entry, oldPath, newPath, eventType);
   }
 
-  relocateFile(oldPath, newPath) {
-    return () => {
-      const added = this.rootDir.addEntry(newPath);
-      const removed = this.find(`[path="${oldPath}"]`);
-      added.setAttribute(`class`, removed.getAttribute(`class`));
-      this.removeEntry(oldPath);
+  // move
+  moveEntry(entry, oldPath, newPath) {
+    const eventType = (entry instanceof FileEntry ? `file` : `dir`) + `:move`;
+    this.relocateEntry(entry, oldPath, newPath, eventType);
+  }
+
+  relocateEntry(entry, oldPath, newPath, eventType) {
+    if (this.entries[newPath]) {
+      throw new Error(`${newPath} already exists.`);
+    }
+    const grant = () => {
+      delete this.entries[oldPath];
+      entry.updatePath(newPath); // for dirs that means recursive content rename
+      this.entries[newPath] = entry;
+      this.rootDir.addEntry(entry); // appendChild effectively moves 
     };
+    this.dispatchEvent(
+      new CustomEvent(eventType, { detail: { oldPath, newPath, grant } })
+    );
   }
 
-  relocateDir(oldPath, newPath) {
-    const dirEntry = this.find(`[path="${oldPath}"]`, this.rootDir);
-    return () => {
-      const list = dirEntry.toValue();
-      list.forEach((removePath) => {
-        const addPath = removePath.replace(oldPath, newPath);
-        this.removeEntry(removePath);
-        this.rootDir.addEntry(addPath);
-      });
-      this.removeEntry(oldPath);
-      this.rootDir.sort();
-    };
-  }
-
+  // delete
   removeEntry(path) {
-    this.rootDir.removeEntry(path);
+    const entry = this.entries[path];
+    if (!entry) {
+      throw new Error(`${path} does not exist.`);
+    }
+    const grant = () => {
+      entry.remove();
+      delete this.entries[path];
+    };
+    const eventType = (entry instanceof FileEntry ? `file` : `dir`) + `:delete`;
+    this.dispatchEvent(new CustomEvent(eventType, { detail: { path, grant } }));
   }
 
   selectEntry(path) {
-    this.rootDir.selectEntry(path);
+    const entry = this.entries[path];
+    if (!entry) {
+      throw new Error(`${path} does not exist.`);
+    }
+    this.find(`.selected`)?.classList.remove(`selected`);
+    entry.classList.add(`selected`);
   }
 
   sort() {
@@ -93,15 +116,15 @@ class FileTree extends LocalCustomElement {
   }
 
   toJSON() {
-    return this.rootDir.toJSON();
+    return JSON.stringify(Object.keys(this.entries).sort());
   }
 
   toString() {
-    return this.rootDir.toString();
+    return this.toJSON();
   }
 
   toValue() {
-    return this.toString();
+    return this;
   }
 }
 
