@@ -1,3 +1,5 @@
+import { processUpload } from "./upload-file.js";
+
 /**
  * Add file and dir drop-zone functionality to the file tree
  */
@@ -69,10 +71,10 @@ export function makeDropZone(dirEntry) {
 
       // Is this a file/dir relocation?
       const entryId = evt.dataTransfer.getData(`id`);
-      if (entryId) return processRelocation(dirEntry, entryId);
+      if (entryId) return processDragMove(dirEntry, entryId);
 
       // If not, it's a file/dir upload from device.
-      await processUpload(dirEntry, evt.dataTransfer.items);
+      await processUpload(dirEntry.root, evt.dataTransfer.items, dirEntry.path);
     },
     { signal: abortController.signal }
   );
@@ -90,19 +92,15 @@ function inThisDir(dir, entry) {
   return entry.closest(`dir-entry`) === dir;
 }
 
-function processRelocation(dirEntry, entryId) {
+function processDragMove(dirEntry, entryId) {
   const entry = dirEntry.findInTree(`[data-id="${entryId}"]`);
   delete entry.dataset.id;
   entry.classList.remove(`dragging`);
-
   if (entry === dirEntry) return;
 
   const oldPath = entry.path;
   let dirPath = dirEntry.path;
   let newPath = (dirPath !== `.` ? dirPath : ``) + entry.name;
-
   if (entry.isDir) newPath += `/`;
-  console.log({ dirPath, name: entry.name, newPath });
-
   dirEntry.root.moveEntry(entry, oldPath, newPath);
 }

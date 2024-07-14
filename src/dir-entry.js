@@ -22,23 +22,60 @@ export class DirEntry extends FileTreeElement {
       const tag = evt.target.tagName;
       if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
       const closed = this.classList.contains(`closed`);
-      this.emit(
-        `dir:click`,
-        { path: this.path, currentState: closed ? `closed` : `open` },
-        () => this.classList.toggle(`closed`)
-      );
+      this.root.selectEntry(this, { currentState: closed ? `closed` : `open` });
     };
+
     this.addListener(`click`, this.clickListener);
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
   }
 
   addButtons() {
+    this.addRenameButton();
+    this.addDeleteButton();
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
+  }
+
+  /**
+   * rename this dir.
+   */
+  addRenameButton() {
+    if (this.path === `.`) return;
+    const btn = create(`button`);
+    btn.title = `Rename directory`;
+    btn.textContent = `✏️`;
+    this.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#rename());
+  }
+
+  #rename() {
+    const newName = prompt(`Choose a new directory name`, this.name)?.trim();
+    if (newName) {
+      if (newName.includes(`/`)) {
+        return alert(`If you want to relocate a dir, just move it.`);
+      }
+      this.root.renameEntry(this, newName);
+    }
+  }
+
+  /**
+   * Remove this dir and everything in it
+   */
+  addDeleteButton() {
+    const btn = create(`button`);
+    btn.title = `Delete directory`;
+    btn.textContent = `🗑️`;
+    this.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#deleteDir());
+  }
+
+  #deleteDir() {
+    const msg = `Are you *sure* you want to delete this directory and everything in it?`;
+    if (confirm(msg)) {
+      this.root.removeEntry(this);
+    }
   }
 
   /**
@@ -96,55 +133,11 @@ export class DirEntry extends FileTreeElement {
    */
   addUploadButton() {
     const btn = create(`button`);
-    btn.title = `upload files from your device`;
+    btn.title = `Upload files from your device`;
     btn.textContent = `💻`;
-    btn.addEventListener(`click`, () => this.#triggerUpload());
+    // This is fairly involved, so it's its own utility function.
+    btn.addEventListener(`click`, () => uploadFilesFromDevice(this));
     this.appendChild(btn);
-  }
-
-  #triggerUpload() {
-    // fairly involved, so this is its own utility function
-    uploadFilesFromDevice(this);
-  }
-
-  /**
-   * rename this dir.
-   */
-  addRenameButton() {
-    if (this.path === `.`) return;
-    const btn = create(`button`);
-    btn.title = `rename dir`;
-    btn.textContent = `✏️`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#rename());
-  }
-
-  #rename() {
-    const newName = prompt(`Choose a new directory name`, this.name)?.trim();
-    if (newName) {
-      if (newName.includes(`/`)) {
-        return alert(`If you want to relocate a dir, just move it.`);
-      }
-      this.root.renameEntry(this, newName);
-    }
-  }
-
-  /**
-   * Remove this dir and everything in it
-   */
-  addDeleteButton() {
-    const btn = create(`button`);
-    btn.title = `delete dir`;
-    btn.textContent = `🗑️`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#deleteDir());
-  }
-
-  #deleteDir() {
-    const msg = `Are you *sure* you want to delete this directory and everything in it?`;
-    if (confirm(msg)) {
-      this.root.removeEntry(this.path);
-    }
   }
 
   /**
@@ -157,7 +150,8 @@ export class DirEntry extends FileTreeElement {
     this.sort();
   }
 
-  sort(recursive = true) {
+  // File tree sorting, with dirs at the top
+  sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
       // dir heading goes first, and there can only be one.
@@ -169,15 +163,17 @@ export class DirEntry extends FileTreeElement {
       else if (a.tagName === `BUTTON`) return -1;
       else if (b.tagName === `BUTTON`) return 1;
 
-      // then dirs, sorted by name, if there are any
-      if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
-        a = a.path;
-        b = b.path;
-        return a < b ? -1 : 1;
-      } else if (a.tagName === `DIR-ENTRY`) {
-        return -1;
-      } else if (b.tagName === `DIR-ENTRY`) {
-        return 1;
+      // then dirs, sorted by name, if there are any.
+      if (separateDirs) {
+        if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
+          a = a.path;
+          b = b.path;
+          return a < b ? -1 : 1;
+        } else if (a.tagName === `DIR-ENTRY`) {
+          return -1;
+        } else if (b.tagName === `DIR-ENTRY`) {
+          return 1;
+        }
       }
 
       // then finally, files.
@@ -193,11 +189,8 @@ export class DirEntry extends FileTreeElement {
     }
   }
 
-  checkEmpty() {
-    if (!this.removeEmpty) return;
-    if (!this.find(`file-entry`)) {
-      this.emit(`dir:delete`, { path: this.path }, () => this.remove());
-    }
+  select() {
+    this.classList.toggle(`closed`);
   }
 
   toJSON() {

@@ -1,10 +1,24 @@
 // src/utils.js
 var create = (tag) => document.createElement(tag);
-var isFile = (name) => {
-  if (name.includes(`.`)) return true;
-  let args = name.substring(name.indexOf(`?`))?.split(`,`) || [];
-  return args.includes(`file`);
-};
+function isFile(path) {
+  const parts = path.split(`/`).filter((v) => !!v);
+  if (parts.at(-1).includes(`.`)) return true;
+  const metaData = getPathMetaData(path);
+  return !!metaData.file;
+}
+function getPathMetaData(path) {
+  let metaData = {};
+  const args = path.substring(path.indexOf(`?`))?.split(`&`) || [];
+  args.forEach((v) => {
+    if (v.includes(`=`)) {
+      const [key, value] = v.split(`=`);
+      metaData[key] = value;
+    } else {
+      metaData[v] = true;
+    }
+  });
+  return metaData;
+}
 var registry = window.customElements;
 function getFileContent(file) {
   return new Promise((resolve, reject) => {
@@ -37,7 +51,6 @@ var FileTreeElement = class extends HTMLElement {
     this.addExternalListener(this, eventName, handler, options);
   }
   addAbortController(controller) {
-    if (!controller) return console.trace();
     this.eventControllers.push(controller);
   }
   disconnectedCallback() {
@@ -53,17 +66,13 @@ var FileTreeElement = class extends HTMLElement {
     return this.getAttribute(`name`);
   }
   set name(name) {
-    console.log(`set name to`, name);
     this.setAttribute(`name`, name);
   }
   get path() {
     return this.getAttribute(`path`);
   }
   set path(path) {
-    if (!this.isTree && !path.includes(`.`) && !path.endsWith(`/`)) {
-      console.warn(`dir path "${path}" does not end in /`);
-      console.trace();
-    }
+    if (!path) return;
     const pos = path.endsWith(`/`) ? -2 : -1;
     this.name = path.split(`/`).at(pos).replace(/#.*/, ``);
     if (!this.name && path) {
@@ -71,13 +80,10 @@ var FileTreeElement = class extends HTMLElement {
     }
     const heading = this.find(`& > entry-heading`);
     heading.textContent = this.name;
-    console.log(`set path to`, path);
     this.setAttribute(`path`, path);
   }
   updatePath(oldPath, newPath) {
-    console.log(`replacing ${oldPath} with ${newPath}`);
     const regex = new RegExp(`^${oldPath}`);
-    console.log(regex);
     this.path = this.path.replace(regex, newPath);
   }
   get dirPath() {
@@ -100,7 +106,6 @@ var FileTreeElement = class extends HTMLElement {
   }) {
     detail.grant = () => {
       grant();
-      console.log(this.root.entries);
     };
     this.root.dispatchEvent(new CustomEvent(eventName, { detail }));
   }
@@ -123,6 +128,50 @@ var FileTreeElement = class extends HTMLElement {
 var EntryHeading = class extends HTMLElement {
 };
 registry.define(`entry-heading`, EntryHeading);
+
+// src/upload-file.js
+function uploadFilesFromDevice({ root, path }) {
+  const upload = create(`input`);
+  upload.type = `file`;
+  upload.multiple = true;
+  const uploadFiles = confirm(
+    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`
+  );
+  if (!uploadFiles) upload.webkitdirectory = true;
+  upload.addEventListener(`change`, () => {
+    const { files } = upload;
+    if (!files) return;
+    processUpload(root, files, path);
+  });
+  upload.click();
+}
+async function processUpload(root, items, dirPath = ``) {
+  async function iterate(item, path = ``) {
+    if (item instanceof File) {
+      const content = await getFileContent(item);
+      const filePath = path + (item.webkitRelativePath || item.name);
+      root.createEntry(dirPath + filePath, content);
+    } else if (item.isFile) {
+      item.file(async (file) => {
+        const content = await getFileContent(file);
+        const filePath = path + file.name;
+        root.createEntry(dirPath + filePath, content);
+      });
+    } else if (item.isDirectory) {
+      const updatedPath = path + item.name + "/";
+      item.createReader().readEntries(async (entries) => {
+        for (let entry of entries) await iterate(entry, updatedPath);
+      });
+    }
+  }
+  for await (let item of items) {
+    try {
+      await iterate(item instanceof File ? item : item.webkitGetAsEntry());
+    } catch (e) {
+      return alert(`Unfortunately, a ${item.kind} is not a file or folder.`);
+    }
+  }
+}
 
 // src/make-drop-zone.js
 function makeDropZone(dirEntry) {
@@ -177,8 +226,8 @@ function makeDropZone(dirEntry) {
       evt.stopPropagation();
       unmark();
       const entryId = evt.dataTransfer.getData(`id`);
-      if (entryId) return processRelocation(dirEntry, entryId);
-      await processUpload(dirEntry, evt.dataTransfer.items);
+      if (entryId) return processDragMove(dirEntry, entryId);
+      await processUpload(dirEntry.root, evt.dataTransfer.items, dirEntry.path);
     },
     { signal: abortController.signal }
   );
@@ -191,7 +240,7 @@ function inThisDir(dir, entry) {
   if (entry === dir) return true;
   return entry.closest(`dir-entry`) === dir;
 }
-function processRelocation(dirEntry, entryId) {
+function processDragMove(dirEntry, entryId) {
   const entry = dirEntry.findInTree(`[data-id="${entryId}"]`);
   delete entry.dataset.id;
   entry.classList.remove(`dragging`);
@@ -200,52 +249,7 @@ function processRelocation(dirEntry, entryId) {
   let dirPath = dirEntry.path;
   let newPath = (dirPath !== `.` ? dirPath : ``) + entry.name;
   if (entry.isDir) newPath += `/`;
-  console.log({ dirPath, name: entry.name, newPath });
   dirEntry.root.moveEntry(entry, oldPath, newPath);
-}
-
-// src/upload-file.js
-function uploadFilesFromDevice({ root }) {
-  const upload = create(`input`);
-  upload.type = `file`;
-  upload.multiple = true;
-  const uploadFiles = confirm(
-    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`
-  );
-  if (!uploadFiles) upload.webkitdirectory = true;
-  upload.addEventListener(`change`, () => {
-    const { files } = upload;
-    if (!files) return;
-    processUpload2(root, files);
-  });
-  upload.click();
-}
-async function processUpload2(root, items) {
-  async function iterate(item, path = ``) {
-    if (item instanceof File) {
-      const content = await getFileContent(item);
-      const filePath = path + (item.webkitRelativePath || item.name);
-      root.createFile(filePath, content);
-    } else if (item.isFile) {
-      item.file(async (file) => {
-        const content = await getFileContent(file);
-        const filePath = path + file.name;
-        root.createFile(filePath, content);
-      });
-    } else if (item.isDirectory) {
-      const updatedPath = path + item.name + "/";
-      item.createReader().readEntries(async (entries) => {
-        for (let entry of entries) await iterate(entry, updatedPath);
-      });
-    }
-  }
-  for await (let item of items) {
-    try {
-      await iterate(item instanceof File ? item : item.webkitGetAsEntry());
-    } catch (e) {
-      return alert(`Unfortunately, a ${item.kind} is not a file or folder.`);
-    }
-  }
 }
 
 // src/dir-entry.js
@@ -263,22 +267,54 @@ var DirEntry = class extends FileTreeElement {
       const tag = evt.target.tagName;
       if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
       const closed = this.classList.contains(`closed`);
-      this.emit(
-        `dir:click`,
-        { path: this.path, currentState: closed ? `closed` : `open` },
-        () => this.classList.toggle(`closed`)
-      );
+      this.root.selectEntry(this, { currentState: closed ? `closed` : `open` });
     };
     this.addListener(`click`, this.clickListener);
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
   }
   addButtons() {
+    this.addRenameButton();
+    this.addDeleteButton();
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
+  }
+  /**
+   * rename this dir.
+   */
+  addRenameButton() {
+    if (this.path === `.`) return;
+    const btn = create(`button`);
+    btn.title = `Rename directory`;
+    btn.textContent = `\u270F\uFE0F`;
+    this.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#rename());
+  }
+  #rename() {
+    const newName = prompt(`Choose a new directory name`, this.name)?.trim();
+    if (newName) {
+      if (newName.includes(`/`)) {
+        return alert(`If you want to relocate a dir, just move it.`);
+      }
+      this.root.renameEntry(this, newName);
+    }
+  }
+  /**
+   * Remove this dir and everything in it
+   */
+  addDeleteButton() {
+    const btn = create(`button`);
+    btn.title = `Delete directory`;
+    btn.textContent = `\u{1F5D1}\uFE0F`;
+    this.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#deleteDir());
+  }
+  #deleteDir() {
+    const msg = `Are you *sure* you want to delete this directory and everything in it?`;
+    if (confirm(msg)) {
+      this.root.removeEntry(this);
+    }
   }
   /**
    * New file in this directory
@@ -331,49 +367,10 @@ var DirEntry = class extends FileTreeElement {
    */
   addUploadButton() {
     const btn = create(`button`);
-    btn.title = `upload files from your device`;
+    btn.title = `Upload files from your device`;
     btn.textContent = `\u{1F4BB}`;
-    btn.addEventListener(`click`, () => this.#triggerUpload());
+    btn.addEventListener(`click`, () => uploadFilesFromDevice(this));
     this.appendChild(btn);
-  }
-  #triggerUpload() {
-    uploadFilesFromDevice(this);
-  }
-  /**
-   * rename this dir.
-   */
-  addRenameButton() {
-    if (this.path === `.`) return;
-    const btn = create(`button`);
-    btn.title = `rename dir`;
-    btn.textContent = `\u270F\uFE0F`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#rename());
-  }
-  #rename() {
-    const newName = prompt(`Choose a new directory name`, this.name)?.trim();
-    if (newName) {
-      if (newName.includes(`/`)) {
-        return alert(`If you want to relocate a dir, just move it.`);
-      }
-      this.root.renameEntry(this, newName);
-    }
-  }
-  /**
-   * Remove this dir and everything in it
-   */
-  addDeleteButton() {
-    const btn = create(`button`);
-    btn.title = `delete dir`;
-    btn.textContent = `\u{1F5D1}\uFE0F`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#deleteDir());
-  }
-  #deleteDir() {
-    const msg = `Are you *sure* you want to delete this directory and everything in it?`;
-    if (confirm(msg)) {
-      this.root.removeEntry(this.path);
-    }
   }
   /**
    * Because the file-tree has a master list of directories, we should
@@ -384,7 +381,8 @@ var DirEntry = class extends FileTreeElement {
     this.appendChild(entry);
     this.sort();
   }
-  sort(recursive = true) {
+  // File tree sorting, with dirs at the top
+  sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
       if (a.tagName === `ENTRY-HEADING`) return -1;
@@ -392,14 +390,16 @@ var DirEntry = class extends FileTreeElement {
       if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
       else if (a.tagName === `BUTTON`) return -1;
       else if (b.tagName === `BUTTON`) return 1;
-      if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
-        a = a.path;
-        b = b.path;
-        return a < b ? -1 : 1;
-      } else if (a.tagName === `DIR-ENTRY`) {
-        return -1;
-      } else if (b.tagName === `DIR-ENTRY`) {
-        return 1;
+      if (separateDirs) {
+        if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
+          a = a.path;
+          b = b.path;
+          return a < b ? -1 : 1;
+        } else if (a.tagName === `DIR-ENTRY`) {
+          return -1;
+        } else if (b.tagName === `DIR-ENTRY`) {
+          return 1;
+        }
       }
       a = a.path;
       b = b.path;
@@ -410,11 +410,8 @@ var DirEntry = class extends FileTreeElement {
       this.findAll(`& > dir-entry`).forEach((d) => d.sort(recursive));
     }
   }
-  checkEmpty() {
-    if (!this.removeEmpty) return;
-    if (!this.find(`file-entry`)) {
-      this.emit(`dir:delete`, { path: this.path }, () => this.remove());
-    }
+  select() {
+    this.classList.toggle(`closed`);
   }
   toJSON() {
     return JSON.stringify(this.toValue());
@@ -459,17 +456,13 @@ var FileEntry = class extends FileTreeElement {
       evt.preventDefault();
       evt.stopPropagation();
       if (confirm(`are you sure you want to delete this file?`)) {
-        const dirEntry = this.parentDir;
-        this.emit(`file:delete`, { path: this.path }, () => {
-          dirEntry.removeChild(this);
-          dirEntry.checkEmpty();
-        });
+        this.root.removeEntry(this);
       }
     });
     this.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      this.root.selected(this);
+      this.root.selectEntry(this);
     });
     this.draggable = true;
     this.addEventListener(`dragstart`, (evt) => {
@@ -479,20 +472,9 @@ var FileEntry = class extends FileTreeElement {
       evt.dataTransfer.setData("id", this.dataset.id);
     });
   }
-  relocateContent(oldPath, newPath) {
-    this.heading.textContent = this.heading.textContent.replace(
-      oldPath,
-      newPath
-    );
-    this.path = this.path.replace(oldPath, newPath);
-  }
-  removeEntry(path) {
-    if (this.path === path) {
-      this.remove();
-    }
-  }
-  selectEntry(path) {
-    this.classList.toggle(`selected`, path === this.path);
+  select() {
+    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.classList.add(`selected`);
   }
   toJSON() {
     return JSON.stringify(this.toValue());
@@ -504,11 +486,7 @@ var FileEntry = class extends FileTreeElement {
     return [this.toString()];
   }
 };
-var FileHeading = class extends FileTreeElement {
-  // this is "just an HTML element" for housing some text
-};
 registry.define(`file-entry`, FileEntry);
-registry.define(`file-heading`, FileHeading);
 
 // src/file-tree.js
 var FileTree = class extends FileTreeElement {
@@ -538,19 +516,12 @@ var FileTree = class extends FileTreeElement {
   /**
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
-   *
-   * @param {*} files
    */
   setFiles(files = []) {
     this.clear();
     files.forEach(
       (path) => this.#addPath(path, void 0, `tree:setfiles`, true)
     );
-    console.log(`
- === setFiles complete ===
-
-`);
-    console.log(this.entries);
   }
   // create or upload
   createEntry(path, content = void 0) {
@@ -560,22 +531,19 @@ var FileTree = class extends FileTreeElement {
   // private function for initiating <file-entry> or <dir-entry> creation
   #addPath(path, content = void 0, eventType, immediate = false) {
     const { entries } = this;
-    if (entries[path]) throw new Error(`${path} already exists.`);
+    if (entries[path]) {
+      throw new Error(`${path} already exists.`);
+    }
     const grant = () => {
-      console.log(`
---- adding entry ---`);
-      const parts = path.split(`/`);
-      const name = parts.at(-1);
-      const EntryType = isFile(name) ? FileEntry : DirEntry;
+      const EntryType = isFile(path) ? FileEntry : DirEntry;
       const entry = new EntryType(path);
       entries[path] = entry;
       this.#mkdir(entry).addEntry(entry);
     };
-    if (immediate) {
-      return grant();
-    }
+    if (immediate) return grant();
     this.emit(eventType, { path, content }, grant);
   }
+  // Ensure that a dir exists (recursively).
   #mkdir({ dirPath }) {
     const { entries } = this;
     if (!dirPath) return this.rootDir;
@@ -584,7 +552,6 @@ var FileTree = class extends FileTreeElement {
     dir = this.rootDir;
     dirPath.split(`/`).forEach((fragment) => {
       if (!fragment) return;
-      console.log({ dirPath: dir.path, fragment });
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
@@ -596,19 +563,16 @@ var FileTree = class extends FileTreeElement {
     });
     return dir;
   }
-  // rename
+  // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
     const oldPath = entry.path;
     const pos = oldPath.lastIndexOf(entry.name);
     let newPath = oldPath.substring(0, pos) + newName;
-    if (entry.isDir) {
-      newPath += `/`;
-    }
-    console.log({ rename: true, newName, oldPath, newPath });
+    if (entry.isDir) newPath += `/`;
     const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
     this.#relocateEntry(entry, oldPath, newPath, eventType);
   }
-  // move
+  // A move is a relocation where everything *but* the last part of the path may have changed.
   moveEntry(entry, oldPath, newPath) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
     this.#relocateEntry(entry, oldPath, newPath, eventType);
@@ -618,7 +582,6 @@ var FileTree = class extends FileTreeElement {
     const { entries } = this;
     if (entries[newPath]) throw new Error(`${newPath} already exists.`);
     this.emit(eventType, { oldPath, newPath }, () => {
-      console.log(`---relocate---`);
       Object.keys(entries).forEach((key) => {
         if (key.startsWith(oldPath)) {
           const entry2 = entries[key];
@@ -628,17 +591,16 @@ var FileTree = class extends FileTreeElement {
         }
       });
       const { dirPath } = entries[newPath] = entry;
-      console.log(`dirPath for`, entry, `is`, dirPath);
       let dir = dirPath ? entries[dirPath] : this.rootDir;
-      console.log(`adding`, entry, `to`, dir);
       dir.addEntry(entry);
     });
   }
-  // delete
-  removeEntry(path) {
+  // Deletes are a DOM removal of the entry itself, and a pruning
+  // of the path -> entry map for any entry that started with the
+  // same path, so we don't end up with any orphans.
+  removeEntry(entry) {
     const { entries } = this;
-    const entry = entries[path];
-    if (!entry) throw new Error(`${path} does not exist.`);
+    const { path } = entry;
     const eventType = (entry.isFile ? `file` : `dir`) + `:delete`;
     this.emit(eventType, { path }, () => {
       const { path: path2 } = entry;
@@ -650,17 +612,18 @@ var FileTree = class extends FileTreeElement {
       });
     });
   }
-  selectEntry(path) {
+  // Select an entry by  its path
+  select(path) {
     const entry = this.entries[path];
     if (!entry) throw new Error(`${path} does not exist.`);
     entry.click();
   }
-  selected(entry) {
+  // Entry selection depends on the element, so we hand that
+  // off to the entry itself once granted. (if granted)
+  selectEntry(entry, detail = {}) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
-    this.emit(eventType, { path: entry.path }, () => {
-      this.find(`.selected`)?.classList.remove(`selected`);
-      entry.classList.add(`selected`);
-    });
+    detail.path = entry.path;
+    this.emit(eventType, { detail }, () => entry.select());
   }
   sort() {
     this.rootDir.sort();

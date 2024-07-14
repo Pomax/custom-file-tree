@@ -28,7 +28,6 @@ export class FileTreeElement extends HTMLElement {
   }
 
   addAbortController(controller) {
-    if (!controller) return console.trace();
     this.eventControllers.push(controller);
   }
 
@@ -48,7 +47,6 @@ export class FileTreeElement extends HTMLElement {
   }
 
   set name(name) {
-    console.log(`set name to`, name);
     this.setAttribute(`name`, name);
   }
 
@@ -57,12 +55,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   set path(path) {
-    // TEST
-    if (!this.isTree && !path.includes(`.`) && !path.endsWith(`/`)) {
-      console.warn(`dir path "${path}" does not end in /`);
-      console.trace();
-    }
-    // END TEST
+    if (!path) return;
 
     // Directories end in `/` so their name is at "index" -2, not -1.
     const pos = path.endsWith(`/`) ? -2 : -1;
@@ -74,14 +67,11 @@ export class FileTreeElement extends HTMLElement {
 
     const heading = this.find(`& > entry-heading`);
     heading.textContent = this.name;
-    console.log(`set path to`, path);
     this.setAttribute(`path`, path);
   }
 
   updatePath(oldPath, newPath) {
-    console.log(`replacing ${oldPath} with ${newPath}`);
     const regex = new RegExp(`^${oldPath}`);
-    console.log(regex);
     this.path = this.path.replace(regex, newPath);
   }
 
@@ -107,7 +97,6 @@ export class FileTreeElement extends HTMLElement {
   emit(eventName, detail = {}, grant = () => {}) {
     detail.grant = () => {
       grant();
-      console.log(this.root.entries);
     };
     this.root.dispatchEvent(new CustomEvent(eventName, { detail }));
   }

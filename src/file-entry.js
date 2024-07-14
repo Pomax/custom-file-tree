@@ -34,18 +34,14 @@ export class FileEntry extends FileTreeElement {
       evt.preventDefault();
       evt.stopPropagation();
       if (confirm(`are you sure you want to delete this file?`)) {
-        const dirEntry = this.parentDir;
-        this.emit(`file:delete`, { path: this.path }, () => {
-          dirEntry.removeChild(this);
-          dirEntry.checkEmpty();
-        });
+        this.root.removeEntry(this);
       }
     });
 
     this.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      this.root.selected(this);
+      this.root.selectEntry(this);
     });
 
     // allow this file to be moved from one dir to another
@@ -58,23 +54,9 @@ export class FileEntry extends FileTreeElement {
     });
   }
 
-  relocateContent(oldPath, newPath) {
-    // TODO: check if this is safe? (e.g. is there already an entry with this name in the tree?
-    this.heading.textContent = this.heading.textContent.replace(
-      oldPath,
-      newPath
-    );
-    this.path = this.path.replace(oldPath, newPath);
-  }
-
-  removeEntry(path) {
-    if (this.path === path) {
-      this.remove();
-    }
-  }
-
-  selectEntry(path) {
-    this.classList.toggle(`selected`, path === this.path);
+  select() {
+    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.classList.add(`selected`);
   }
 
   toJSON() {
@@ -90,9 +72,4 @@ export class FileEntry extends FileTreeElement {
   }
 }
 
-class FileHeading extends FileTreeElement {
-  // this is "just an HTML element" for housing some text
-}
-
 registry.define(`file-entry`, FileEntry);
-registry.define(`file-heading`, FileHeading);

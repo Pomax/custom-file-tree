@@ -59,6 +59,7 @@ file-tree {
         cursor: pointer;
         margin-left: calc(0px - var(--padding));
       }
+
       &.closed {
         &:before {
           content: "📕";

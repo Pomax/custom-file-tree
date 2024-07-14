@@ -4,8 +4,11 @@ import { registry, isFile } from "./utils.js";
 import { FileTreeElement } from "./file-tree-element.js";
 
 /**
- * All operations "start" in the file tree, and when granted get
- * sent into the root directory for placement handling.
+ * The file tree maintains the list of path -> entry mappings,
+ * and is the only place where mutations happen. If a user
+ * creates, renames, uploads, moves, or deletes a file or
+ * directory, that operation gets turned into a path based
+ * operation, which is then handled by the file tree.
  */
 class FileTree extends FileTreeElement {
   isTree = true;
@@ -38,16 +41,12 @@ class FileTree extends FileTreeElement {
   /**
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
-   *
-   * @param {*} files
    */
   setFiles(files = []) {
     this.clear();
     files.forEach((path) =>
       this.#addPath(path, undefined, `tree:setfiles`, true)
     );
-    console.log(`\n === setFiles complete ===\n\n`);
-    console.log(this.entries);
   }
 
   // create or upload
@@ -60,15 +59,13 @@ class FileTree extends FileTreeElement {
   #addPath(path, content = undefined, eventType, immediate = false) {
     const { entries } = this;
 
-    if (entries[path]) throw new Error(`${path} already exists.`);
+    if (entries[path]) {
+      throw new Error(`${path} already exists.`);
+    }
 
+    // When granted, build the entry.
     const grant = () => {
-      console.log(`\n--- adding entry ---`);
-
-      // Build the entry
-      const parts = path.split(`/`);
-      const name = parts.at(-1);
-      const EntryType = isFile(name) ? FileEntry : DirEntry;
+      const EntryType = isFile(path) ? FileEntry : DirEntry;
       const entry = new EntryType(path);
       entries[path] = entry;
 
@@ -76,13 +73,13 @@ class FileTree extends FileTreeElement {
       this.#mkdir(entry).addEntry(entry);
     };
 
-    if (immediate) {
-      return grant();
-    }
+    // During setFiles, we will not be asking for permission.
+    if (immediate) return grant();
 
     this.emit(eventType, { path, content }, grant);
   }
 
+  // Ensure that a dir exists (recursively).
   #mkdir({ dirPath }) {
     const { entries } = this;
     if (!dirPath) return this.rootDir;
@@ -91,7 +88,6 @@ class FileTree extends FileTreeElement {
     dir = this.rootDir;
     dirPath.split(`/`).forEach((fragment) => {
       if (!fragment) return;
-      console.log({ dirPath: dir.path, fragment });
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
@@ -104,20 +100,17 @@ class FileTree extends FileTreeElement {
     return dir;
   }
 
-  // rename
+  // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
     const oldPath = entry.path;
     const pos = oldPath.lastIndexOf(entry.name);
     let newPath = oldPath.substring(0, pos) + newName;
-    if (entry.isDir) {
-      newPath += `/`;
-    }
-    console.log({ rename: true, newName, oldPath, newPath });
+    if (entry.isDir) newPath += `/`;
     const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
     this.#relocateEntry(entry, oldPath, newPath, eventType);
   }
 
-  // move
+  // A move is a relocation where everything *but* the last part of the path may have changed.
   moveEntry(entry, oldPath, newPath) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
     this.#relocateEntry(entry, oldPath, newPath, eventType);
@@ -128,8 +121,9 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
     if (entries[newPath]) throw new Error(`${newPath} already exists.`);
     this.emit(eventType, { oldPath, newPath }, () => {
-      console.log(`---relocate---`);
-
+      // Update all entries whose path starts with {oldPath},
+      // which for files is just a single entry, but for dirs
+      // can be any number of entries.
       Object.keys(entries).forEach((key) => {
         if (key.startsWith(oldPath)) {
           const entry = entries[key];
@@ -139,19 +133,20 @@ class FileTree extends FileTreeElement {
         }
       });
 
+      // Then make sure the relocated entry gets moved to
+      // the correct parent, which we can do directly.
       const { dirPath } = (entries[newPath] = entry);
-      console.log(`dirPath for`, entry, `is`, dirPath);
       let dir = dirPath ? entries[dirPath] : this.rootDir;
-      console.log(`adding`, entry, `to`, dir);
       dir.addEntry(entry);
     });
   }
 
-  // delete
-  removeEntry(path) {
+  // Deletes are a DOM removal of the entry itself, and a pruning
+  // of the path -> entry map for any entry that started with the
+  // same path, so we don't end up with any orphans.
+  removeEntry(entry) {
     const { entries } = this;
-    const entry = entries[path];
-    if (!entry) throw new Error(`${path} does not exist.`);
+    const { path } = entry;
     const eventType = (entry.isFile ? `file` : `dir`) + `:delete`;
     this.emit(eventType, { path }, () => {
       const { path } = entry;
@@ -164,18 +159,19 @@ class FileTree extends FileTreeElement {
     });
   }
 
-  selectEntry(path) {
+  // Select an entry by  its path
+  select(path) {
     const entry = this.entries[path];
     if (!entry) throw new Error(`${path} does not exist.`);
     entry.click();
   }
 
-  selected(entry) {
+  // Entry selection depends on the element, so we hand that
+  // off to the entry itself once granted. (if granted)
+  selectEntry(entry, detail = {}) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
-    this.emit(eventType, { path: entry.path }, () => {
-      this.find(`.selected`)?.classList.remove(`selected`);
-      entry.classList.add(`selected`);
-    });
+    detail.path = entry.path;
+    this.emit(eventType, { detail }, () => entry.select());
   }
 
   sort() {

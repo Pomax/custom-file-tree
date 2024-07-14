@@ -37,11 +37,20 @@ body {
 
     button {
       margin-left: 1em;
+      padding: 0 2px;
+      opacity: 0.3;
+
+      &:hover {
+        opacity: 1;
+      }
+
       & + button {
         margin-left: 0.5em;
       }
-      padding: 0 2px;
-      opacity: 0.5;
+    }
+
+    dir-entry > button[title="Delete directory"] + button {
+      margin-left: 1em;
     }
   }
 }
