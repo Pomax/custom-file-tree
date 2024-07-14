@@ -1,16 +1,11 @@
-import { create, registry, LocalCustomElement } from "./utils.js";
+import { create, registry } from "./utils.js";
+import { FileTreeElement } from "./file-tree-element.js";
 
-/**
- * ...
- */
-export class FileEntry extends LocalCustomElement {
-  init(fileName, fullPath) {
-    this.name = fileName;
-    this.path = fullPath;
+export class FileEntry extends FileTreeElement {
+  isFile = true;
 
-    const heading = (this.heading = create(`file-heading`));
-    heading.textContent = fileName;
-    this.appendChild(heading);
+  constructor(fileName, fullPath) {
+    super(fileName, fullPath);
 
     const rename = create(`button`);
     rename.title = `rename file`;
@@ -21,23 +16,13 @@ export class FileEntry extends LocalCustomElement {
       evt.stopPropagation();
       const newFileName = prompt(
         `New file name?`,
-        this.heading.textContent,
+        this.heading.textContent
       )?.trim();
       if (newFileName) {
         if (newFileName.includes(`/`)) {
           return alert(`If you want to relocate a file, just move it.`);
         }
-        const oldPath = this.path;
-        const newPath = oldPath.replace(this.heading.textContent, newFileName);
-        const currentPath = this.path;
-        this.emit(`file:rename`, { oldPath, newPath }, () => {
-          this.path = currentPath.replace(
-            this.heading.textContent,
-            newFileName,
-          );
-          this.name = newFileName;
-          this.heading.textContent = newFileName;
-        });
+        this.root.renameEntry(this, newFileName);
       }
     });
 
@@ -57,13 +42,10 @@ export class FileEntry extends LocalCustomElement {
       }
     });
 
-    this.addEventListener(`click`, () => {
-      this.emit(`file:click`, { path: this.path }, () => {
-        this.findAllInTree(`.selected`).forEach((e) =>
-          e.classList.remove(`selected`),
-        );
-        this.classList.add(`selected`);
-      });
+    this.addEventListener(`click`, (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      this.root.selected(this);
     });
 
     // allow this file to be moved from one dir to another
@@ -80,7 +62,7 @@ export class FileEntry extends LocalCustomElement {
     // TODO: check if this is safe? (e.g. is there already an entry with this name in the tree?
     this.heading.textContent = this.heading.textContent.replace(
       oldPath,
-      newPath,
+      newPath
     );
     this.path = this.path.replace(oldPath, newPath);
   }
@@ -108,7 +90,7 @@ export class FileEntry extends LocalCustomElement {
   }
 }
 
-class FileHeading extends LocalCustomElement {
+class FileHeading extends FileTreeElement {
   // this is "just an HTML element" for housing some text
 }
 

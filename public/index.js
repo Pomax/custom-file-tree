@@ -1,25 +1,29 @@
 // Add <file-tree> to our page and grab the element
-import "../dist/file-tree.esm.min.js";
+import "../dist/file-tree.esm.js";
 const fileTree = document.querySelector(`file-tree`);
 
 // Set some files. Intentionally terribly sorted.
 const demoList = [
-  `src/utils.js`,
-  `README.md`,
+
   `dist/README.md`,
   `dist/file-tree.esm.js`,
-  `test/README.md`,
+  `dist/file-tree.esm.min.js`,
+  `dist/old/file-tree.esm.js`,
+  `dist/old/file-tree.esm.min.js`,
+  `dist/old/README.md`,
   `public/index.html`,
-  `src/file-entry.js`,
+  `public/index.js`,
   `public/README.md`,
   `src/dir-entry.js`,
-  `package.json`,
-  `public/index.js`,
-  `src/README.md`,
-  `dist/file-tree.esm.min.js`,
-  `test/cake.because.why.not`,
-  `src/file-tree.js`,
+  `src/file-entry.js`,
   `src/file-tree.css`,
+  `src/file-tree.js`,
+  `src/README.md`,
+  `src/utils.js`,
+  `test/cake.because.why.not`,
+  `test/README.md`,
+  `package.json`,
+  `README.md`,
 ];
 
 fileTree.setFiles(demoList);
@@ -40,13 +44,15 @@ const eventList = [
   `dir:rename`,
   `dir:move`,
   `dir:delete`,
+  // debug event
+  `tree:setfiles`,
 ];
 
 eventList.forEach((type) =>
   fileTree.addEventListener(type, (evt) => {
     const { type, detail } = evt;
     const { content, grant, ...rest } = detail;
-    console.log(type, { ...rest });
+    console.log(`file tree event:`, type, { ...rest });
     grant();
   })
 );
