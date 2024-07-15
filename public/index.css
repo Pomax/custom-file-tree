@@ -25,6 +25,8 @@ body {
 
   pre {
     display: inline-block;
+    background: #eee;
+    padding: 0.5em;
     margin-left: var(--indent);
     border: var(--border);
     border-radius: var(--radius);
@@ -34,6 +36,7 @@ body {
     display: inline-block;
     margin-left: var(--indent);
     border: var(--border);
+    padding: 0.5em;
 
     button {
       margin-left: 1em;

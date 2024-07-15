@@ -6,7 +6,7 @@ export function uploadFilesFromDevice({ root, path }) {
   upload.multiple = true;
 
   const uploadFiles = confirm(
-    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`
+    `To upload one or more files, press "OK". To upload an entire folder, press "Cancel".`,
   );
 
   if (!uploadFiles) upload.webkitdirectory = true;

@@ -52,7 +52,7 @@ eventList.forEach((type) =>
   fileTree.addEventListener(type, (evt) => {
     const { type, detail } = evt;
     const { content, grant, ...rest } = detail;
-    console.log(`file tree event:`, type, { ...rest });
+    // console.log(`file tree event:`, type, { ...rest });
     grant();
   })
 );

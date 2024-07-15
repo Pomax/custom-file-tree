@@ -1,7 +1,8 @@
 import { FileTreeElement } from "./file-tree-element.js";
-import { create, registry } from "./utils.js";
-import { makeDropZone } from "./make-drop-zone.js";
-import { uploadFilesFromDevice } from "./upload-file.js";
+import { create, registry } from "../utils/utils.js";
+import { makeDropZone } from "../utils/make-drop-zone.js";
+import { uploadFilesFromDevice } from "../utils/upload-file.js";
+import { Strings } from "../utils/strings.js";
 
 /**
  * ...
@@ -44,17 +45,18 @@ export class DirEntry extends FileTreeElement {
   addRenameButton() {
     if (this.path === `.`) return;
     const btn = create(`button`);
-    btn.title = `Rename directory`;
+    btn.classList.add(`rename-dir`);
+    btn.title = Strings.RENAME_DIRECTORY;
     btn.textContent = `✏️`;
     this.appendChild(btn);
     btn.addEventListener(`click`, () => this.#rename());
   }
 
   #rename() {
-    const newName = prompt(`Choose a new directory name`, this.name)?.trim();
+    const newName = prompt(Strings.RENAME_DIRECTORY_PROMPT, this.name)?.trim();
     if (newName) {
       if (newName.includes(`/`)) {
-        return alert(`If you want to relocate a dir, just move it.`);
+        return alert(Strings.RENAME_DIRECTORY_MOVE_INSTEAD);
       }
       this.root.renameEntry(this, newName);
     }
@@ -65,14 +67,15 @@ export class DirEntry extends FileTreeElement {
    */
   addDeleteButton() {
     const btn = create(`button`);
-    btn.title = `Delete directory`;
+    btn.classList.add(`delete-dir`);
+    btn.title = Strings.DELETE_DIRECTORY;
     btn.textContent = `🗑️`;
     this.appendChild(btn);
     btn.addEventListener(`click`, () => this.#deleteDir());
   }
 
   #deleteDir() {
-    const msg = `Are you *sure* you want to delete this directory and everything in it?`;
+    const msg = Strings.DELETE_DIRECTORY_PROMPT;
     if (confirm(msg)) {
       this.root.removeEntry(this);
     }
@@ -83,19 +86,18 @@ export class DirEntry extends FileTreeElement {
    */
   createFileButton() {
     const btn = create(`button`);
-    btn.title = `Add new file`;
+    btn.classList.add(`add-file`);
+    btn.title = Strings.CREATE_FILE;
     btn.textContent = `📄`;
     btn.addEventListener(`click`, () => this.#createFile());
     this.appendChild(btn);
   }
 
   #createFile() {
-    let fileName = prompt("Please specify a filename.")?.trim();
+    let fileName = prompt(Strings.CREATE_FILE_PROMPT)?.trim();
     if (fileName) {
       if (fileName.includes(`/`)) {
-        return alert(
-          `Just add new files directly to the directory where they should live.`
-        );
+        return alert(Strings.CREATE_FILE_NO_DIRS);
       }
       if (this.path !== `.`) {
         fileName = this.path + fileName;
@@ -109,19 +111,18 @@ export class DirEntry extends FileTreeElement {
    */
   createDirButton() {
     const btn = create(`button`);
-    btn.title = `Add new directory`;
+    btn.classList.add(`add-dir`);
+    btn.title = Strings.CREATE_DIRECTORY;
     btn.textContent = `📁`;
     btn.addEventListener(`click`, () => this.#createDir());
     this.appendChild(btn);
   }
 
   #createDir() {
-    let dirName = prompt("Please specify a directory name.")?.trim();
+    let dirName = prompt(String.CREATE_DIRECTORY_PROMPT)?.trim();
     if (dirName) {
       if (dirName.includes(`/`)) {
-        return alert(
-          `You'll have to create nested directories one at a time..`
-        );
+        return alert(Strings.CREATE_DIRECTORY_NO_NESTING);
       }
       let path = (this.path !== `.` ? this.path : ``) + dirName + `/`;
       this.root.createEntry(path);
@@ -133,7 +134,8 @@ export class DirEntry extends FileTreeElement {
    */
   addUploadButton() {
     const btn = create(`button`);
-    btn.title = `Upload files from your device`;
+    btn.classList.add(`upload`);
+    btn.title = Strings.UPLOAD_FILES;
     btn.textContent = `💻`;
     // This is fairly involved, so it's its own utility function.
     btn.addEventListener(`click`, () => uploadFilesFromDevice(this));
@@ -148,6 +150,19 @@ export class DirEntry extends FileTreeElement {
   addEntry(entry) {
     this.appendChild(entry);
     this.sort();
+  }
+
+  /**
+   * If the file tree has the `remove-empty` attribute, deleting the
+   * last bit of content from a dir should trigger its own deletion.
+   * @returns
+   */
+  checkEmpty() {
+    if (!this.removeEmptyDir) return;
+    if (this.find(`dir-entry, file-entry`)) return;
+    // let's make the reason explicit:
+    const deleteBecauseWeAreEmpty = true;
+    this.root.removeEntry(this, deleteBecauseWeAreEmpty);
   }
 
   // File tree sorting, with dirs at the top

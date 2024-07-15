@@ -1,4 +1,4 @@
-import { create, registry } from "./utils.js";
+import { create, registry } from "../utils/utils.js";
 
 const HTMLElement = globalThis.HTMLElement ?? class {};
 
@@ -38,8 +38,8 @@ export class FileTreeElement extends HTMLElement {
     }
   }
 
-  get removeEmpty() {
-    return this.root.getAttribute(`remove-empty`);
+  get removeEmptyDir() {
+    return this.root.getAttribute(`remove-empty-dir`);
   }
 
   get name() {

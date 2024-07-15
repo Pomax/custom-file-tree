@@ -22,7 +22,7 @@ export function makeDropZone(dirEntry) {
       dirEntry.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", dirEntry.dataset.id);
     },
-    { signal: abortController.signal }
+    { signal: abortController.signal },
   );
 
   // drag enter: mark element as being dragged
@@ -33,7 +33,7 @@ export function makeDropZone(dirEntry) {
       unmark();
       dirEntry.classList.add(`drop-target`);
     },
-    { signal: abortController.signal }
+    { signal: abortController.signal },
   );
 
   // drag over: highlight this specific directory
@@ -48,7 +48,7 @@ export function makeDropZone(dirEntry) {
         dirEntry.classList.add(`drop-target`);
       }
     },
-    { signal: abortController.signal }
+    { signal: abortController.signal },
   );
 
   // drag leave: stop highlighting this specific directory
@@ -58,7 +58,7 @@ export function makeDropZone(dirEntry) {
       evt.preventDefault();
       unmark();
     },
-    { signal: abortController.signal }
+    { signal: abortController.signal },
   );
 
   // drop: what is being dropped here?
@@ -76,7 +76,7 @@ export function makeDropZone(dirEntry) {
       // If not, it's a file/dir upload from device.
       await processUpload(dirEntry.root, evt.dataTransfer.items, dirEntry.path);
     },
-    { signal: abortController.signal }
+    { signal: abortController.signal },
   );
 
   // Special handling: the root itself is definitely not draggable!

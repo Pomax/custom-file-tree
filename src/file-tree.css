@@ -1,10 +1,33 @@
 file-tree {
   display: block;
-  padding: 0.5em !important;
 
   button {
     min-width: 1.5em;
     padding: 2px 1px;
+  }
+
+  /* by default the top level is hidden*/
+  &:not([show-top-level]) > dir-entry[path="."] {
+    margin: 0 !important;
+    padding: 0 !important;
+    &:before {
+      content: unset;
+    }
+    & > *:not(dir-entry, file-entry) {
+      display: none !important;
+    }
+    /* but we do need some of the buttons */
+    & > button {
+      &.add-file {
+        margin-left: 0 !important;
+      }
+      &.add-file,
+      &.add-dir,
+      &.upload {
+        display: inline-block !important;
+        margin-bottom: 0.5em;
+      }
+    }
   }
 
   dir-entry {
@@ -46,9 +69,9 @@ file-tree {
 
         & > button {
           display: none;
-          &[title="Add new file"],
-          &[title="Add new directory"],
-          &[title="upload files from your device"] {
+          &.add-file,
+          &.add-dir,
+          &.upload {
             display: inline-block;
           }
         }
@@ -64,7 +87,8 @@ file-tree {
         &:before {
           content: "📕";
         }
-        dir-entry, file-entry {
+        dir-entry,
+        file-entry {
           display: none;
         }
       }

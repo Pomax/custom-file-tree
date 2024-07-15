@@ -1,7 +1,8 @@
-import { DirEntry } from "./dir-entry.js";
-import { FileEntry } from "./file-entry.js";
-import { registry, isFile } from "./utils.js";
-import { FileTreeElement } from "./file-tree-element.js";
+import { FileTreeElement } from "./classes/file-tree-element.js";
+import { DirEntry } from "./classes/dir-entry.js";
+import { FileEntry } from "./classes/file-entry.js";
+import { registry, isFile } from "./utils/utils.js";
+import { Strings } from "./utils/strings.js";
 
 /**
  * The file tree maintains the list of path -> entry mappings,
@@ -34,7 +35,7 @@ class FileTree extends FileTreeElement {
 
   connectedCallback() {
     this.addExternalListener(document, `dragend`, () =>
-      this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`))
+      this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`)),
     );
   }
 
@@ -45,7 +46,7 @@ class FileTree extends FileTreeElement {
   setFiles(files = []) {
     this.clear();
     files.forEach((path) =>
-      this.#addPath(path, undefined, `tree:setfiles`, true)
+      this.#addPath(path, undefined, `tree:setfiles`, true),
     );
   }
 
@@ -60,7 +61,7 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
 
     if (entries[path]) {
-      throw new Error(`${path} already exists.`);
+      throw new Error(Strings.PATH_EXISTS(path));
     }
 
     // When granted, build the entry.
@@ -119,7 +120,8 @@ class FileTree extends FileTreeElement {
   // private function for initiating <file-entry> or <dir-entry> path changes
   #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
-    if (entries[newPath]) throw new Error(`${newPath} already exists.`);
+    if (oldPath === newPath) return;
+    if (entries[newPath]) throw new Error(Strings.PATH_EXISTS(newPath));
     this.emit(eventType, { oldPath, newPath }, () => {
       // Update all entries whose path starts with {oldPath},
       // which for files is just a single entry, but for dirs
@@ -144,25 +146,36 @@ class FileTree extends FileTreeElement {
   // Deletes are a DOM removal of the entry itself, and a pruning
   // of the path -> entry map for any entry that started with the
   // same path, so we don't end up with any orphans.
-  removeEntry(entry) {
+  removeEntry(entry, emptyDir = false) {
     const { entries } = this;
-    const { path } = entry;
-    const eventType = (entry.isFile ? `file` : `dir`) + `:delete`;
-    this.emit(eventType, { path }, () => {
-      const { path } = entry;
-      Object.entries(entries).forEach(([key, entry]) => {
-        if (key.startsWith(path)) {
-          entry.remove();
-          delete entries[key];
-        }
-      });
+    const { path, isFile, parentDir } = entry;
+    const eventType = (isFile ? `file` : `dir`) + `:delete`;
+    const detail = { path };
+    if (emptyDir) detail.emptyDir = true;
+    this.emit(eventType, detail, () => {
+      // single instances are simple removals
+      if (isFile || emptyDir) {
+        entry.remove();
+        delete entries[path];
+      }
+      // dirs need a mapping traversal to remove everything inside of it.
+      else {
+        Object.entries(entries).forEach(([key, entry]) => {
+          if (key.startsWith(path)) {
+            entry.remove();
+            delete entries[key];
+          }
+        });
+      }
+      // And then we check whether we need to delete the parent, too.
+      parentDir.checkEmpty();
     });
   }
 
   // Select an entry by  its path
   select(path) {
     const entry = this.entries[path];
-    if (!entry) throw new Error(`${path} does not exist.`);
+    if (!entry) throw new Error(Strings.PATH_DOES_NOT_EXIST(path));
     entry.click();
   }
 

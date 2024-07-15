@@ -30,7 +30,7 @@
 
     <h2>The element:</h2>
 
-    <file-tree></file-tree>
+    <file-tree show-top-level="true" remove-empty-dir="true"></file-tree>
 
     <p>
       You can click files, drag files and directories around, create, rename,
@@ -44,9 +44,29 @@
 
     <p>
       It's an HTML element. The code is identical to other HTML elements, in
-      that you just write <code>&lt;file-tree&gt;&lt;/file-tree&gt;</code> (or
-      generate a `file-tree` element) and that's all you need as far as the page
-      code is concerned.
+      that you just write:
+    </p>
+
+    <pre><code>&lt;file-tree&gt;&lt;/file-tree&gt;</code></pre>
+
+    <p>
+      Or generate a `file-tree` element on the JS side:
+    </p>
+
+    <pre><code>const tree = document.createElement(`file-tree`);
+document.body.appendchild(tree);</code></pre>
+
+    <p>
+      And that's all you need as far as the page code is concerned.
+    </p>
+
+    <p>
+      In this case we've also specified the <code>show-top-level</code> and
+      <code>remove-empty-dir</code> attributes, so that we get to see all the
+      functionality, with the first showing the normally hidden <code>.</code>
+      directory that everything lives under, and the latter deleting any
+      directory that becomes empty when deleting the last file and directory
+      inside of it.
     </p>
 
     <h2>The JS that made the above work:</h2>
@@ -114,7 +134,7 @@ eventList.forEach((type) =>
     <h2>See for yourself</h2>
 
     <p>
-      If you `view-source` this page, you'll see there's nothing special going
+      If you "view-source" this page, you'll see there's nothing special going
       on in the HTML, and viewing the <a href="index.js">page JS</a> should show
       the same code as listed above.
     </p>

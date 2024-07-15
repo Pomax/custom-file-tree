@@ -1,43 +1,55 @@
-import { create, registry } from "./utils.js";
 import { FileTreeElement } from "./file-tree-element.js";
+import { create, registry } from "../utils/utils.js";
+import { Strings } from "../utils/strings.js";
 
 export class FileEntry extends FileTreeElement {
   isFile = true;
 
   constructor(fileName, fullPath) {
     super(fileName, fullPath);
+    this.addRenameButton();
+    this.addDeleteButton();
+    this.addEventHandling();
+  }
 
-    const rename = create(`button`);
-    rename.title = `rename file`;
-    rename.textContent = `✏️`;
-    this.appendChild(rename);
-    rename.addEventListener(`click`, (evt) => {
+  addRenameButton() {
+    const btn = create(`button`);
+    btn.classList.add(`rename-file`);
+    btn.title = Strings.RENAME_FILE;
+    btn.textContent = `✏️`;
+    this.appendChild(btn);
+    btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
       const newFileName = prompt(
-        `New file name?`,
-        this.heading.textContent
+        Strings.RENAME_FILE_PROMPT,
+        this.heading.textContent,
       )?.trim();
       if (newFileName) {
         if (newFileName.includes(`/`)) {
-          return alert(`If you want to relocate a file, just move it.`);
+          return alert(Strings.RENAME_FILE_MOVE_INSTEAD);
         }
         this.root.renameEntry(this, newFileName);
       }
     });
+  }
 
-    const remove = create(`button`);
-    remove.title = `delete file`;
-    remove.textContent = `🗑️`;
-    this.appendChild(remove);
-    remove.addEventListener(`click`, (evt) => {
+  addDeleteButton() {
+    const btn = create(`button`);
+    btn.classList.add(`delete-file`);
+    btn.title = Strings.DELETE_FILE;
+    btn.textContent = `🗑️`;
+    this.appendChild(btn);
+    btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      if (confirm(`are you sure you want to delete this file?`)) {
+      if (confirm(Strings.DELETE_FILE_PROMPT)) {
         this.root.removeEntry(this);
       }
     });
+  }
 
+  addEventHandling() {
     this.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();

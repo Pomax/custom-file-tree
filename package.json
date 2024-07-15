@@ -5,14 +5,16 @@
   "type": "module",
   "main": "src/file-tree.js",
   "scripts": {
-    "start": "npm run server",
-    "test": "npm run lint && npm run build",
-    "build": "npm run build:esm && npm run build:min && cp ./src/file-tree.css ./dist",
     "build:base": "esbuild --bundle --format=esm ./src/file-tree.js",
     "build:esm": "npm run build:base -- --outfile=dist/file-tree.esm.js",
     "build:min": "npm run build:base -- --minify --outfile=dist/file-tree.esm.min.js",
+    "build": "npm run lint && npm run build:esm && npm run build:min && cp ./src/file-tree.css ./dist",
     "lint": "prettier -w src/**/*.js",
-    "server": "node server.js"
+    "postinstall": "playwright install",
+    "server": "node server.js",
+    "start": "npm run build && npm run server",
+    "test": "npm run start -- -- --test",
+    "test:integration": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -25,9 +27,12 @@
   },
   "homepage": "https://pomax.github.io/custom-file-tree/public/",
   "devDependencies": {
+    "@playwright/test": "^1.45.1",
     "esbuild": "^0.23.0",
     "express": "^4.19.2",
+    "install": "^0.13.0",
     "nocache": "^4.0.0",
+    "npm": "^10.8.2",
     "prettier": "^3.3.2"
   },
   "keywords": [
