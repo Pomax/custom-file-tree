@@ -13,7 +13,7 @@
     "postinstall": "playwright install",
     "server": "node server.js",
     "start": "npm run build && npm run server",
-    "test": "npm run start -- -- --test",
+    "test": "npm run start -- -- --test  && rm -rf test-results",
     "test:integration": "playwright test tests"
   },
   "repository": {

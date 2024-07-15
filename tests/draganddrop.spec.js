@@ -56,18 +56,23 @@ test.describe(`file events`, () => {
       await entryExists(`package.json`);
       await entryDoesNotExist(`dist/newfile.txt`);
 
-      await page
-        .locator(`file-entry[path="package.json"]`)
-        .dragTo(page.locator(`dir-entry[path="dist/"]`));
+      const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
 
-      // Why the fuck is this selecting "src/file-tree.css"???
+      const source = page.locator(`file-entry[path="package.json"]`);
+      expect(source).toHaveAttribute(`path`, `package.json`);
+      await page.dispatchEvent(`file-entry[path="package.json"]`, `dragstart`, { dataTransfer });
+
+      const target = page.locator(`dir-entry[path="dist/"]`);
+      expect(target).toHaveAttribute(`path`, `dist/`);
+      await page.dispatchEvent(`dir-entry[path="dist/"]`, `drop`, { dataTransfer });
+
       const { detail } = await fileEventPromise;
       const { oldPath, newPath } = detail;
-      await expect(oldPath).toBe(`package.json`);
-      await expect(newPath).toBe(`dist/package.json`);
+      expect(oldPath).toBe(`package.json`);
+      expect(newPath).toBe(`dist/package.json`);
 
-      await entryExists(`package.json`);
-      await entryDoesNotExist(`dist/package.json`);
+      await entryDoesNotExist(`package.json`);
+      await entryExists(`dist/package.json`);
     });
   });
 });
