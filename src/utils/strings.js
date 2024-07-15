@@ -28,6 +28,9 @@ const LOCALE_STRINGS = {
 
     PATH_EXISTS: (path) => `${path} already exists.`,
     PATH_DOES_NOT_EXIST: (path) => `${path} does not exist.`,
+
+    INVALID_UPLOAD_TYPE: (type) =>
+      `Unfortunately, a ${type} is not a file or folder.`,
   },
 };
 

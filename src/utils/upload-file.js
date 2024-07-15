@@ -1,4 +1,5 @@
 import { create, getFileContent } from "./utils.js";
+import { Strings } from "./strings.js";
 
 export function uploadFilesFromDevice({ root, path }) {
   const upload = create(`input`);
@@ -26,7 +27,8 @@ export async function processUpload(root, items, dirPath = ``) {
     if (item instanceof File) {
       const content = await getFileContent(item);
       const filePath = path + (item.webkitRelativePath || item.name);
-      root.createEntry(dirPath + filePath, content);
+      const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
+      root.createEntry(entryPath, content);
     }
 
     // File input dialog result (for files)
@@ -34,7 +36,8 @@ export async function processUpload(root, items, dirPath = ``) {
       item.file(async (file) => {
         const content = await getFileContent(file);
         const filePath = path + file.name;
-        root.createEntry(dirPath + filePath, content);
+        const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
+        root.createEntry(entryPath, content);
       });
     }
 
@@ -50,11 +53,18 @@ export async function processUpload(root, items, dirPath = ``) {
     }
   }
 
-  for await (let item of items) {
+  for (let item of items) {
     try {
-      await iterate(item instanceof File ? item : item.webkitGetAsEntry());
+      let entry = item;
+      if (entry.getAsFile()) {
+        entry = entry.getAsFile();
+      } else if (entry.webkitGetAsEntry()) {
+        entry = webkitGetAsEntry();
+      }
+
+      await iterate(entry);
     } catch (e) {
-      return alert(`Unfortunately, a ${item.kind} is not a file or folder.`);
+      return alert(Strings.INVALID_UPLOAD_TYPE(item.kind));
     }
   }
 }

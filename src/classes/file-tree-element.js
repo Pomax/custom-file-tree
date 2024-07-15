@@ -94,11 +94,9 @@ export class FileTreeElement extends HTMLElement {
     return element.closest(`dir-entry`);
   }
 
-  emit(eventName, detail = {}, grant = () => {}) {
-    detail.grant = () => {
-      grant();
-    };
-    this.root.dispatchEvent(new CustomEvent(eventName, { detail }));
+  emit(eventType, detail = {}, grant = () => {}) {
+    detail.grant = grant;
+    this.root.dispatchEvent(new CustomEvent(eventType, { detail }));
   }
 
   find(qs) {
