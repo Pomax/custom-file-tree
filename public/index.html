@@ -49,16 +49,12 @@
 
     <pre><code>&lt;file-tree&gt;&lt;/file-tree&gt;</code></pre>
 
-    <p>
-      Or generate a `file-tree` element on the JS side:
-    </p>
+    <p>Or generate a `file-tree` element on the JS side:</p>
 
     <pre><code>const tree = document.createElement(`file-tree`);
 document.body.appendchild(tree);</code></pre>
 
-    <p>
-      And that's all you need as far as the page code is concerned.
-    </p>
+    <p>And that's all you need as far as the page code is concerned.</p>
 
     <p>
       In this case we've also specified the <code>show-top-level</code> and
@@ -130,6 +126,16 @@ eventList.forEach((type) =>
     detail.grant();
   })
 );</code></pre>
+
+    <h2>That's, uh, a lot of buttons?</h2>
+
+    <p>
+      There is no touch equivalent of "mouse-over", and if you want to frustrate
+      your users as much as possible, you put common operations under a
+      "hamburger" or ellipse menu button so they <em>always</em> have to click
+      or tap something twice. There are a lot of buttons, because your user
+      should be in control of what happens.
+    </p>
 
     <h2>See for yourself</h2>
 

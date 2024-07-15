@@ -14,7 +14,7 @@
     "server": "node server.js",
     "start": "npm run build && npm run server",
     "test": "npm run start -- -- --test",
-    "test:integration": "playwright test"
+    "test:integration": "playwright test tests"
   },
   "repository": {
     "type": "git",
