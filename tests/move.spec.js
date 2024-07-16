@@ -1,39 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { bootstrapPage } from "./utils.js";
 
 test.describe(`move events`, () => {
   let page;
   let fileTree;
-  let eventPromise;
+  let utils;
 
-  async function listenForEvent(eventType) {
-    eventPromise = page.evaluate(
-      (eventType) =>
-        new Promise((resolve) => {
-          document
-            .querySelector(`file-tree`)
-            .addEventListener(eventType, ({ type, detail }) =>
-              resolve({ type, detail })
-            );
-        }),
-      eventType
-    );
-  }
-
-  async function hasEntry(path) {
-    return page.evaluate((path) => {
-      const { entries } = document.querySelector(`file-tree`);
-      const entry = entries[path];
-      return !!(entry?.path === path);
-    }, path);
-  }
-
-  async function entryExists(path) {
-    return expect(await hasEntry(path)).toBe(true);
-  }
-
-  async function entryDoesNotExist(path) {
-    return expect(await hasEntry(path)).toBe(false);
-  }
+  test.beforeEach(async ({ browser }) => {
+    utils = await bootstrapPage(browser);
+    page = utils.page;
+    fileTree = utils.fileTree;
+  });
 
   async function dragAndDrop(source, target) {
     const sourceSelector = `[path="${source}"]`;
@@ -49,29 +26,21 @@ test.describe(`move events`, () => {
     await page.dispatchEvent(targetSelector, `drop`, { dataTransfer });
   }
 
-  test.beforeEach(async ({ browser }) => {
-    eventPromise = undefined;
-    page = await browser.newPage();
-    page.on("console", (msg) => console.log(msg.text()));
-    await page.goto(`http://localhost:8000`);
-    fileTree = page.locator(`file-tree`).first();
-  });
-
   /**
    * All file:move event code paths
    */
   test.describe(`file:move`, () => {
-    const listenForFileMoveEvent = () => listenForEvent(`file:move`);
+    const listenForFileMoveEvent = () => utils.listenForEvent(`file:move`);
 
     test(`move a root file into a subdirectory`, async () => {
-      listenForFileMoveEvent();
+      const eventPromise = listenForFileMoveEvent();
 
       const sourcePath = `package.json`;
       const targetPath = `dist/`;
       const finalPath = targetPath + sourcePath;
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -79,19 +48,19 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
     });
 
     test(`move a subdirectory file to the root`, async () => {
-      listenForFileMoveEvent();
+      const eventPromise = listenForFileMoveEvent();
 
       const sourcePath = `dist/file-tree.esm.min.js`;
       const targetPath = `.`;
       const finalPath = sourcePath.substring(sourcePath.lastIndexOf(`/`) + 1);
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -99,20 +68,20 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
     });
 
     test(`move a subdirectory file deeper`, async () => {
-      listenForFileMoveEvent();
+      const eventPromise = listenForFileMoveEvent();
 
       const sourcePath = `dist/README.md`;
       const targetPath = `dist/old/`;
       const finalPath =
         targetPath + sourcePath.substring(sourcePath.lastIndexOf(`/`) + 1);
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -120,20 +89,20 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
     });
 
     test(`move a deep subdirectory file up`, async () => {
-      listenForFileMoveEvent();
+      const eventPromise = listenForFileMoveEvent();
 
       const sourcePath = `dist/old/README.old`;
       const targetPath = `dist/`;
       const finalPath =
         targetPath + sourcePath.substring(sourcePath.lastIndexOf(`/`) + 1);
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -141,8 +110,8 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
     });
   });
 
@@ -150,17 +119,17 @@ test.describe(`move events`, () => {
    * All dir:move event code paths
    */
   test.describe(`dir:move`, () => {
-    const listenForDirMoveEvent = () => listenForEvent(`dir:move`);
+    const listenForDirMoveEvent = () => utils.listenForEvent(`dir:move`);
 
     test(`move a directory into another directory`, async () => {
-      listenForDirMoveEvent();
+      const eventPromise = listenForDirMoveEvent();
 
       const sourcePath = `dist/`;
       const targetPath = `test/`;
       const finalPath = targetPath + sourcePath;
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -168,8 +137,8 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
 
       // confirm all files moved properly, too.
       for await (const old of [
@@ -180,20 +149,20 @@ test.describe(`move events`, () => {
         `dist/old/file-tree.esm.js`,
         `dist/old/file-tree.esm.min.js`,
       ]) {
-        await entryDoesNotExist(old);
-        await entryExists(`test/${old}`);
+        await utils.entryDoesNotExist(old);
+        await utils.entryExists(`test/${old}`);
       }
     });
 
     test(`move a nested directory out of its parent`, async () => {
-      listenForDirMoveEvent();
+      const eventPromise = listenForDirMoveEvent();
 
       const sourcePath = `dist/old/`;
       const targetPath = `test/`;
       const finalPath = `test/old/`;
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -201,8 +170,8 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
 
       // confirm all files moved properly, too.
       for await (const old of [
@@ -210,20 +179,20 @@ test.describe(`move events`, () => {
         `dist/old/file-tree.esm.js`,
         `dist/old/file-tree.esm.min.js`,
       ]) {
-        await entryDoesNotExist(old);
-        await entryExists(old.replace(`dist/`, `test/`));
+        await utils.entryDoesNotExist(old);
+        await utils.entryExists(old.replace(`dist/`, `test/`));
       }
     });
 
     test(`move a directory into the root`, async () => {
-      listenForDirMoveEvent();
+      const eventPromise = listenForDirMoveEvent();
 
       const sourcePath = `dist/old/`;
       const targetPath = `.`;
       const finalPath = `old/`;
 
-      await entryExists(sourcePath);
-      await entryDoesNotExist(finalPath);
+      await utils.entryExists(sourcePath);
+      await utils.entryDoesNotExist(finalPath);
 
       await dragAndDrop(sourcePath, targetPath);
       const { detail } = await eventPromise;
@@ -231,8 +200,8 @@ test.describe(`move events`, () => {
       expect(oldPath).toBe(sourcePath);
       expect(newPath).toBe(finalPath);
 
-      await entryDoesNotExist(sourcePath);
-      await entryExists(finalPath);
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
 
       // confirm all files moved properly, too.
       for await (const old of [
@@ -240,8 +209,8 @@ test.describe(`move events`, () => {
         `dist/old/file-tree.esm.js`,
         `dist/old/file-tree.esm.min.js`,
       ]) {
-        await entryDoesNotExist(old);
-        await entryExists(old.replace(`dist/`, ``));
+        await utils.entryDoesNotExist(old);
+        await utils.entryExists(old.replace(`dist/`, ``));
       }
     });
   });

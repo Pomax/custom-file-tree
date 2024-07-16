@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { Strings } from "../src/utils/strings.js";
 
 test.describe(`delete events`, () => {
   let page;
@@ -64,9 +63,7 @@ test.describe(`delete events`, () => {
 
       await entryExists(`README.md`);
       await page.locator(`[path="README.md"]`).click();
-      const qs = `[path="README.md"] button[title="${Strings.DELETE_FILE}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await page.locator(`[path="README.md"] > .delete-file`).click();
     });
 
     test(`deleting a file in a subdirectory`, async () => {
@@ -83,9 +80,7 @@ test.describe(`delete events`, () => {
 
       await entryExists(`dist/README.md`);
       await page.locator(`[path="dist/README.md"]`).click();
-      const qs = `[path="dist/README.md"] button[title="${Strings.DELETE_FILE}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await page.locator(`[path="dist/README.md"] > .delete-file`).click();
     });
   });
 
@@ -115,9 +110,7 @@ test.describe(`delete events`, () => {
 
       await entryExists(`dist/`);
       await page.locator(`[path="dist/"] > entry-heading`).click();
-      const qs = `dir-entry[path="dist/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await page.locator(`[path="dist/"] > .delete-dir`).click();
     });
 
     test(`deleting a dir in another directory`, async () => {
@@ -141,9 +134,7 @@ test.describe(`delete events`, () => {
 
       await entryExists(`dist/old/`);
       await page.locator(`[path="dist/old/"] > entry-heading`).click();
-      const qs = `[path="dist/old/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await page.locator(`[path="dist/old/"] > .delete-dir`).click();
     });
   });
 });

@@ -37,11 +37,11 @@ file-tree {
     }
     /* but we do need some of the buttons */
     & > button {
-      &.add-file {
+      &.create-file {
         margin-left: 0 !important;
       }
-      &.add-file,
-      &.add-dir,
+      &.create-file,
+      &.create-dir,
       &.upload {
         display: inline-block !important;
         margin-bottom: 0.5em;
@@ -93,8 +93,8 @@ file-tree {
 
         & > button {
           display: none;
-          &.add-file,
-          &.add-dir,
+          &.create-file,
+          &.create-dir,
           &.upload {
             display: inline-block;
           }

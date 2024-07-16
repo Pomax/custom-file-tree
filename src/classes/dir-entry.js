@@ -98,7 +98,7 @@ export class DirEntry extends FileTreeElement {
    */
   createFileButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-file`);
+    btn.classList.add(`create-file`);
     btn.title = Strings.CREATE_FILE;
     btn.textContent = `📄`;
     btn.addEventListener(`click`, () => this.#createFile());
@@ -123,7 +123,7 @@ export class DirEntry extends FileTreeElement {
    */
   createDirButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-dir`);
+    btn.classList.add(`create-dir`);
     btn.title = Strings.CREATE_DIRECTORY;
     btn.textContent = `📁`;
     btn.addEventListener(`click`, () => this.#createDir());

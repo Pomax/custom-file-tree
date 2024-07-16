@@ -384,7 +384,7 @@ var DirEntry = class extends FileTreeElement {
    */
   createFileButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-file`);
+    btn.classList.add(`create-file`);
     btn.title = localeStrings.CREATE_FILE;
     btn.textContent = `\u{1F4C4}`;
     btn.addEventListener(`click`, () => this.#createFile());
@@ -407,7 +407,7 @@ var DirEntry = class extends FileTreeElement {
    */
   createDirButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-dir`);
+    btn.classList.add(`create-dir`);
     btn.title = localeStrings.CREATE_DIRECTORY;
     btn.textContent = `\u{1F4C1}`;
     btn.addEventListener(`click`, () => this.#createDir());
