@@ -1,5 +1,5 @@
-.gitignore
 node_modules
 public
-test
+tests
+.gitignore
 server.js
