@@ -45,7 +45,7 @@ test.describe(`delete events`, () => {
   });
 
   /**
-   * All file:rename event code paths
+   * All file:delete event code paths
    */
   test.describe(`file:delete`, () => {
     const listenForFileDeleteEvent = () => listenForEvent(`file:delete`);
@@ -56,14 +56,88 @@ test.describe(`delete events`, () => {
       page.on(`dialog`, async (dialog) => {
         await dialog.accept();
 
-        const { type, detail } = await eventPromise;
+        const { detail } = await eventPromise;
         const { path } = detail;
         await expect(path).toBe(`README.md`);
         await entryDoesNotExist(`README.md`);
       });
 
       await entryExists(`README.md`);
-      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
+      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.DELETE_FILE}"]`;
+      const btn = page.locator(qs).first();
+      await btn.click();
+    });
+
+    test(`deleting a file in a subdirectory`, async () => {
+      listenForFileDeleteEvent();
+
+      page.on(`dialog`, async (dialog) => {
+        await dialog.accept();
+
+        const { detail } = await eventPromise;
+        const { path } = detail;
+        await expect(path).toBe(`dist/README.md`);
+        await entryDoesNotExist(`dist/README.md`);
+      });
+
+      await entryExists(`dist/README.md`);
+      const qs = `file-tree file-entry[path="dist/README.md"] button[title="${Strings.DELETE_FILE}"]`;
+      const btn = page.locator(qs).first();
+      await btn.click();
+    });
+  });
+
+  /**
+   * All dir:delete event code paths
+   */
+  test.describe(`dir:delete`, () => {
+    const listenForDirDeleteEvent = () => listenForEvent(`dir:delete`);
+
+    test(`deleting a dir at the root location`, async () => {
+      listenForDirDeleteEvent();
+
+      page.on(`dialog`, async (dialog) => {
+        await dialog.accept();
+
+        const { detail } = await eventPromise;
+        const { path } = detail;
+        await expect(path).toBe(`dist/`);
+        await entryDoesNotExist(`dist/`);
+
+        // verify no entries start with this path anymore
+        const keys = await page.evaluate(() =>
+          Object.keys(document.querySelector(`file-tree`).entries)
+        );
+        expect(!keys.some((v) => v.startsWith(`dist/`))).toBe(true);
+      });
+
+      await entryExists(`dist/`);
+      const qs = `file-tree dir-entry[path="dist/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
+      const btn = page.locator(qs).first();
+      await btn.click();
+    });
+
+    test(`deleting a dir in another directory`, async () => {
+      listenForDirDeleteEvent();
+
+      page.on(`dialog`, async (dialog) => {
+        await dialog.accept();
+
+        const { detail } = await eventPromise;
+        const { path } = detail;
+        await expect(path).toBe(`dist/old/`);
+        await entryDoesNotExist(`dist/old/`);
+
+        // verify no entries start with this path anymore
+        const keys = await page.evaluate(() =>
+          Object.keys(document.querySelector(`file-tree`).entries)
+        );
+        expect(!keys.some((v) => v.startsWith(`dist/old/`))).toBe(true);
+        expect(keys.some((v) => v.startsWith(`dist/`))).toBe(true);
+      });
+
+      await entryExists(`dist/old/`);
+      const qs = `file-tree dir-entry[path="dist/old/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });

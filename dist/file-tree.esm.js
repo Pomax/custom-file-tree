@@ -667,7 +667,6 @@ var FileTree = class extends FileTreeElement {
     const eventType = (isFile2 ? `file` : `dir`) + `:delete`;
     const detail = { path };
     if (emptyDir) detail.emptyDir = true;
-    console.log(`emitting ${eventType}`);
     this.emit(eventType, detail, () => {
       if (isFile2 || emptyDir) {
         entry.remove();
