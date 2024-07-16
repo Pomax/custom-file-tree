@@ -4,7 +4,6 @@ const fileTree = document.querySelector(`file-tree`);
 
 // Set some files. Intentionally terribly sorted.
 const demoList = [
-
   `dist/README.md`,
   `dist/file-tree.esm.js`,
   `dist/file-tree.esm.min.js`,
@@ -35,7 +34,6 @@ const eventList = [
   // File events you care about
   `file:create`,
   `file:rename`,
-  `file:upload`,
   `file:move`,
   `file:delete`,
   // Directory events you care about
@@ -44,15 +42,8 @@ const eventList = [
   `dir:rename`,
   `dir:move`,
   `dir:delete`,
-  // debug event
-  `tree:setfiles`,
 ];
 
 eventList.forEach((type) =>
-  fileTree.addEventListener(type, (evt) => {
-    const { type, detail } = evt;
-    const { content, grant, ...rest } = detail;
-    // console.log(`file tree event:`, type, { ...rest });
-    grant();
-  })
+  fileTree.addEventListener(type, ({ detail }) => detail.grant())
 );

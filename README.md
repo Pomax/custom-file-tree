@@ -79,9 +79,8 @@ If an event is allowed to happen, your code must call `event.detail.grant()`, wh
 Events are listed here as `name → detail object content`, with the `grant` function omitted from the detail object, as by definition all events come with a grant function.
 
 - `file:click` → `{path}`,<br>Dispatched when a file entry is clicked, with `path` representing the full path of the file in question.<br>Granting this action will assign the `selected` class to the associated file entry.
-- `file:create` → `{path}`,<br>Dispatched when a new file is created by name, without content, with `path` being the file's full path.<br>Granting this action will create a new file entry, nested according to the `path` value.
+- `file:create` → `{path, content?}`,<br>Dispatched when a new file is created by name, with `path` being the file's full path. If this file was created through a file "upload", it will also have a `content` value of type [ArrayBuffer](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) representing the file's byte code.<br>Granting this action will create a new file entry, nested according to the `path` value.
 - `file:rename` → `{oldPath, newPath}`,<br>Dispatched when an existing file is renamed by the user, with `oldPath` being the current file path, and `newPath` the desired new path.<br>Granting this action will change the file entry's label and path values.<br><strong>Note</strong>: file renames are (currently) restricted to file names only, as renames that include directory prefixes (including `../`) should be effected by just moving the file to the correct directory.
-- `file:upload` → `{path, content}`,<br>Dispatched when a new file is created by drag-and-drop, with `path` being the file's full path, and `content` being the file's content as [ArrayBuffer](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer).<br>Granting this action will create a new file entry, nested according to the `path` value.<br><strong>Note</strong>: there is no mechanism for retrieving the file's content later, file content is discarded upon event resolution.
 - `file:move` → `{oldPath, newPath}`,<br>Dispatched when a file gets moved to a different directory, with `oldPath` being the current file path, and `newPath` the desired new path.<br>Granting this action will move the file entry from its current location to the location indicated by `newPath`.
 - `file:delete` → `{path}`,<br>Dispatched when a file gets deleted, with `path` representing the full path of the file in question.<br>Granting this action will remove the file entry from the tree.<br><strong>Note</strong>: if this is the only file in a directory, <em>and</em> the `<file-tree>` specifies the `remove-empty` attribute, the now empty directory will also be deleted, gated by a `dir:delete` permission event, but _not_ gated by a `confirm()` dialog to the user.
 
@@ -95,19 +94,25 @@ Events are listed here as `name → detail object content`, with the `grant` fun
 
 ## Special attributes
 
-File tree tags may also specify a "remove-empty" attribute, i.e.
+File tree tags may specify a "remove-empty" attribute, i.e.
 
 ```html
-<file-tree remove-empty></file-tree>
+<file-tree remove-empty="true"></file-tree>
 ```
 
 Setting this attribute tells the file tree that it may delete directories that become empty due to file move/delete operations.
 
-## Warning: file tree content is (_for now_) not guaranteed to be persistent
+By default, file trees content "normally", even though under the hood all content is wrapped by a directory entry with path "." to act as a root. File tree tags may specify a "show-top-level" attribute to show this root directory, i.e.
 
-While `<file-tree>` elements themselves are persistent, the same is not true for _any_ child content, which may get removed and rebuilt from scratch depending on user actions. This means that if you set a class on a file or directory entry, that class may seem to "get unset" or "disappear" when in reality the entire file or directory entry got deleted and a new one was generated in its place. A good example of this is moving files or directories: nothing gets moved, the entries get removed from the DOM in their old position, and new entries are inserted into the DOM in their new positions.
+```html
+<file-tree show-top-level="true"></file-tree>
+```
 
-I intend to change that in the near future, but getting the library released and in your hands for playing with was more important =)
+## File tree elements have a persistent state
+
+If you wish to associate data with `<file-entry>` and `<dir-entry>` elements, you can do so by adding data to their `.state` property either directly, or by using the `.setState(update)` function, which takes an update object and applies all key:value pairs in the update to the element's state.
+
+While in HTML context this should be obvious: this is done synchronously, unlike the similarly named function that you might be familiar with from frameworks like React or Preact. The `<file-tree>` is a normal HTML element and updates take effect immediately.
 
 # Contributing
 
