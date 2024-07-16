@@ -174,7 +174,7 @@ function uploadFilesFromDevice({ root, path }) {
 }
 async function processUpload(root, items, dirPath = ``) {
   async function iterate(item, path = ``) {
-    if (item instanceof File) {
+    if (item instanceof File && !item.isDirectory) {
       const content = await getFileContent(item);
       const filePath = path + (item.webkitRelativePath || item.name);
       const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
@@ -195,11 +195,15 @@ async function processUpload(root, items, dirPath = ``) {
   }
   for (let item of items) {
     try {
-      let entry = item;
-      if (entry.getAsFile()) {
-        entry = entry.getAsFile();
-      } else if (entry.webkitGetAsEntry()) {
-        entry = webkitGetAsEntry();
+      let entry;
+      if (!entry && item instanceof File) {
+        entry = item;
+      }
+      if (!entry && item.webkitGetAsEntry) {
+        entry = item.webkitGetAsEntry() ?? entry;
+      }
+      if (!entry && item.getAsFile) {
+        entry = item.getAsFile();
       }
       await iterate(entry);
     } catch (e) {
@@ -663,6 +667,7 @@ var FileTree = class extends FileTreeElement {
     const eventType = (isFile2 ? `file` : `dir`) + `:delete`;
     const detail = { path };
     if (emptyDir) detail.emptyDir = true;
+    console.log(`emitting ${eventType}`);
     this.emit(eventType, detail, () => {
       if (isFile2 || emptyDir) {
         entry.remove();

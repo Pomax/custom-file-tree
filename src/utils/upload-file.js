@@ -23,8 +23,10 @@ export function uploadFilesFromDevice({ root, path }) {
 
 export async function processUpload(root, items, dirPath = ``) {
   async function iterate(item, path = ``) {
-    // Direct file drop?
-    if (item instanceof File) {
+    // Direct file drop? And note the dir check, which is due to
+    // the fact that our tests need to shim the directory drop
+    // by faking a class that extends File... =(
+    if (item instanceof File && !item.isDirectory) {
       const content = await getFileContent(item);
       const filePath = path + (item.webkitRelativePath || item.name);
       const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
@@ -45,7 +47,7 @@ export async function processUpload(root, items, dirPath = ``) {
     else if (item.isDirectory) {
       // NOTE: This will skip empty dirs, which is unfortunately by design. The
       //       whole "uploading an entire folder" isn't part of the standard, so
-      //       all browser makers (lol, all two of them) support this sad version.
+      //       all browser makers (lol, all two of them) support a limited version.
       const updatedPath = path + item.name + "/";
       item.createReader().readEntries(async (entries) => {
         for (let entry of entries) await iterate(entry, updatedPath);
@@ -55,13 +57,16 @@ export async function processUpload(root, items, dirPath = ``) {
 
   for (let item of items) {
     try {
-      let entry = item;
-      if (entry.getAsFile()) {
-        entry = entry.getAsFile();
-      } else if (entry.webkitGetAsEntry()) {
-        entry = webkitGetAsEntry();
+      let entry;
+      if (!entry && item instanceof File) {
+        entry = item;
       }
-
+      if (!entry && item.webkitGetAsEntry) {
+        entry = item.webkitGetAsEntry() ?? entry;
+      }
+      if (!entry && item.getAsFile) {
+        entry = item.getAsFile();
+      }
       await iterate(entry);
     } catch (e) {
       return alert(Strings.INVALID_UPLOAD_TYPE(item.kind));

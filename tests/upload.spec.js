@@ -1,88 +1,84 @@
 import { expect, test } from "@playwright/test";
-import { Strings } from "../src/utils/strings.js";
+import { setupHelpers } from "./utils.js";
 
-test.describe(`file events`, () => {
+test.describe(`upload events`, () => {
   let page;
   let fileTree;
-  let eventPromise;
-
-  async function listenForEvent(eventType) {
-    eventPromise = page.evaluate((eventType) => {
-      return new Promise((resolve) => {
-        document
-          .querySelector(`file-tree`)
-          .addEventListener(eventType, ({ type, detail }) => {
-            resolve({ type, detail });
-          });
-      });
-    }, eventType);
-  }
-
-  async function hasEntry(path) {
-    return page.evaluate((path) => {
-      const { entries } = document.querySelector(`file-tree`);
-      const entry = entries[path];
-      return !!(entry?.path === path);
-    }, path);
-  }
-
-  async function entryExists(path) {
-    return expect(await hasEntry(path)).toBe(true);
-  }
-
-  async function entryDoesNotExist(path) {
-    return expect(await hasEntry(path)).toBe(false);
-  }
-  async function dragAndDropFiles(target, fileNames) {
-    const targetSelector = `[path="${target}"]`;
-
-    const dataTransfer = await page.evaluateHandle((fileNames) => {
-      const dataTransfer = new DataTransfer();
-      const { items } = dataTransfer;
-      fileNames.forEach((fileName) => {
-        const item = new File([..."test data"], fileName, {
-          type: `text/plain`,
-        });
-        items.add(item);
-      });
-      return dataTransfer;
-    }, fileNames);
-
-    await page.dispatchEvent(targetSelector, `drop`, { dataTransfer });
-  }
+  let utils;
 
   test.beforeEach(async ({ browser }) => {
-    eventPromise = undefined;
     page = await browser.newPage();
     page.on("console", (msg) => console.log(msg.text()));
     await page.goto(`http://localhost:8000`);
+    utils = setupHelpers(page);
     fileTree = page.locator(`file-tree`).first();
   });
 
   /**
-   * All file:move event code paths
+   * All file upload code paths, with associated file:create events
    */
-  test.describe(`file:move`, () => {
-    const listenForFileCreateEvent = () => listenForEvent(`file:create`);
+  test.describe(`file:upload`, () => {
+    const listenForFileCreateEvent = () => utils.listenForEvent(`file:create`);
 
-    test(`dropping files on the root "uploads" them there`, async () => {
-      listenForFileCreateEvent();
+    test(`dropping a file on the root "uploads" it there`, async () => {
+      const eventPromise = listenForFileCreateEvent();
       const targetPath = `.`;
-      await entryDoesNotExist(`test.file`);
-      await dragAndDropFiles(targetPath, [`test.file`]);
+      await utils.entryDoesNotExist(`test.file`);
+      await utils.dragAndDropFiles(targetPath, [`test.file`]);
       const { detail } = await eventPromise;
-      expect(detail.path).toBe(`test.file`);
-      await entryExists(`test.file`);
+      const { path, content } = detail;
+      expect(path).toBe(`test.file`);
+      const contentBytes = [...`test data`].map((v) => v.charCodeAt(0));
+      expect(content).toEqual(contentBytes);
+      await utils.entryExists(`test.file`);
     });
 
-    test(`dropping files on a directory "uploads" them there`, async () => {
-      listenForFileCreateEvent();
+    test(`dropping multiple files "uploads" all of them`, async () => {
+      const targetPath = `.`;
+      const files = [
+        `test.1.file`,
+        `test.2.file`,
+        `test.3.file`,
+        `test.4.file`,
+        `test.5.file`,
+      ];
+      for (const fileName of files) await utils.entryDoesNotExist(fileName);
+      await utils.dragAndDropFiles(targetPath, files);
+      for (const fileName of files) await utils.entryExists(fileName);
+    });
+
+    test(`dropping a file on a directory "uploads" it there`, async () => {
+      const eventPromise = listenForFileCreateEvent();
       const targetPath = `dist/`;
-      await entryDoesNotExist(`test.file`);
-      await dragAndDropFiles(targetPath, [`test.file`]);
+      await utils.entryDoesNotExist(`test.file`);
+      await utils.dragAndDropFiles(targetPath, [`test.file`]);
       const { detail } = await eventPromise;
-      expect(detail.path).toBe(`dist/test.file`);
-      await entryExists(`dist/test.file`);
+      const { path, content } = detail;
+      expect(path).toBe(`dist/test.file`);
+      const contentBytes = [...`test data`].map((v) => v.charCodeAt(0));
+      expect(content).toEqual(contentBytes);
+      await utils.entryExists(`dist/test.file`);
+    });
+  });
+
+  /**
+   * All directory upload code paths, with associated dir:create events
+   */
+  test.describe(`dir:upload`, () => {
+    const listenForFileCreateEvent = () => utils.listenForEvent(`file:create`);
+
+    test(`dropping a dir on the root "uploads" it there`, async () => {
+      const fileEventPromise = listenForFileCreateEvent();
+      const targetPath = `.`;
+      await utils.entryDoesNotExist(`temp/`);
+      await utils.entryDoesNotExist(`temp/test.file`);
+      await utils.dragAndDropFiles(targetPath, {}); // TODO: move dummy data here
+      const { detail } = await fileEventPromise;
+      const { path, content } = detail;
+      expect(path).toBe(`temp/test.file`);
+      const contentBytes = [...`test data`].map((v) => v.charCodeAt(0));
+      expect(content).toEqual(contentBytes);
+      await utils.entryExists(`temp/test.file`);
     });
   });
 });

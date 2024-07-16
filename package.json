@@ -14,7 +14,7 @@
     "server": "node server.js",
     "start": "npm run build && npm run server",
     "test": "npm run start -- -- --test  && rm -rf test-results",
-    "test:integration": "playwright test tests"
+    "test:integration": "playwright test tests --workers=1 --timeout 5000"
   },
   "repository": {
     "type": "git",

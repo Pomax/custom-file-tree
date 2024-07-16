@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { Strings } from "../src/utils/strings.js";
 
-test.describe(`file events`, () => {
+test.describe(`move events`, () => {
   let page;
   let fileTree;
   let eventPromise;
