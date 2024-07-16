@@ -4,12 +4,6 @@ import { makeDropZone } from "../utils/make-drop-zone.js";
 import { uploadFilesFromDevice } from "../utils/upload-file.js";
 import { Strings } from "../utils/strings.js";
 
-function pointInRect(x, y, { top, bottom, left, right }) {
-  const pointInRect = x >= left && x <= right && y >= top && y <= bottom;
-  console.log({ x, left, right, y, top, bottom, pointInRect });
-  return pointInRect;
-}
-
 /**
  * ...
  */
