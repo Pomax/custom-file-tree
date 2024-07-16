@@ -115,6 +115,31 @@ If you wish to associate data with `<file-entry>` and `<dir-entry>` elements, yo
 
 While in HTML context this should be obvious: this is done synchronously, unlike the similarly named function that you might be familiar with from frameworks like React or Preact. The `<file-tree>` is a normal HTML element and updates take effect immediately.
 
+## Customizing the styling
+
+If you don't like the default styling, just override it! This custom element uses normal CSS, so you're under no obligation to load the `file-tree.css` file, either load it and then override the parts you want to customize, or don't even load `file-tree.css` at all and come up with your own styling.
+
+That said, there are a number of CSS variables that you override on the `file-tree` selector if you just want to tweak things a little, with their current definitions being:
+
+```
+file-tree {
+  --fallback-icon: "🌲";
+  --open-dir-icon: "📒";
+  --closed-dir-icon: "📕";
+  --file-icon: "📄";
+
+  --icon-size: 1.25em;
+  --line-height: 1.5em;
+  --indent: 1em;
+  --entry-padding: 0.25em;
+  --highlight-background: lightcyan;
+  --highlight-border-color: blue;
+  --drop-target-color: rgb(205, 255, 242);
+}
+```
+
+For example, if you just want to customize the icons and colors, load the `file-tree.css` and then load your own overrides that set new values for those CSS variables. Nice and simple!
+
 # Contributing
 
 - If you think you've found a bug, feel free to file it over on the the issue tracker: https://github.com/Pomax/custom-file-tree/issues
