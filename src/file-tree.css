@@ -1,16 +1,39 @@
 file-tree {
   display: block;
-  padding: 0.5em !important;
 
   button {
     min-width: 1.5em;
     padding: 2px 1px;
   }
 
+  /* by default the top level is hidden*/
+  &:not([show-top-level]) > dir-entry[path="."] {
+    margin: 0 !important;
+    padding: 0 !important;
+    &:before {
+      content: unset;
+    }
+    & > *:not(dir-entry, file-entry) {
+      display: none !important;
+    }
+    /* but we do need some of the buttons */
+    & > button {
+      &.add-file {
+        margin-left: 0 !important;
+      }
+      &.add-file,
+      &.add-dir,
+      &.upload {
+        display: inline-block !important;
+        margin-bottom: 0.5em;
+      }
+    }
+  }
+
   dir-entry {
     display: block;
 
-    dir-heading {
+    entry-heading {
       margin-left: 0.25em;
       cursor: pointer;
     }
@@ -36,7 +59,7 @@ file-tree {
         height: 100%;
         cursor: auto;
 
-        & > dir-heading {
+        & > entry-heading {
           cursor: auto;
         }
 
@@ -46,15 +69,12 @@ file-tree {
 
         & > button {
           display: none;
-          &[title="add new file"],
-          &[title="upload files from your device"] {
+          &.add-file,
+          &.add-dir,
+          &.upload {
             display: inline-block;
           }
         }
-      }
-
-      button[title="upload files from your device"] {
-        display: none;
       }
 
       &:before {
@@ -62,11 +82,13 @@ file-tree {
         cursor: pointer;
         margin-left: calc(0px - var(--padding));
       }
+
       &.closed {
         &:before {
           content: "📕";
         }
-        dir-entry, file-entry {
+        dir-entry,
+        file-entry {
           display: none;
         }
       }
@@ -77,7 +99,7 @@ file-tree {
     display: block;
     white-space: nowrap;
 
-    file-heading {
+    entry-heading {
       cursor: pointer;
     }
 

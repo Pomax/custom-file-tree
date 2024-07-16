@@ -1,8 +1,8 @@
 import express from "express";
-import { watch } from "node:fs";
+import nocache from "nocache";
+import { readdirSync, watch } from "node:fs";
 import { resolve } from "node:path";
-import { spawnSync } from "node:child_process";
-
+import { spawn, spawnSync } from "node:child_process";
 
 const PORT = process.env.PORT ?? 8000;
 process.env.PORT = PORT;
@@ -14,9 +14,12 @@ const npm = process.platform === `win32` ? `npm.cmd` : `npm`;
 
 // Set up the core server
 const app = express();
+app.use(nocache());
 app.set("etag", false);
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.url}`);
+  if (!process.argv.includes(`--test`)) {
+    console.log(`[${new Date().toISOString()}] ${req.url}`);
+  }
   next();
 });
 
@@ -33,8 +36,28 @@ app.use((req, res) => {
 
 // Run the server, and trigger a client bundle rebuild every time script.js changes.
 app.listen(PORT, () => {
-  console.log(`Server running on http://${HOSTNAME}:${PORT}\n`);
-  try { watchForRebuild(); } catch (e) { console.error(e); }
+  const msg = `=   Server running on http://${HOSTNAME}:${PORT}   =`;
+  const line = `=`.repeat(msg.length);
+  const mid = `=${` `.repeat(msg.length - 2)}=`;
+  console.log([``, line, mid, msg, mid, line, ``].join(`\n`));
+
+  // are we running tests?
+  if (process.argv.includes(`--test`)) {
+    const runner = spawn(npm, [`run`, `test:integration`], {
+      stdio: `inherit`,
+    });
+    runner.on(`close`, () => process.exit());
+    runner.on(`error`, () => process.exit(1));
+  }
+
+  // we're not, run in watch mode
+  else {
+    try {
+      watchForRebuild();
+    } catch (e) {
+      console.error(e);
+    }
+  }
 });
 
 /**
@@ -57,13 +80,5 @@ function watchForRebuild() {
     list.forEach((filename) => watch(resolve(filename), () => rebuild()));
   }
 
-  watchList([
-    `./src/dir-entry.js`,
-    `./src/file-entry.js`,
-    `./src/file-tree.css`,
-    `./src/file-tree.js`,
-    `./src/utils.js`,
-  ]);
-
-  rebuild();
+  watchList(readdirSync(`./src`).map((v) => `./src/${v}`));
 }
