@@ -11,9 +11,20 @@ export class FileTreeElement extends HTMLElement {
 
   constructor(path = ``) {
     super();
-    const heading = (this.heading = create(`entry-heading`));
-    this.appendChild(heading);
-    this.path = path;
+
+    if (path) {
+      // set up our icon
+      const icon = (this.icon = create(`span`));
+      icon.classList.add(`icon`);
+      this.appendChild(icon);
+
+      // set up our heading
+      const heading = (this.heading = create(`entry-heading`));
+      this.appendChild(heading);
+
+      // and then bootstrap
+      this.path = path;
+    }
   }
 
   addExternalListener(target, eventName, handler, options = {}) {
@@ -113,6 +124,11 @@ export class FileTreeElement extends HTMLElement {
 
   findAllInTree(qs) {
     return Array.from(this.root.querySelectorAll(qs));
+  }
+
+  select() {
+    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.classList.add(`selected`);
   }
 
   setState(stateUpdate) {

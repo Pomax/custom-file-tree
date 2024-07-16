@@ -37,9 +37,14 @@ var FileTreeElement = class extends HTMLElement {
   eventControllers = [];
   constructor(path = ``) {
     super();
-    const heading = this.heading = create(`entry-heading`);
-    this.appendChild(heading);
-    this.path = path;
+    if (path) {
+      const icon = this.icon = create(`span`);
+      icon.classList.add(`icon`);
+      this.appendChild(icon);
+      const heading = this.heading = create(`entry-heading`);
+      this.appendChild(heading);
+      this.path = path;
+    }
   }
   addExternalListener(target, eventName, handler, options = {}) {
     const abortController = new AbortController();
@@ -118,6 +123,10 @@ var FileTreeElement = class extends HTMLElement {
   }
   findAllInTree(qs) {
     return Array.from(this.root.querySelectorAll(qs));
+  }
+  select() {
+    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.classList.add(`selected`);
   }
   setState(stateUpdate) {
     Object.assign(this.state, stateUpdate);
@@ -299,25 +308,38 @@ var DirEntry = class extends FileTreeElement {
     this.addButtons();
   }
   connectedCallback() {
-    this.clickListener = (evt) => {
-      evt.stopPropagation();
-      evt.preventDefault();
-      if (this.path === `.`) return;
-      const tag = evt.target.tagName;
-      if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
-      const closed = this.classList.contains(`closed`);
-      this.root.selectEntry(this, { currentState: closed ? `closed` : `open` });
-    };
-    this.addListener(`click`, this.clickListener);
+    this.addListener(`click`, (evt) => this.selectListener(evt));
+    this.addExternalListener(
+      this.icon,
+      `click`,
+      (evt) => this.foldListener(evt)
+    );
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
   }
+  selectListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const tag = evt.target.tagName;
+    if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
+    this.root.selectEntry(this);
+  }
+  foldListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const closed = this.classList.contains(`closed`);
+    this.root.toggleDirectory(this, {
+      currentState: closed ? `closed` : `open`
+    });
+  }
   addButtons() {
-    this.addRenameButton();
-    this.addDeleteButton();
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
+    this.addRenameButton();
+    this.addDeleteButton();
   }
   /**
    * rename this dir.
@@ -436,6 +458,8 @@ var DirEntry = class extends FileTreeElement {
   sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
+      if (a.tagName === `SPAN`) return -1;
+      if (b.tagName === `SPAN`) return 1;
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
       if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
@@ -461,7 +485,7 @@ var DirEntry = class extends FileTreeElement {
       this.findAll(`& > dir-entry`).forEach((d) => d.sort(recursive));
     }
   }
-  select() {
+  toggle() {
     this.classList.toggle(`closed`);
   }
   toJSON() {
@@ -533,10 +557,6 @@ var FileEntry = class extends FileTreeElement {
       this.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", this.dataset.id);
     });
-  }
-  select() {
-    this.root.find(`.selected`)?.classList.remove(`selected`);
-    this.classList.add(`selected`);
   }
   toJSON() {
     return JSON.stringify(this.toValue());
@@ -694,6 +714,11 @@ var FileTree = class extends FileTreeElement {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
     detail.path = entry.path;
     this.emit(eventType, { detail }, () => entry.select());
+  }
+  toggleDirectory(entry, detail = {}) {
+    const eventType = `dir:toggle`;
+    detail.path = entry.path;
+    this.emit(eventType, { detail }, () => entry.toggle());
   }
   sort() {
     this.rootDir.sort();

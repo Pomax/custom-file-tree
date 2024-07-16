@@ -4,6 +4,12 @@ import { makeDropZone } from "../utils/make-drop-zone.js";
 import { uploadFilesFromDevice } from "../utils/upload-file.js";
 import { Strings } from "../utils/strings.js";
 
+function pointInRect(x, y, { top, bottom, left, right }) {
+  const pointInRect = x >= left && x <= right && y >= top && y <= bottom;
+  console.log({ x, left, right, y, top, bottom, pointInRect });
+  return pointInRect;
+}
+
 /**
  * ...
  */
@@ -16,27 +22,39 @@ export class DirEntry extends FileTreeElement {
   }
 
   connectedCallback() {
-    this.clickListener = (evt) => {
-      evt.stopPropagation();
-      evt.preventDefault();
-      if (this.path === `.`) return;
-      const tag = evt.target.tagName;
-      if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
-      const closed = this.classList.contains(`closed`);
-      this.root.selectEntry(this, { currentState: closed ? `closed` : `open` });
-    };
-
-    this.addListener(`click`, this.clickListener);
+    this.addListener(`click`, (evt) => this.selectListener(evt));
+    this.addExternalListener(this.icon, `click`, (evt) =>
+      this.foldListener(evt),
+    );
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
   }
 
+  selectListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const tag = evt.target.tagName;
+    if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
+    this.root.selectEntry(this);
+  }
+
+  foldListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const closed = this.classList.contains(`closed`);
+    this.root.toggleDirectory(this, {
+      currentState: closed ? `closed` : `open`,
+    });
+  }
+
   addButtons() {
-    this.addRenameButton();
-    this.addDeleteButton();
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
+    this.addRenameButton();
+    this.addDeleteButton();
   }
 
   /**
@@ -169,7 +187,11 @@ export class DirEntry extends FileTreeElement {
   sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
-      // dir heading goes first, and there can only be one.
+      // icon first (there can only be one)
+      if (a.tagName === `SPAN`) return -1;
+      if (b.tagName === `SPAN`) return 1;
+
+      // then dir heading (there can only be one)
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
 
@@ -204,7 +226,7 @@ export class DirEntry extends FileTreeElement {
     }
   }
 
-  select() {
+  toggle() {
     this.classList.toggle(`closed`);
   }
 

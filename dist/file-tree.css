@@ -4,6 +4,25 @@ file-tree {
   button {
     min-width: 1.5em;
     padding: 2px 1px;
+    display: none;
+  }
+
+  .selected > button,
+  dir-entry[path="."] > button {
+    display: inline-block;
+  }
+
+  .icon {
+    position: relative;
+    display: inline-block;
+    width: 1.25em;
+    height: 1.25em;
+    &:before {
+      position: absolute;
+      bottom: -0.25em;
+      left: 0;
+      content: "?";
+    }
   }
 
   /* by default the top level is hidden*/
@@ -47,8 +66,13 @@ file-tree {
     }
 
     &[path] {
-      --padding: 1em;
-      padding-left: var(--padding);
+      margin-bottom: 0.25em;
+
+      & > file-entry,
+      & > dir-entry {
+        --padding: 1em;
+        padding-left: var(--padding);
+      }
 
       /*
         the root dir is a bit special: it shoudl have buttons for
@@ -77,14 +101,13 @@ file-tree {
         }
       }
 
-      &:before {
+      & > .icon:before {
         content: "📒";
         cursor: pointer;
-        margin-left: calc(0px - var(--padding));
       }
 
       &.closed {
-        &:before {
+        & > .icon:before {
           content: "📕";
         }
         dir-entry,
@@ -103,7 +126,8 @@ file-tree {
       cursor: pointer;
     }
 
-    &:before {
+    & > .icon:before {
+      position: relative;
       content: "📄";
       cursor: pointer;
       margin-right: 0.25em;
@@ -112,14 +136,21 @@ file-tree {
     &.dragging {
       opacity: 0.2;
     }
+  }
 
-    &.selected {
-      background: #e3f6ff;
-      border: 1px solid blue;
-      padding-left: 0.25em;
-      box-sizing: border-box;
-      margin: -1px;
-      margin-left: calc(-1px - 0.25em);
-    }
+  dir-entry.selected > entry-heading,
+  file-entry.selected {
+    background: #e3f6ff;
+    border: 1px solid blue;
+    box-sizing: border-box;
+    margin: -1px;
+    margin-left: calc(-1px - 0.25em);
+  }
+  file-entry.selected {
+    padding-left: 0.25em;
+  }
+  dir-entry.selected > entry-heading {
+    margin-right: -0.5em;
+    padding: 2px 0.5em;
   }
 }

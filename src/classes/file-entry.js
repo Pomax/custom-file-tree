@@ -66,11 +66,6 @@ export class FileEntry extends FileTreeElement {
     });
   }
 
-  select() {
-    this.root.find(`.selected`)?.classList.remove(`selected`);
-    this.classList.add(`selected`);
-  }
-
   toJSON() {
     return JSON.stringify(this.toValue());
   }
