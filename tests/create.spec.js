@@ -91,7 +91,8 @@ test.describe(`create events`, () => {
       });
 
       await entryDoesNotExist(`dist/newfile.txt`);
-      const qs = `file-tree dir-entry[path="dist/"] button[title="${Strings.CREATE_FILE}"]`;
+      await page.locator(`[path="dist/"] > entry-heading`).click();
+      const qs = `[path="dist/"] button[title="${Strings.CREATE_FILE}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
@@ -161,7 +162,8 @@ test.describe(`create events`, () => {
       });
 
       await entryDoesNotExist(`dist/newdir/`);
-      const qs = `file-tree dir-entry[path="dist/"] button[title="${Strings.CREATE_DIRECTORY}"]`;
+      await page.locator(`[path="dist/"] > entry-heading`).click();
+      const qs = `[path="dist/"] button[title="${Strings.CREATE_DIRECTORY}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });

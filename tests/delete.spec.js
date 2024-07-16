@@ -63,7 +63,8 @@ test.describe(`delete events`, () => {
       });
 
       await entryExists(`README.md`);
-      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.DELETE_FILE}"]`;
+      await page.locator(`[path="README.md"]`).click();
+      const qs = `[path="README.md"] button[title="${Strings.DELETE_FILE}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
@@ -81,7 +82,8 @@ test.describe(`delete events`, () => {
       });
 
       await entryExists(`dist/README.md`);
-      const qs = `file-tree file-entry[path="dist/README.md"] button[title="${Strings.DELETE_FILE}"]`;
+      await page.locator(`[path="dist/README.md"]`).click();
+      const qs = `[path="dist/README.md"] button[title="${Strings.DELETE_FILE}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
@@ -112,7 +114,8 @@ test.describe(`delete events`, () => {
       });
 
       await entryExists(`dist/`);
-      const qs = `file-tree dir-entry[path="dist/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
+      await page.locator(`[path="dist/"] > entry-heading`).click();
+      const qs = `dir-entry[path="dist/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
@@ -137,7 +140,8 @@ test.describe(`delete events`, () => {
       });
 
       await entryExists(`dist/old/`);
-      const qs = `file-tree dir-entry[path="dist/old/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
+      await page.locator(`[path="dist/old/"] > entry-heading`).click();
+      const qs = `[path="dist/old/"] button[title="${Strings.DELETE_DIRECTORY}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });

@@ -74,7 +74,8 @@ test.describe(`rename events`, () => {
       await entryExists(`README.md`);
       await entryDoesNotExist(`newfile.txt`);
 
-      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
+      await page.locator(`[path="README.md"]`).click();
+      const qs = `[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
@@ -102,8 +103,8 @@ test.describe(`rename events`, () => {
 
       await entryExists(`dist/README.md`);
       await entryDoesNotExist(`dist/newfile.txt`);
-
-      const qs = `file-tree file-entry[path="dist/README.md"] button[title="${Strings.RENAME_FILE}"]`;
+      await page.locator(`[path="dist/README.md"]`).click();
+      const qs = `[path="dist/README.md"] button[title="${Strings.RENAME_FILE}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
@@ -122,9 +123,12 @@ test.describe(`rename events`, () => {
       });
       await entryExists(`README.md`);
       await entryDoesNotExist(`dist/newfile.txt`);
-      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
+      await page.locator(`[path="README.md"]`).click();
+      const qs = `[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
       const btn = page.locator(qs).first();
       await btn.click();
     });
   });
+
+  // TODO: rename directories
 });
