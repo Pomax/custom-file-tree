@@ -43,7 +43,7 @@ export class FileEntry extends FileTreeElement {
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      if (confirm(Strings.DELETE_FILE_PROMPT)) {
+      if (confirm(Strings.DELETE_FILE_PROMPT(this.path))) {
         this.root.removeEntry(this);
       }
     });

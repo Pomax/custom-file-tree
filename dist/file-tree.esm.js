@@ -146,7 +146,7 @@ var LOCALE_STRINGS = {
     RENAME_FILE_PROMPT: `New file name?`,
     RENAME_FILE_MOVE_INSTEAD: `If you want to relocate a file, just move it.`,
     DELETE_FILE: `Delete file`,
-    DELETE_FILE_PROMPT: `Are you sure you want to delete this file?`,
+    DELETE_FILE_PROMPT: (path) => `Are you sure you want to delete ${path}?`,
     CREATE_DIRECTORY: `Add new directory`,
     CREATE_DIRECTORY_PROMPT: `Please specify a directory name.`,
     CREATE_DIRECTORY_NO_NESTING: `You'll have to create nested directories one at a time.`,
@@ -154,7 +154,7 @@ var LOCALE_STRINGS = {
     RENAME_DIRECTORY_PROMPT: `Choose a new directory name`,
     RENAME_DIRECTORY_MOVE_INSTEAD: `If you want to relocate a directory, just move it.`,
     DELETE_DIRECTORY: `Delete directory`,
-    DELETE_DIRECTORY_PROMPT: `Are you *sure* you want to delete this directory and everything in it?`,
+    DELETE_DIRECTORY_PROMPT: (path) => `Are you *sure* you want to delete ${path} and everything in it?`,
     UPLOAD_FILES: `Upload files from your device`,
     PATH_EXISTS: (path) => `${path} already exists.`,
     PATH_DOES_NOT_EXIST: (path) => `${path} does not exist.`,
@@ -324,6 +324,9 @@ var DirEntry = class extends FileTreeElement {
     const tag = evt.target.tagName;
     if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
     this.root.selectEntry(this);
+    if (this.classList.contains(`closed`)) {
+      this.foldListener(evt);
+    }
   }
   foldListener(evt) {
     evt.stopPropagation();
@@ -338,8 +341,10 @@ var DirEntry = class extends FileTreeElement {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
+    if (this.path !== `.`) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
   /**
    * rename this dir.
@@ -374,7 +379,7 @@ var DirEntry = class extends FileTreeElement {
     btn.addEventListener(`click`, () => this.#deleteDir());
   }
   #deleteDir() {
-    const msg = localeStrings.DELETE_DIRECTORY_PROMPT;
+    const msg = localeStrings.DELETE_DIRECTORY_PROMPT(this.path);
     if (confirm(msg)) {
       this.root.removeEntry(this);
     }
@@ -539,7 +544,7 @@ var FileEntry = class extends FileTreeElement {
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      if (confirm(localeStrings.DELETE_FILE_PROMPT)) {
+      if (confirm(localeStrings.DELETE_FILE_PROMPT(this.path))) {
         this.root.removeEntry(this);
       }
     });

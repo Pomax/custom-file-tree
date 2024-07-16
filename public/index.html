@@ -64,11 +64,14 @@ document.body.appendchild(tree);</code></pre>
 
     <p>And that's all you need as far as the page code is concerned.</p>
 
+    <p>In this case we've also specified two extra attributes:</p>
+
+    <pre><code>&lt;file-tree show-top-level="true" remove-empty-dir="true"&gt;&lt;/file-tree&gt;</code></pre>
+
     <p>
-      In this case we've also specified the <code>show-top-level</code> and
-      <code>remove-empty-dir</code> attributes, so that we get to see all the
-      functionality, with the first showing the normally hidden <code>.</code>
-      directory that everything lives under, and the latter deleting any
+      The <code>show-top-level</code> attribute shows the normally hidden
+      <code>.</code> directory that everything lives under, and the
+      <code>remove-empty-dir</code> attribute makes the file tree delete any
       directory that becomes empty when deleting the last entry it contains.
     </p>
 

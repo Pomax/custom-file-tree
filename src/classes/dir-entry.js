@@ -31,6 +31,9 @@ export class DirEntry extends FileTreeElement {
     const tag = evt.target.tagName;
     if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
     this.root.selectEntry(this);
+    if (this.classList.contains(`closed`)) {
+      this.foldListener(evt);
+    }
   }
 
   foldListener(evt) {
@@ -47,8 +50,10 @@ export class DirEntry extends FileTreeElement {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
+    if (this.path !== `.`) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
 
   /**
@@ -87,7 +92,7 @@ export class DirEntry extends FileTreeElement {
   }
 
   #deleteDir() {
-    const msg = Strings.DELETE_DIRECTORY_PROMPT;
+    const msg = Strings.DELETE_DIRECTORY_PROMPT(this.path);
     if (confirm(msg)) {
       this.root.removeEntry(this);
     }

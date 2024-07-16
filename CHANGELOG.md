@@ -19,6 +19,7 @@ Full rewrite, with test coverage.
 - The top level "." dir will only show when using the new `show-top-level="true"` attribute on `<file-tree>`
 - File and dir entries are no persistent, with a `.state` variable that can be used as a persistent data store for the lifetime of the file tree (or until `setFiles` gets called).
 - There is a `setState(update)` function that can be used to  (synchronously) update the `state` variable. Note that this function is not required, you are free to modify `state` directly. (This isn't React, it's an HTML element)
+- collapsed directories will now auto-open when selected.
 
 # Previous Versions
 
