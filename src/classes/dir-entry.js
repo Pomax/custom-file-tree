@@ -15,6 +15,18 @@ export class DirEntry extends FileTreeElement {
     this.addButtons();
   }
 
+  get path() {
+    return super.path;
+  }
+
+  set path(v) {
+    super.path = v;
+    if (v === `.`) {
+      this.find(`& > .rename-dir`)?.remove();
+      this.find(`& > .delete-dir`)?.remove();
+    }
+  }
+
   connectedCallback() {
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(this.icon, `click`, (evt) =>
@@ -50,10 +62,8 @@ export class DirEntry extends FileTreeElement {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    if (this.path !== `.`) {
-      this.addRenameButton();
-      this.addDeleteButton();
-    }
+    this.addRenameButton();
+    this.addDeleteButton();
   }
 
   /**

@@ -311,6 +311,16 @@ var DirEntry = class extends FileTreeElement {
     super(name, fullPath);
     this.addButtons();
   }
+  get path() {
+    return super.path;
+  }
+  set path(v) {
+    super.path = v;
+    if (v === `.`) {
+      this.find(`& > .rename-dir`)?.remove();
+      this.find(`& > .delete-dir`)?.remove();
+    }
+  }
   connectedCallback() {
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(
@@ -345,10 +355,8 @@ var DirEntry = class extends FileTreeElement {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    if (this.path !== `.`) {
-      this.addRenameButton();
-      this.addDeleteButton();
-    }
+    this.addRenameButton();
+    this.addDeleteButton();
   }
   /**
    * rename this dir.
