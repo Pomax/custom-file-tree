@@ -9,21 +9,22 @@ export class FileTreeElement extends HTMLElement {
   state = {};
   eventControllers = [];
 
-  constructor(path = ``) {
+  constructor() {
     super();
 
-    if (path) {
-      // set up our icon
+    // set up our icon
+    this.icon = this.find(`& > .icon`);
+    if (!this.icon) {
       const icon = (this.icon = create(`span`));
       icon.classList.add(`icon`);
       this.appendChild(icon);
+    }
 
-      // set up our heading
+    // set up our heading
+    this.heading = this.find(`& > entry-heading`);
+    if (!this.heading) {
       const heading = (this.heading = create(`entry-heading`));
       this.appendChild(heading);
-
-      // and then bootstrap
-      this.path = path;
     }
   }
 

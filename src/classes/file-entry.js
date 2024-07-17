@@ -13,6 +13,8 @@ export class FileEntry extends FileTreeElement {
   }
 
   addRenameButton() {
+    if (this.find(`& > .rename-file`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`rename-file`);
     btn.title = Strings.RENAME_FILE;
@@ -35,6 +37,8 @@ export class FileEntry extends FileTreeElement {
   }
 
   addDeleteButton() {
+    if (this.find(`& > .delete-file`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`delete-file`);
     btn.title = Strings.DELETE_FILE;

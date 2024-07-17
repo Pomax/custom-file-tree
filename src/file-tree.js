@@ -17,6 +17,7 @@ class FileTree extends FileTreeElement {
 
   constructor() {
     super();
+    this.heading.textContent = `File tree`;
   }
 
   get root() {
@@ -29,7 +30,8 @@ class FileTree extends FileTreeElement {
 
   clear() {
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = (this.rootDir = new DirEntry(`.`));
+    const rootDir = (this.rootDir = new DirEntry());
+    rootDir.path = `.`;
     this.appendChild(rootDir);
   }
 
@@ -67,7 +69,8 @@ class FileTree extends FileTreeElement {
     // When granted, build the entry.
     const grant = () => {
       const EntryType = isFile(path) ? FileEntry : DirEntry;
-      const entry = new EntryType(path);
+      const entry = new EntryType();
+      entry.path = path;
       entries[path] = entry;
 
       // Then add it to the actual DOM tree, after making sure its parent dir exists.
@@ -92,7 +95,8 @@ class FileTree extends FileTreeElement {
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
-        subDir = new DirEntry(subDirPath);
+        subDir = new DirEntry();
+        subDir.path = subDirPath;
         dir.addEntry(subDir);
         entries[subDirPath] = subDir;
       }
@@ -121,6 +125,8 @@ class FileTree extends FileTreeElement {
   #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
+    if (newPath.startsWith(oldPath))
+      throw new Error(Strings.PATH_INSIDE_ITSELF(oldPath));
     if (entries[newPath]) throw new Error(Strings.PATH_EXISTS(newPath));
     this.emit(eventType, { oldPath, newPath }, () => {
       // Update all entries whose path starts with {oldPath},

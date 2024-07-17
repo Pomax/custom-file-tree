@@ -35,15 +35,18 @@ var HTMLElement = globalThis.HTMLElement ?? class {
 var FileTreeElement = class extends HTMLElement {
   state = {};
   eventControllers = [];
-  constructor(path = ``) {
+  constructor() {
     super();
-    if (path) {
+    this.icon = this.find(`& > .icon`);
+    if (!this.icon) {
       const icon = this.icon = create(`span`);
       icon.classList.add(`icon`);
       this.appendChild(icon);
+    }
+    this.heading = this.find(`& > entry-heading`);
+    if (!this.heading) {
       const heading = this.heading = create(`entry-heading`);
       this.appendChild(heading);
-      this.path = path;
     }
   }
   addExternalListener(target, eventName, handler, options = {}) {
@@ -158,6 +161,7 @@ var LOCALE_STRINGS = {
     UPLOAD_FILES: `Upload files from your device`,
     PATH_EXISTS: (path) => `${path} already exists.`,
     PATH_DOES_NOT_EXIST: (path) => `${path} does not exist.`,
+    PATH_INSIDE_ITSELF: (path) => `Cannot nest ${path} inside its own subdirectory.`,
     INVALID_UPLOAD_TYPE: (type) => `Unfortunately, a ${type} is not a file or folder.`
   }
 };
@@ -351,6 +355,7 @@ var DirEntry = class extends FileTreeElement {
    */
   addRenameButton() {
     if (this.path === `.`) return;
+    if (this.find(`& > .rename-dir`)) return;
     const btn = create(`button`);
     btn.classList.add(`rename-dir`);
     btn.title = localeStrings.RENAME_DIRECTORY;
@@ -371,6 +376,8 @@ var DirEntry = class extends FileTreeElement {
    * Remove this dir and everything in it
    */
   addDeleteButton() {
+    if (this.path === `.`) return;
+    if (this.find(`& > .delete-dir`)) return;
     const btn = create(`button`);
     btn.classList.add(`delete-dir`);
     btn.title = localeStrings.DELETE_DIRECTORY;
@@ -388,6 +395,7 @@ var DirEntry = class extends FileTreeElement {
    * New file in this directory
    */
   createFileButton() {
+    if (this.find(`& > .create-file`)) return;
     const btn = create(`button`);
     btn.classList.add(`create-file`);
     btn.title = localeStrings.CREATE_FILE;
@@ -411,6 +419,7 @@ var DirEntry = class extends FileTreeElement {
    * New directory in this directory
    */
   createDirButton() {
+    if (this.find(`& > .create-dir`)) return;
     const btn = create(`button`);
     btn.classList.add(`create-dir`);
     btn.title = localeStrings.CREATE_DIRECTORY;
@@ -432,6 +441,7 @@ var DirEntry = class extends FileTreeElement {
    * Upload files or an entire directory from your device
    */
   addUploadButton() {
+    if (this.find(`& > .upload`)) return;
     const btn = create(`button`);
     btn.classList.add(`upload`);
     btn.title = localeStrings.UPLOAD_FILES;
@@ -515,6 +525,7 @@ var FileEntry = class extends FileTreeElement {
     this.addEventHandling();
   }
   addRenameButton() {
+    if (this.find(`& > .rename-file`)) return;
     const btn = create(`button`);
     btn.classList.add(`rename-file`);
     btn.title = localeStrings.RENAME_FILE;
@@ -536,6 +547,7 @@ var FileEntry = class extends FileTreeElement {
     });
   }
   addDeleteButton() {
+    if (this.find(`& > .delete-file`)) return;
     const btn = create(`button`);
     btn.classList.add(`delete-file`);
     btn.title = localeStrings.DELETE_FILE;
@@ -581,6 +593,7 @@ var FileTree = class extends FileTreeElement {
   entries = {};
   constructor() {
     super();
+    this.heading.textContent = `File tree`;
   }
   get root() {
     return this;
@@ -590,7 +603,8 @@ var FileTree = class extends FileTreeElement {
   }
   clear() {
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = this.rootDir = new DirEntry(`.`);
+    const rootDir = this.rootDir = new DirEntry();
+    rootDir.path = `.`;
     this.appendChild(rootDir);
   }
   connectedCallback() {
@@ -623,7 +637,8 @@ var FileTree = class extends FileTreeElement {
     }
     const grant = () => {
       const EntryType = isFile(path) ? FileEntry : DirEntry;
-      const entry = new EntryType(path);
+      const entry = new EntryType();
+      entry.path = path;
       entries[path] = entry;
       this.#mkdir(entry).addEntry(entry);
     };
@@ -642,7 +657,8 @@ var FileTree = class extends FileTreeElement {
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
-        subDir = new DirEntry(subDirPath);
+        subDir = new DirEntry();
+        subDir.path = subDirPath;
         dir.addEntry(subDir);
         entries[subDirPath] = subDir;
       }
@@ -668,6 +684,8 @@ var FileTree = class extends FileTreeElement {
   #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
+    if (newPath.startsWith(oldPath))
+      throw new Error(localeStrings.PATH_INSIDE_ITSELF(oldPath));
     if (entries[newPath]) throw new Error(localeStrings.PATH_EXISTS(newPath));
     this.emit(eventType, { oldPath, newPath }, () => {
       Object.keys(entries).forEach((key) => {
