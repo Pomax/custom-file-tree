@@ -35,16 +35,13 @@ var HTMLElement = globalThis.HTMLElement ?? class {
 var FileTreeElement = class extends HTMLElement {
   state = {};
   eventControllers = [];
-  constructor(path = ``) {
+  constructor() {
     super();
-    if (path) {
-      const icon = this.icon = create(`span`);
-      icon.classList.add(`icon`);
-      this.appendChild(icon);
-      const heading = this.heading = create(`entry-heading`);
-      this.appendChild(heading);
-      this.path = path;
-    }
+    const icon = this.icon = create(`span`);
+    icon.classList.add(`icon`);
+    this.appendChild(icon);
+    const heading = this.heading = create(`entry-heading`);
+    this.appendChild(heading);
   }
   addExternalListener(target, eventName, handler, options = {}) {
     const abortController = new AbortController();
@@ -590,7 +587,8 @@ var FileTree = class extends FileTreeElement {
   }
   clear() {
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = this.rootDir = new DirEntry(`.`);
+    const rootDir = this.rootDir = new DirEntry();
+    rootDir.path = `.`;
     this.appendChild(rootDir);
   }
   connectedCallback() {
@@ -623,7 +621,8 @@ var FileTree = class extends FileTreeElement {
     }
     const grant = () => {
       const EntryType = isFile(path) ? FileEntry : DirEntry;
-      const entry = new EntryType(path);
+      const entry = new EntryType();
+      entry.path = path;
       entries[path] = entry;
       this.#mkdir(entry).addEntry(entry);
     };
@@ -642,7 +641,8 @@ var FileTree = class extends FileTreeElement {
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
-        subDir = new DirEntry(subDirPath);
+        subDir = new DirEntry();
+        subDir.path = subDirPath;
         dir.addEntry(subDir);
         entries[subDirPath] = subDir;
       }

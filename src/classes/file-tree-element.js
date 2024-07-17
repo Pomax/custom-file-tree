@@ -9,22 +9,17 @@ export class FileTreeElement extends HTMLElement {
   state = {};
   eventControllers = [];
 
-  constructor(path = ``) {
+  constructor() {
     super();
 
-    if (path) {
-      // set up our icon
-      const icon = (this.icon = create(`span`));
-      icon.classList.add(`icon`);
-      this.appendChild(icon);
+    // set up our icon
+    const icon = (this.icon = create(`span`));
+    icon.classList.add(`icon`);
+    this.appendChild(icon);
 
-      // set up our heading
-      const heading = (this.heading = create(`entry-heading`));
-      this.appendChild(heading);
-
-      // and then bootstrap
-      this.path = path;
-    }
+    // set up our heading
+    const heading = (this.heading = create(`entry-heading`));
+    this.appendChild(heading);
   }
 
   addExternalListener(target, eventName, handler, options = {}) {

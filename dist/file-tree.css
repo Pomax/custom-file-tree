@@ -27,6 +27,14 @@ file-tree {
     }
   }
 
+  & > .icon {
+    display: none;
+  }
+
+  & > entry-heading {
+    display: none;
+  }
+
   [path="."] > .icon {
     cursor: default !important;
   }
