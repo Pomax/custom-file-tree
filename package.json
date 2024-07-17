@@ -1,6 +1,6 @@
 {
   "name": "custom-file-tree",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Add the custom element to your page context using plain old HTML:",
   "type": "module",
   "main": "src/file-tree.js",
