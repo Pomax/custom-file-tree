@@ -9,6 +9,7 @@ file-tree {
   --closed-dir-icon: "📕";
   --file-icon: "📄";
 
+  --dir-touch-padding: 0;
   --open-dir-icon-cursor: pointer;
   --closed-dir-icon-cursor: pointer;
   --dir-heading-cursor: pointer;
@@ -51,11 +52,11 @@ file-tree {
   */
 
   & > .icon {
-    display: none;
+    display: none !important;
   }
 
   & > entry-heading {
-    display: none;
+    display: none !important;
   }
 
   /*
@@ -78,6 +79,7 @@ file-tree {
 
   entry-heading {
     cursor: pointer;
+    display: inline-block;
   }
 
   [path="."] > entry-heading {
@@ -87,6 +89,8 @@ file-tree {
   .selected > entry-heading {
     background: var(--highlight-background);
     border: 1px solid var(--highlight-border-color);
+    margin-top: -1px;
+    margin-bottom: -1px;
     padding-left: var(--entry-padding);
     padding-right: var(--entry-padding);
   }
@@ -122,6 +126,11 @@ file-tree {
 
     & > entry-heading {
       cursor: var(--dir-heading-cursor);
+      /*
+        It's super easy to mistouch dirs, so we give them a little more space
+      */
+      padding-top: var(--dir-touch-padding);
+      padding-bottom: var(--dir-touch-padding);
     }
 
     &.closed {
@@ -138,7 +147,7 @@ file-tree {
       }
     }
 
-    /* Directories */
+    /* Files */
 
     file-entry {
       display: block;
@@ -156,5 +165,14 @@ file-tree {
         cursor: var(--file-heading-cursor);
       }
     }
+  }
+}
+
+/*
+  for touch devices, we want to make sure that our fat fingers can still click drag  entries
+*/
+@media (pointer: coarse) {
+  file-tree {
+    --dir-touch-padding: 0.4em;
   }
 }

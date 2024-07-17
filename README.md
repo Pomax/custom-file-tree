@@ -128,6 +128,13 @@ file-tree {
   --closed-dir-icon: "📕";
   --file-icon: "📄";
 
+  --dir-touch-padding: 0;
+  --open-dir-icon-cursor: pointer;
+  --closed-dir-icon-cursor: pointer;
+  --dir-heading-cursor: pointer;
+  --file-icon-cursor: pointer;
+  --file-heading-cursor: pointer;
+
   --icon-size: 1.25em;
   --line-height: 1.5em;
   --indent: 1em;
