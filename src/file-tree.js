@@ -17,6 +17,7 @@ class FileTree extends FileTreeElement {
 
   constructor() {
     super();
+    this.heading.textContent = `File tree`;
   }
 
   get root() {
@@ -124,6 +125,8 @@ class FileTree extends FileTreeElement {
   #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
+    if (newPath.startsWith(oldPath))
+      throw new Error(Strings.PATH_INSIDE_ITSELF(oldPath));
     if (entries[newPath]) throw new Error(Strings.PATH_EXISTS(newPath));
     this.emit(eventType, { oldPath, newPath }, () => {
       // Update all entries whose path starts with {oldPath},

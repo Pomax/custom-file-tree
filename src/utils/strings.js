@@ -29,6 +29,8 @@ const LOCALE_STRINGS = {
 
     PATH_EXISTS: (path) => `${path} already exists.`,
     PATH_DOES_NOT_EXIST: (path) => `${path} does not exist.`,
+    PATH_INSIDE_ITSELF: (path) =>
+      `Cannot nest ${path} inside its own subdirectory.`,
 
     INVALID_UPLOAD_TYPE: (type) =>
       `Unfortunately, a ${type} is not a file or folder.`,

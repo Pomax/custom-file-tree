@@ -61,6 +61,8 @@ export class DirEntry extends FileTreeElement {
    */
   addRenameButton() {
     if (this.path === `.`) return;
+    if (this.find(`& > .rename-dir`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`rename-dir`);
     btn.title = Strings.RENAME_DIRECTORY;
@@ -83,6 +85,9 @@ export class DirEntry extends FileTreeElement {
    * Remove this dir and everything in it
    */
   addDeleteButton() {
+    if (this.path === `.`) return;
+    if (this.find(`& > .delete-dir`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`delete-dir`);
     btn.title = Strings.DELETE_DIRECTORY;
@@ -102,6 +107,8 @@ export class DirEntry extends FileTreeElement {
    * New file in this directory
    */
   createFileButton() {
+    if (this.find(`& > .create-file`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`create-file`);
     btn.title = Strings.CREATE_FILE;
@@ -127,6 +134,8 @@ export class DirEntry extends FileTreeElement {
    * New directory in this directory
    */
   createDirButton() {
+    if (this.find(`& > .create-dir`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`create-dir`);
     btn.title = Strings.CREATE_DIRECTORY;
@@ -150,6 +159,8 @@ export class DirEntry extends FileTreeElement {
    * Upload files or an entire directory from your device
    */
   addUploadButton() {
+    if (this.find(`& > .upload`)) return;
+
     const btn = create(`button`);
     btn.classList.add(`upload`);
     btn.title = Strings.UPLOAD_FILES;

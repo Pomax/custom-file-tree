@@ -213,5 +213,7 @@ test.describe(`move events`, () => {
         await utils.entryExists(old.replace(`dist/`, ``));
       }
     });
+
+    // TODO: FIXME: missing test for moving a dir into one of its own subdirs
   });
 });

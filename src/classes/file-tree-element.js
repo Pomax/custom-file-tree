@@ -13,13 +13,19 @@ export class FileTreeElement extends HTMLElement {
     super();
 
     // set up our icon
-    const icon = (this.icon = create(`span`));
-    icon.classList.add(`icon`);
-    this.appendChild(icon);
+    this.icon = this.find(`& > .icon`);
+    if (!this.icon) {
+      const icon = (this.icon = create(`span`));
+      icon.classList.add(`icon`);
+      this.appendChild(icon);
+    }
 
     // set up our heading
-    const heading = (this.heading = create(`entry-heading`));
-    this.appendChild(heading);
+    this.heading = this.find(`& > entry-heading`);
+    if (!this.heading) {
+      const heading = (this.heading = create(`entry-heading`));
+      this.appendChild(heading);
+    }
   }
 
   addExternalListener(target, eventName, handler, options = {}) {
