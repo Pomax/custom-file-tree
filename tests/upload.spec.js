@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { setupHelpers } from "./utils.js";
+import { bootstrapPage } from "./utils.js";
 
 test.describe(`upload events`, () => {
   let page;
@@ -7,11 +7,9 @@ test.describe(`upload events`, () => {
   let utils;
 
   test.beforeEach(async ({ browser }) => {
-    page = await browser.newPage();
-    page.on("console", (msg) => console.log(msg.text()));
-    await page.goto(`http://localhost:8000`);
-    utils = setupHelpers(page);
-    fileTree = page.locator(`file-tree`).first();
+    utils = await bootstrapPage(browser);
+    page = utils.page;
+    fileTree = utils.fileTree;
   });
 
   /**

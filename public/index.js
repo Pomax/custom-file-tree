@@ -36,8 +36,10 @@ const eventList = [
   `file:rename`,
   `file:move`,
   `file:delete`,
-  // Directory events you care about
+  // Directory events your users care about
   `dir:click`,
+  `dir:toggle`,
+  // Directory events you care about
   `dir:create`,
   `dir:rename`,
   `dir:move`,

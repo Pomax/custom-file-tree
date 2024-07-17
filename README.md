@@ -86,7 +86,8 @@ Events are listed here as `name → detail object content`, with the `grant` fun
 
 ## Events relating to directories:
 
-- `dir:click` → `{path, currentState}`,<br>Dispatched when a directory entry is clicked, with `path` representing the full path of the directory in question, and `currentState` reflecting whether this directory is currently visualized as `"open"` or `"closed"`, determined by whether or not its class list includes the `closed` class.<br>Granting this action will toggle the `closed` class on the associated directory entry.
+- `dir:click` → `{path}`,<br>Dispatched when a directory entry is clicked, with `path` representing the full path of the directory in question.<br>Granting this action will assign the `selected` class to the associated directory entry.
+- `dir:toggle` → `{path, currentState}`,<br>Dispatched when a directory icon is clicked, with `path` representing the full path of the directory in question, and `currentState` reflecting whether this directory is currently visualized as `"open"` or `"closed"`, determined by whether or not its class list includes the `closed` class.<br>Granting this action will toggle the `closed` class on the associated directory entry.
 - `dir:create` → `{path}`,<br>Dispatched when a directory gets created, with `path` being the directory's full path.<br>Granting this action will create a new directory entry, nested according to the `path` value.
 - `dir:rename` → `{oldPath, newPath}`,<br>Dispatched when an existing directory is renamed by the user, with `oldPath` being the current directory path, and `newPath` the desired new path.<br>Granting this action will change the directory entry's label and path values.<br><strong>Note</strong>: directory nesting cannot (currently) be effected by renaming, and should instead be effected by just moving the directory into or out of another directory.
 - `dir:move` → `{oldPath, newPath}`,<br>Dispatched when a directory gets moved to a different parent directory, with `oldPath` being the current directory path, and `newPath` the desired new path.<br>Granting this action will move the directory entry from its current location to the location indicated by `newPath`.
@@ -113,6 +114,31 @@ By default, file trees content "normally", even though under the hood all conten
 If you wish to associate data with `<file-entry>` and `<dir-entry>` elements, you can do so by adding data to their `.state` property either directly, or by using the `.setState(update)` function, which takes an update object and applies all key:value pairs in the update to the element's state.
 
 While in HTML context this should be obvious: this is done synchronously, unlike the similarly named function that you might be familiar with from frameworks like React or Preact. The `<file-tree>` is a normal HTML element and updates take effect immediately.
+
+## Customizing the styling
+
+If you don't like the default styling, just override it! This custom element uses normal CSS, so you're under no obligation to load the `file-tree.css` file, either load it and then override the parts you want to customize, or don't even load `file-tree.css` at all and come up with your own styling.
+
+That said, there are a number of CSS variables that you override on the `file-tree` selector if you just want to tweak things a little, with their current definitions being:
+
+```
+file-tree {
+  --fallback-icon: "🌲";
+  --open-dir-icon: "📒";
+  --closed-dir-icon: "📕";
+  --file-icon: "📄";
+
+  --icon-size: 1.25em;
+  --line-height: 1.5em;
+  --indent: 1em;
+  --entry-padding: 0.25em;
+  --highlight-background: lightcyan;
+  --highlight-border-color: blue;
+  --drop-target-color: rgb(205, 255, 242);
+}
+```
+
+For example, if you just want to customize the icons and colors, load the `file-tree.css` and then load your own overrides that set new values for those CSS variables. Nice and simple!
 
 # Contributing
 

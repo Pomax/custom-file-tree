@@ -188,6 +188,12 @@ class FileTree extends FileTreeElement {
     this.emit(eventType, { detail }, () => entry.select());
   }
 
+  toggleDirectory(entry, detail = {}) {
+    const eventType = `dir:toggle`;
+    detail.path = entry.path;
+    this.emit(eventType, { detail }, () => entry.toggle());
+  }
+
   sort() {
     this.rootDir.sort();
   }

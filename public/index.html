@@ -21,10 +21,17 @@
         >
       </h1>
       <p>
-        It shows off a dummy file tree with blanket "do everything" permissions
-        (there are no real files backing this tree, it's <em>just</em> the file
-        tree interface, generating permission events that we just blanket allow
-        in order to show off the interface).
+        Its project page can be found over on
+        <a href="https://github.com/Pomax/custom-file-tree"
+          >https://github.com/Pomax/custom-file-tree</a
+        >.
+      </p>
+      <p>
+        This page shows off a dummy &lt;file-tree&gt; with blanket "do
+        everything" permissions. Note that there are no real files backing this
+        tree, it's just the file tree <em>interface</em>, generating permission
+        events that we just blanket-allow in order to show off what the
+        interface lets your users do in terms of tree interaction.
       </p>
       <p>
         The project page can be found over on <a href="https://github.com/Pomax/custom-file-tree">https://github.com/Pomax/custom-file-tree</a>.
@@ -52,20 +59,23 @@
 
     <pre><code>&lt;file-tree&gt;&lt;/file-tree&gt;</code></pre>
 
-    <p>Or generate a `file-tree` element on the JS side:</p>
+    <p>Or generate a <code>file-tree</code> element on the JS side:</p>
 
     <pre><code>const tree = document.createElement(`file-tree`);
+tree.setFiles([`a`, `list.of`, `file.paths`]);
 document.body.appendchild(tree);</code></pre>
 
     <p>And that's all you need as far as the page code is concerned.</p>
 
+    <p>In this case we've also specified two extra attributes:</p>
+
+    <pre><code>&lt;file-tree show-top-level="true" remove-empty-dir="true"&gt;&lt;/file-tree&gt;</code></pre>
+
     <p>
-      In this case we've also specified the <code>show-top-level</code> and
-      <code>remove-empty-dir</code> attributes, so that we get to see all the
-      functionality, with the first showing the normally hidden <code>.</code>
-      directory that everything lives under, and the latter deleting any
-      directory that becomes empty when deleting the last file and directory
-      inside of it.
+      The <code>show-top-level</code> attribute shows the normally hidden
+      <code>.</code> directory that everything lives under, and the
+      <code>remove-empty-dir</code> attribute makes the file tree delete any
+      directory that becomes empty when deleting the last entry it contains.
     </p>
 
     <h2>The JS that made the above work:</h2>
@@ -115,8 +125,10 @@ const eventList = [
   `file:rename`,
   `file:move`,
   `file:delete`,
-  // Directory events you care about
+  // Directory events your users care about
   `dir:click`,
+  `dir:toggle`,
+  // Directory events you care about
   `dir:create`,
   `dir:rename`,
   `dir:move`,
@@ -127,17 +139,19 @@ eventList.forEach((type) =>
   fileTree.addEventListener(type, ({ detail }) => detail.grant())
 );</code></pre>
 
-    <h2>That's, uh, a lot of buttons?</h2>
+    <h2>Is there a list of events?</h2>
 
     <p>
-      There is no touch equivalent of "mouse-over", and if you want to frustrate
-      your users as much as possible, you put common operations under a
-      "hamburger" or ellipse menu button so they <em>always</em> have to click
-      or tap something twice. There are a lot of buttons, because your user
-      should be in control of what happens.
+      Of course. Click the link to head on over to the project page for
+      <a
+        href="https://github.com/Pomax/custom-file-tree?tab=readme-ov-file#file-tree-events"
+        >the list of events</a
+      >
+      and a description of what data they come with that you can use make
+      permission decisions with.
     </p>
 
-    <h2>See for yourself</h2>
+    <h2>Lift the hood!</h2>
 
     <p>
       If you "view-source" this page, you'll see there's nothing special going

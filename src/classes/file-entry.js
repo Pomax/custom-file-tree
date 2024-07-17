@@ -43,7 +43,7 @@ export class FileEntry extends FileTreeElement {
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      if (confirm(Strings.DELETE_FILE_PROMPT)) {
+      if (confirm(Strings.DELETE_FILE_PROMPT(this.path))) {
         this.root.removeEntry(this);
       }
     });
@@ -64,11 +64,6 @@ export class FileEntry extends FileTreeElement {
       this.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", this.dataset.id);
     });
-  }
-
-  select() {
-    this.root.find(`.selected`)?.classList.remove(`selected`);
-    this.classList.add(`selected`);
   }
 
   toJSON() {

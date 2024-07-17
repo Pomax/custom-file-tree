@@ -11,7 +11,7 @@ const LOCALE_STRINGS = {
     RENAME_FILE_MOVE_INSTEAD: `If you want to relocate a file, just move it.`,
 
     DELETE_FILE: `Delete file`,
-    DELETE_FILE_PROMPT: `Are you sure you want to delete this file?`,
+    DELETE_FILE_PROMPT: (path) => `Are you sure you want to delete ${path}?`,
 
     CREATE_DIRECTORY: `Add new directory`,
     CREATE_DIRECTORY_PROMPT: `Please specify a directory name.`,
@@ -22,7 +22,8 @@ const LOCALE_STRINGS = {
     RENAME_DIRECTORY_MOVE_INSTEAD: `If you want to relocate a directory, just move it.`,
 
     DELETE_DIRECTORY: `Delete directory`,
-    DELETE_DIRECTORY_PROMPT: `Are you *sure* you want to delete this directory and everything in it?`,
+    DELETE_DIRECTORY_PROMPT: (path) =>
+      `Are you *sure* you want to delete ${path} and everything in it?`,
 
     UPLOAD_FILES: `Upload files from your device`,
 

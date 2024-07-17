@@ -1,5 +1,15 @@
 import { expect } from "@playwright/test";
 
+export async function bootstrapPage(browser) {
+  const page = await browser.newPage();
+  page.on("console", (msg) => console.log(msg.text()));
+  await page.goto(`http://localhost:8000`);
+  const utils = setupHelpers(page);
+  utils.page = page;
+  utils.fileTree = page.locator(`file-tree`).first();
+  return utils;
+}
+
 export function setupHelpers(page) {
   /**
    * ...docs go here...
@@ -125,5 +135,11 @@ export function setupHelpers(page) {
   }
 
   // This is a scoped export, basically.
-  return { listenForEvent, entryExists, entryDoesNotExist, dragAndDropFiles };
+  return {
+    bootstrapPage,
+    listenForEvent,
+    entryExists,
+    entryDoesNotExist,
+    dragAndDropFiles,
+  };
 }

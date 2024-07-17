@@ -37,9 +37,14 @@ var FileTreeElement = class extends HTMLElement {
   eventControllers = [];
   constructor(path = ``) {
     super();
-    const heading = this.heading = create(`entry-heading`);
-    this.appendChild(heading);
-    this.path = path;
+    if (path) {
+      const icon = this.icon = create(`span`);
+      icon.classList.add(`icon`);
+      this.appendChild(icon);
+      const heading = this.heading = create(`entry-heading`);
+      this.appendChild(heading);
+      this.path = path;
+    }
   }
   addExternalListener(target, eventName, handler, options = {}) {
     const abortController = new AbortController();
@@ -119,6 +124,10 @@ var FileTreeElement = class extends HTMLElement {
   findAllInTree(qs) {
     return Array.from(this.root.querySelectorAll(qs));
   }
+  select() {
+    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.classList.add(`selected`);
+  }
   setState(stateUpdate) {
     Object.assign(this.state, stateUpdate);
   }
@@ -137,7 +146,7 @@ var LOCALE_STRINGS = {
     RENAME_FILE_PROMPT: `New file name?`,
     RENAME_FILE_MOVE_INSTEAD: `If you want to relocate a file, just move it.`,
     DELETE_FILE: `Delete file`,
-    DELETE_FILE_PROMPT: `Are you sure you want to delete this file?`,
+    DELETE_FILE_PROMPT: (path) => `Are you sure you want to delete ${path}?`,
     CREATE_DIRECTORY: `Add new directory`,
     CREATE_DIRECTORY_PROMPT: `Please specify a directory name.`,
     CREATE_DIRECTORY_NO_NESTING: `You'll have to create nested directories one at a time.`,
@@ -145,7 +154,7 @@ var LOCALE_STRINGS = {
     RENAME_DIRECTORY_PROMPT: `Choose a new directory name`,
     RENAME_DIRECTORY_MOVE_INSTEAD: `If you want to relocate a directory, just move it.`,
     DELETE_DIRECTORY: `Delete directory`,
-    DELETE_DIRECTORY_PROMPT: `Are you *sure* you want to delete this directory and everything in it?`,
+    DELETE_DIRECTORY_PROMPT: (path) => `Are you *sure* you want to delete ${path} and everything in it?`,
     UPLOAD_FILES: `Upload files from your device`,
     PATH_EXISTS: (path) => `${path} already exists.`,
     PATH_DOES_NOT_EXIST: (path) => `${path} does not exist.`,
@@ -299,25 +308,43 @@ var DirEntry = class extends FileTreeElement {
     this.addButtons();
   }
   connectedCallback() {
-    this.clickListener = (evt) => {
-      evt.stopPropagation();
-      evt.preventDefault();
-      if (this.path === `.`) return;
-      const tag = evt.target.tagName;
-      if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
-      const closed = this.classList.contains(`closed`);
-      this.root.selectEntry(this, { currentState: closed ? `closed` : `open` });
-    };
-    this.addListener(`click`, this.clickListener);
+    this.addListener(`click`, (evt) => this.selectListener(evt));
+    this.addExternalListener(
+      this.icon,
+      `click`,
+      (evt) => this.foldListener(evt)
+    );
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
   }
+  selectListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const tag = evt.target.tagName;
+    if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
+    this.root.selectEntry(this);
+    if (this.classList.contains(`closed`)) {
+      this.foldListener(evt);
+    }
+  }
+  foldListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const closed = this.classList.contains(`closed`);
+    this.root.toggleDirectory(this, {
+      currentState: closed ? `closed` : `open`
+    });
+  }
   addButtons() {
-    this.addRenameButton();
-    this.addDeleteButton();
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
+    if (this.path !== `.`) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
   /**
    * rename this dir.
@@ -352,7 +379,7 @@ var DirEntry = class extends FileTreeElement {
     btn.addEventListener(`click`, () => this.#deleteDir());
   }
   #deleteDir() {
-    const msg = localeStrings.DELETE_DIRECTORY_PROMPT;
+    const msg = localeStrings.DELETE_DIRECTORY_PROMPT(this.path);
     if (confirm(msg)) {
       this.root.removeEntry(this);
     }
@@ -362,7 +389,7 @@ var DirEntry = class extends FileTreeElement {
    */
   createFileButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-file`);
+    btn.classList.add(`create-file`);
     btn.title = localeStrings.CREATE_FILE;
     btn.textContent = `\u{1F4C4}`;
     btn.addEventListener(`click`, () => this.#createFile());
@@ -385,7 +412,7 @@ var DirEntry = class extends FileTreeElement {
    */
   createDirButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-dir`);
+    btn.classList.add(`create-dir`);
     btn.title = localeStrings.CREATE_DIRECTORY;
     btn.textContent = `\u{1F4C1}`;
     btn.addEventListener(`click`, () => this.#createDir());
@@ -436,6 +463,8 @@ var DirEntry = class extends FileTreeElement {
   sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
+      if (a.tagName === `SPAN`) return -1;
+      if (b.tagName === `SPAN`) return 1;
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
       if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
@@ -461,7 +490,7 @@ var DirEntry = class extends FileTreeElement {
       this.findAll(`& > dir-entry`).forEach((d) => d.sort(recursive));
     }
   }
-  select() {
+  toggle() {
     this.classList.toggle(`closed`);
   }
   toJSON() {
@@ -515,7 +544,7 @@ var FileEntry = class extends FileTreeElement {
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      if (confirm(localeStrings.DELETE_FILE_PROMPT)) {
+      if (confirm(localeStrings.DELETE_FILE_PROMPT(this.path))) {
         this.root.removeEntry(this);
       }
     });
@@ -533,10 +562,6 @@ var FileEntry = class extends FileTreeElement {
       this.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", this.dataset.id);
     });
-  }
-  select() {
-    this.root.find(`.selected`)?.classList.remove(`selected`);
-    this.classList.add(`selected`);
   }
   toJSON() {
     return JSON.stringify(this.toValue());
@@ -694,6 +719,11 @@ var FileTree = class extends FileTreeElement {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
     detail.path = entry.path;
     this.emit(eventType, { detail }, () => entry.select());
+  }
+  toggleDirectory(entry, detail = {}) {
+    const eventType = `dir:toggle`;
+    detail.path = entry.path;
+    this.emit(eventType, { detail }, () => entry.toggle());
   }
   sort() {
     this.rootDir.sort();

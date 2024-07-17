@@ -1,57 +1,26 @@
 import { expect, test } from "@playwright/test";
+import { bootstrapPage } from "./utils.js";
 import { Strings } from "../src/utils/strings.js";
 
 test.describe(`rename events`, () => {
   let page;
   let fileTree;
-  let eventPromise;
-
-  async function listenForEvent(eventType) {
-    eventPromise = page.evaluate(
-      (eventType) =>
-        new Promise((resolve) => {
-          document
-            .querySelector(`file-tree`)
-            .addEventListener(eventType, ({ type, detail }) =>
-              resolve({ type, detail })
-            );
-        }),
-      eventType
-    );
-  }
-
-  async function hasEntry(path) {
-    return page.evaluate((path) => {
-      const { entries } = document.querySelector(`file-tree`);
-      const entry = entries[path];
-      return !!(entry?.path === path);
-    }, path);
-  }
-
-  async function entryExists(path) {
-    return expect(await hasEntry(path)).toBe(true);
-  }
-
-  async function entryDoesNotExist(path) {
-    return expect(await hasEntry(path)).toBe(false);
-  }
+  let utils;
 
   test.beforeEach(async ({ browser }) => {
-    eventPromise = undefined;
-    page = await browser.newPage();
-    page.on("console", (msg) => console.log(msg.text()));
-    await page.goto(`http://localhost:8000`);
-    fileTree = page.locator(`file-tree`).first();
+    utils = await bootstrapPage(browser);
+    page = utils.page;
+    fileTree = utils.fileTree;
   });
 
   /**
    * All file:rename event code paths
    */
   test.describe(`file:rename`, () => {
-    const listenForFileRenameEvent = () => listenForEvent(`file:rename`);
+    const listenForFileRenameEvent = () => utils.listenForEvent(`file:rename`);
 
     test(`renaming a file at the root location`, async () => {
-      listenForFileRenameEvent();
+      const eventPromise = listenForFileRenameEvent();
 
       page.on(`dialog`, async (dialog) => {
         await dialog.accept(`newfile.txt`);
@@ -60,27 +29,24 @@ test.describe(`rename events`, () => {
         const fileEntry = await page.locator(qs).first();
         await expect(fileEntry).toHaveAttribute(`name`, `newfile.txt`);
 
-        const { type, detail } = await eventPromise;
-        await expect(type).toBe(`file:rename`);
-
+        const { detail } = await eventPromise;
         const { oldPath, newPath } = detail;
         await expect(oldPath).toBe(`README.md`);
         await expect(newPath).toBe(`newfile.txt`);
 
-        await entryDoesNotExist(`README.md`);
-        await entryExists(`newfile.txt`);
+        await utils.entryDoesNotExist(`README.md`);
+        await utils.entryExists(`newfile.txt`);
       });
 
-      await entryExists(`README.md`);
-      await entryDoesNotExist(`newfile.txt`);
+      await utils.entryExists(`README.md`);
+      await utils.entryDoesNotExist(`newfile.txt`);
 
-      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await page.locator(`[path="README.md"]`).click();
+      await page.locator(`[path="README.md"] > .rename-file`).click();
     });
 
     test(`renaming a file in the "dist" directory`, async () => {
-      listenForFileRenameEvent();
+      const eventPromise = listenForFileRenameEvent();
 
       page.on(`dialog`, async (dialog) => {
         await dialog.accept(`newfile.txt`);
@@ -89,23 +55,19 @@ test.describe(`rename events`, () => {
         const fileEntry = await page.locator(qs).first();
         await expect(fileEntry).toHaveAttribute(`name`, `newfile.txt`);
 
-        const { type, detail } = await eventPromise;
-        await expect(type).toBe(`file:rename`);
-
+        const { detail } = await eventPromise;
         const { oldPath, newPath } = detail;
         await expect(oldPath).toBe(`dist/README.md`);
         await expect(newPath).toBe(`dist/newfile.txt`);
 
-        await entryDoesNotExist(`dist/README.md`);
-        await entryExists(`dist/newfile.txt`);
+        await utils.entryDoesNotExist(`dist/README.md`);
+        await utils.entryExists(`dist/newfile.txt`);
       });
 
-      await entryExists(`dist/README.md`);
-      await entryDoesNotExist(`dist/newfile.txt`);
-
-      const qs = `file-tree file-entry[path="dist/README.md"] button[title="${Strings.RENAME_FILE}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await utils.entryExists(`dist/README.md`);
+      await utils.entryDoesNotExist(`dist/newfile.txt`);
+      await page.locator(`[path="dist/README.md"]`).click();
+      await page.locator(`[path="dist/README.md"] > .rename-file`).click();
     });
 
     test(`renaming a file with dir delimiter should get rejected`, async () => {
@@ -114,17 +76,89 @@ test.describe(`rename events`, () => {
         if (type === `alert`) {
           expect(dialog.message()).toBe(Strings.RENAME_FILE_MOVE_INSTEAD);
           await dialog.dismiss();
-          await entryExists(`README.md`);
-          await entryDoesNotExist(`dist/newfile.txt`);
+          await utils.entryExists(`README.md`);
+          await utils.entryDoesNotExist(`dist/newfile.txt`);
         } else {
           await dialog.accept(`dist/newfile.txt`);
         }
       });
-      await entryExists(`README.md`);
-      await entryDoesNotExist(`dist/newfile.txt`);
-      const qs = `file-tree file-entry[path="README.md"] button[title="${Strings.RENAME_FILE}"]`;
-      const btn = page.locator(qs).first();
-      await btn.click();
+      await utils.entryExists(`README.md`);
+      await utils.entryDoesNotExist(`dist/newfile.txt`);
+      await page.locator(`[path="README.md"]`).click();
+      await page.locator(`[path="README.md"] > button.rename-file`).click();
+    });
+  });
+
+  /**
+   * All dir:rename event code paths
+   */
+  test.describe(`dir:rename`, () => {
+    const listenForDirRenameEvent = () => utils.listenForEvent(`dir:rename`);
+
+    test(`renaming "dist" to "newname"`, async () => {
+      const eventPromise = listenForDirRenameEvent();
+
+      page.on(`dialog`, async (dialog) => {
+        await dialog.accept(`newname`);
+
+        const qs = `[path="newname/"]`;
+        const dirEntry = await page.locator(qs);
+        await expect(dirEntry).toHaveAttribute(`name`, `newname`);
+
+        const { detail } = await eventPromise;
+        const { oldPath, newPath } = detail;
+        await expect(oldPath).toBe(`dist/`);
+        await expect(newPath).toBe(`newname/`);
+
+        // confirm all child content got renamed, too.
+        for await (const path of [
+          `newname/README.md`,
+          `newname/file-tree.esm.js`,
+          `newname/file-tree.esm.min.js`,
+          `newname/old/README.old`,
+          `newname/old/file-tree.esm.js`,
+          `newname/old/file-tree.esm.min.js`,
+        ]) {
+          await utils.entryExists(path);
+        }
+      });
+
+      await utils.entryExists(`dist/`);
+      await page.locator(`[path="dist/"] > entry-heading`).click();
+      await page.locator(`[path="dist/"] > .rename-dir`).click();
+    });
+
+    test(`renaming "dist/old" to "dist/newname"`, async () => {
+      const eventPromise = listenForDirRenameEvent();
+
+      page.on(`dialog`, async (dialog) => {
+        await dialog.accept(`newname`);
+
+        const qs = `[path="dist/newname/"]`;
+        const dirEntry = await page.locator(qs);
+        await expect(dirEntry).toHaveAttribute(`name`, `newname`);
+
+        const { detail } = await eventPromise;
+        const { oldPath, newPath } = detail;
+        await expect(oldPath).toBe(`dist/old/`);
+        await expect(newPath).toBe(`dist/newname/`);
+
+        // confirm all child content got renamed, too.
+        for await (const path of [
+          `dist/README.md`,
+          `dist/file-tree.esm.js`,
+          `dist/file-tree.esm.min.js`,
+          `dist/newname/README.old`,
+          `dist/newname/file-tree.esm.js`,
+          `dist/newname/file-tree.esm.min.js`,
+        ]) {
+          await utils.entryExists(path);
+        }
+      });
+
+      await utils.entryExists(`dist/old/`);
+      await page.locator(`[path="dist/old/"] > entry-heading`).click();
+      await page.locator(`[path="dist/old/"] > .rename-dir`).click();
     });
   });
 });

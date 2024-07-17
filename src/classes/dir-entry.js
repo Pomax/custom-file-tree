@@ -16,27 +16,44 @@ export class DirEntry extends FileTreeElement {
   }
 
   connectedCallback() {
-    this.clickListener = (evt) => {
-      evt.stopPropagation();
-      evt.preventDefault();
-      if (this.path === `.`) return;
-      const tag = evt.target.tagName;
-      if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
-      const closed = this.classList.contains(`closed`);
-      this.root.selectEntry(this, { currentState: closed ? `closed` : `open` });
-    };
-
-    this.addListener(`click`, this.clickListener);
+    this.addListener(`click`, (evt) => this.selectListener(evt));
+    this.addExternalListener(this.icon, `click`, (evt) =>
+      this.foldListener(evt),
+    );
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
   }
 
+  selectListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const tag = evt.target.tagName;
+    if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
+    this.root.selectEntry(this);
+    if (this.classList.contains(`closed`)) {
+      this.foldListener(evt);
+    }
+  }
+
+  foldListener(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    if (this.path === `.`) return;
+    const closed = this.classList.contains(`closed`);
+    this.root.toggleDirectory(this, {
+      currentState: closed ? `closed` : `open`,
+    });
+  }
+
   addButtons() {
-    this.addRenameButton();
-    this.addDeleteButton();
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
+    if (this.path !== `.`) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
 
   /**
@@ -75,7 +92,7 @@ export class DirEntry extends FileTreeElement {
   }
 
   #deleteDir() {
-    const msg = Strings.DELETE_DIRECTORY_PROMPT;
+    const msg = Strings.DELETE_DIRECTORY_PROMPT(this.path);
     if (confirm(msg)) {
       this.root.removeEntry(this);
     }
@@ -86,7 +103,7 @@ export class DirEntry extends FileTreeElement {
    */
   createFileButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-file`);
+    btn.classList.add(`create-file`);
     btn.title = Strings.CREATE_FILE;
     btn.textContent = `📄`;
     btn.addEventListener(`click`, () => this.#createFile());
@@ -111,7 +128,7 @@ export class DirEntry extends FileTreeElement {
    */
   createDirButton() {
     const btn = create(`button`);
-    btn.classList.add(`add-dir`);
+    btn.classList.add(`create-dir`);
     btn.title = Strings.CREATE_DIRECTORY;
     btn.textContent = `📁`;
     btn.addEventListener(`click`, () => this.#createDir());
@@ -169,7 +186,11 @@ export class DirEntry extends FileTreeElement {
   sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
-      // dir heading goes first, and there can only be one.
+      // icon first (there can only be one)
+      if (a.tagName === `SPAN`) return -1;
+      if (b.tagName === `SPAN`) return 1;
+
+      // then dir heading (there can only be one)
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
 
@@ -204,7 +225,7 @@ export class DirEntry extends FileTreeElement {
     }
   }
 
-  select() {
+  toggle() {
     this.classList.toggle(`closed`);
   }
 

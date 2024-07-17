@@ -1,125 +1,99 @@
 file-tree {
-  display: block;
+  --fallback-icon: "🌲";
+  --open-dir-icon: "📒";
+  --closed-dir-icon: "📕";
+  --file-icon: "📄";
 
-  button {
-    min-width: 1.5em;
-    padding: 2px 1px;
+  --icon-size: 1.25em;
+  --line-height: 1.5em;
+  --indent: 1em;
+  --entry-padding: 0.25em;
+  --highlight-background: lightcyan;
+  --highlight-border-color: blue;
+  --drop-target-color: rgb(205, 255, 242);
+
+  .icon {
+    position: relative;
+    display: inline-block;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    cursor: pointer;
+
+    &:before {
+      position: absolute;
+      bottom: -0.25em;
+      left: 0;
+      content: var(--fallback-icon);
+    }
   }
 
-  /* by default the top level is hidden*/
-  &:not([show-top-level]) > dir-entry[path="."] {
-    margin: 0 !important;
-    padding: 0 !important;
-    &:before {
-      content: unset;
-    }
-    & > *:not(dir-entry, file-entry) {
-      display: none !important;
-    }
-    /* but we do need some of the buttons */
-    & > button {
-      &.add-file {
-        margin-left: 0 !important;
-      }
-      &.add-file,
-      &.add-dir,
-      &.upload {
-        display: inline-block !important;
-        margin-bottom: 0.5em;
-      }
-    }
+  [path="."] > .icon {
+    cursor: default !important;
+  }
+
+  & button {
+    display: none;
+    height: var(--line-height);
+  }
+
+  & .selected > button,
+  & [path="."] > button {
+    display: inline-block;
+  }
+
+  entry-heading {
+    cursor: pointer;
+  }
+
+  [path="."] > entry-heading {
+    cursor: default;
+  }
+
+  .selected > entry-heading {
+    background: var(--highlight-background);
+    border: 1px solid var(--highlight-border-color);
+    padding-left: var(--entry-padding);
+    padding-right: var(--entry-padding);
+  }
+
+  .dragging {
+    opacity: 0.2;
+  }
+  .drop-target {
+    background: var(--drop-target-color);
   }
 
   dir-entry {
     display: block;
+    min-height: var(--line-height);
+    margin-left: var(--indent);
 
-    entry-heading {
-      margin-left: 0.25em;
-      cursor: pointer;
+    & > .icon:before {
+      content: var(--open-dir-icon);
     }
 
-    &.dragging {
-      opacity: 0.2;
-    }
-
-    &.drop-target {
-      background: #e3fff4;
-    }
-
-    &[path] {
-      --padding: 1em;
-      padding-left: var(--padding);
-
-      /*
-        the root dir is a bit special: it shoudl have buttons for
-        creating or uploading files, but should not offer buttons
-        to rename or delete it:
-      */
-      &[path="."] {
-        height: 100%;
-        cursor: auto;
-
-        & > entry-heading {
-          cursor: auto;
-        }
-
-        &:before {
-          cursor: auto;
-        }
-
-        & > button {
-          display: none;
-          &.add-file,
-          &.add-dir,
-          &.upload {
-            display: inline-block;
-          }
-        }
+    &.closed {
+      & > file-entry,
+      & > dir-entry {
+        display: none;
       }
 
-      &:before {
-        content: "📒";
-        cursor: pointer;
-        margin-left: calc(0px - var(--padding));
-      }
-
-      &.closed {
-        &:before {
-          content: "📕";
-        }
-        dir-entry,
-        file-entry {
-          display: none;
-        }
+      & .icon:before {
+        content: var(--closed-dir-icon);
       }
     }
-  }
 
-  file-entry {
-    display: block;
-    white-space: nowrap;
-
-    entry-heading {
-      cursor: pointer;
+    &[path="."] {
+      margin-left: 0;
     }
+    file-entry {
+      display: block;
+      margin-left: var(--indent);
+      height: var(--line-height);
 
-    &:before {
-      content: "📄";
-      cursor: pointer;
-      margin-right: 0.25em;
-    }
-
-    &.dragging {
-      opacity: 0.2;
-    }
-
-    &.selected {
-      background: #e3f6ff;
-      border: 1px solid blue;
-      padding-left: 0.25em;
-      box-sizing: border-box;
-      margin: -1px;
-      margin-left: calc(-1px - 0.25em);
+      & > .icon:before {
+        content: var(--file-icon);
+      }
     }
   }
 }
