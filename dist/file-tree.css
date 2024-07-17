@@ -69,7 +69,7 @@ file-tree {
     margin-left: var(--indent);
 
     & > .icon {
-      cursor: row-resize;
+      cursor: pointer;
       &:before {
         content: var(--open-dir-icon);
       }
@@ -81,8 +81,11 @@ file-tree {
         display: none;
       }
 
-      & .icon:before {
-        content: var(--closed-dir-icon);
+      & > .icon {
+        cursor: pointer;
+        &:before {
+          content: var(--closed-dir-icon);
+        }
       }
     }
 
@@ -94,8 +97,11 @@ file-tree {
       margin-left: var(--indent);
       height: var(--line-height);
 
-      & > .icon:before {
-        content: var(--file-icon);
+      & > .icon {
+        cursor: pointer;
+        &:before {
+          content: var(--file-icon);
+        }
       }
     }
   }
