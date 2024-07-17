@@ -68,8 +68,11 @@ file-tree {
     min-height: var(--line-height);
     margin-left: var(--indent);
 
-    & > .icon:before {
-      content: var(--open-dir-icon);
+    & > .icon {
+      cursor: row-resize;
+      &:before {
+        content: var(--open-dir-icon);
+      }
     }
 
     &.closed {
