@@ -10,14 +10,19 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v3.2.0 (July 17, 2024)
+
+- documented the `setFiles` and `select` functions on FileTree.
+- [bugfix/feature] errors are now `...:error` events rather than `throw`s, because the code was throwing errors in code paths where they could not be caught.
+- dev dependencies cleanup
+
+# Previous Versions
+
 ## v3.1.0 (July 17, 2024)
 
 - new CSS variables for ease-of-customization
 - directories automatically get more padding on touch devices to make drag-and-drop of entire dirs easier (you could too easily accidentally start dragging a file instead of a dir)
 - [bugfix] file tree elements correctly clone now, no longer breaking the drag and drop shim
-
-
-# Previous Versions
 
 ## v3.0.0 (July 16, 2024)
 

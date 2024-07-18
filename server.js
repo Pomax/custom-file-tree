@@ -1,5 +1,4 @@
 import express from "express";
-import nocache from "nocache";
 import { readdirSync, watch } from "node:fs";
 import { resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
@@ -14,7 +13,16 @@ const npm = process.platform === `win32` ? `npm.cmd` : `npm`;
 
 // Set up the core server
 const app = express();
-app.use(nocache());
+app.use((req, res, next) => {
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate"
+  );
+  res.setHeader("Expires", "0");
+  next();
+});
+
 app.set("etag", false);
 app.use((req, res, next) => {
   if (!process.argv.includes(`--test`)) {

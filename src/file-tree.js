@@ -63,7 +63,9 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
 
     if (entries[path]) {
-      throw new Error(Strings.PATH_EXISTS(path));
+      return this.emit(`${eventType}:error`, {
+        error: Strings.PATH_EXISTS(path),
+      });
     }
 
     // When granted, build the entry.
@@ -125,9 +127,20 @@ class FileTree extends FileTreeElement {
   #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
-    if (newPath.startsWith(oldPath))
-      throw new Error(Strings.PATH_INSIDE_ITSELF(oldPath));
-    if (entries[newPath]) throw new Error(Strings.PATH_EXISTS(newPath));
+    if (newPath.startsWith(oldPath)) {
+      return this.emit(`${eventType}:error`, {
+        oldPath,
+        newPath,
+        error: Strings.PATH_INSIDE_ITSELF(oldPath),
+      });
+    }
+    if (entries[newPath]) {
+      return this.emit(`${eventType}:error`, {
+        oldPath,
+        newPath,
+        error: Strings.PATH_EXISTS(newPath),
+      });
+    }
     this.emit(eventType, { oldPath, newPath }, () => {
       // Update all entries whose path starts with {oldPath},
       // which for files is just a single entry, but for dirs
@@ -179,7 +192,7 @@ class FileTree extends FileTreeElement {
     });
   }
 
-  // Select an entry by  its path
+  // Select an entry by its path
   select(path) {
     const entry = this.entries[path];
     if (!entry) throw new Error(Strings.PATH_DOES_NOT_EXIST(path));

@@ -84,6 +84,14 @@ Events are listed here as `name → detail object content`, with the `grant` fun
 - `file:move` → `{oldPath, newPath}`,<br>Dispatched when a file gets moved to a different directory, with `oldPath` being the current file path, and `newPath` the desired new path.<br>Granting this action will move the file entry from its current location to the location indicated by `newPath`.
 - `file:delete` → `{path}`,<br>Dispatched when a file gets deleted, with `path` representing the full path of the file in question.<br>Granting this action will remove the file entry from the tree.<br><strong>Note</strong>: if this is the only file in a directory, <em>and</em> the `<file-tree>` specifies the `remove-empty` attribute, the now empty directory will also be deleted, gated by a `dir:delete` permission event, but _not_ gated by a `confirm()` dialog to the user.
 
+### Error events
+
+The following events will be emitted when certain errors occur. All errors have an event detail object that is the same as for the non-error event, with an additional `error` property that has a string value reflecting what went wrong.
+
+- `file:create:error`,<br>Emitted when a file:create has failed.
+- `file:rename:error`,<br>Emitted when a file:rename has failed.
+- `file:move:error`,<br>Emitted when a file:move has failed.
+
 ## Events relating to directories:
 
 - `dir:click` → `{path}`,<br>Dispatched when a directory entry is clicked, with `path` representing the full path of the directory in question.<br>Granting this action will assign the `selected` class to the associated directory entry.
@@ -92,6 +100,21 @@ Events are listed here as `name → detail object content`, with the `grant` fun
 - `dir:rename` → `{oldPath, newPath}`,<br>Dispatched when an existing directory is renamed by the user, with `oldPath` being the current directory path, and `newPath` the desired new path.<br>Granting this action will change the directory entry's label and path values.<br><strong>Note</strong>: directory nesting cannot (currently) be effected by renaming, and should instead be effected by just moving the directory into or out of another directory.
 - `dir:move` → `{oldPath, newPath}`,<br>Dispatched when a directory gets moved to a different parent directory, with `oldPath` being the current directory path, and `newPath` the desired new path.<br>Granting this action will move the directory entry from its current location to the location indicated by `newPath`.
 - `dir:delete` → `{path}`,<br>Dispatched when a directory gets deleted, with `path` representing the full path of the directory in question.<br>Granting this action will remove the directory entry (including its associated content) from the tree.<br><strong>Note</strong>: this action is gated behind a `confirm()` dialog for the user.
+
+### Error events
+
+The following events will be emitted when certain errors occur. All errors have an event detail object that is the same as for the non-error event, with an additional `error` property that has a string value reflecting what went wrong.
+
+- `dir:create:error`,<br>Emitted when a dir:create has failed.
+- `dir:rename:error`,<br>Emitted when a dir:rename has failed.
+- `dir:move:error`,<br>Emitted when a dir:move has failed.
+
+## Functions
+
+There are two functions supported by `<file-tree`>:
+
+- `.setFiles(paths)`,<br>This function sets the file tree content, with `paths` being an array of strings, where each string represents a relative path that uses `/` as path delimiter.
+- `.select(path)`,<br>This function allows the programmatic selection of a directory or file entry without the user needing to click the entry. This function will throw if the provided path string does not match any of the paths in the file tree.
 
 ## Special attributes
 

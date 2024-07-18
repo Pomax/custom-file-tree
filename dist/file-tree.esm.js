@@ -641,7 +641,9 @@ var FileTree = class extends FileTreeElement {
   #addPath(path, content = void 0, eventType, immediate = false) {
     const { entries } = this;
     if (entries[path]) {
-      throw new Error(localeStrings.PATH_EXISTS(path));
+      return this.emit(`${eventType}:error`, {
+        error: localeStrings.PATH_EXISTS(path)
+      });
     }
     const grant = () => {
       const EntryType = isFile(path) ? FileEntry : DirEntry;
@@ -692,9 +694,20 @@ var FileTree = class extends FileTreeElement {
   #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
-    if (newPath.startsWith(oldPath))
-      throw new Error(localeStrings.PATH_INSIDE_ITSELF(oldPath));
-    if (entries[newPath]) throw new Error(localeStrings.PATH_EXISTS(newPath));
+    if (newPath.startsWith(oldPath)) {
+      return this.emit(`${eventType}:error`, {
+        oldPath,
+        newPath,
+        error: localeStrings.PATH_INSIDE_ITSELF(oldPath)
+      });
+    }
+    if (entries[newPath]) {
+      return this.emit(`${eventType}:error`, {
+        oldPath,
+        newPath,
+        error: localeStrings.PATH_EXISTS(newPath)
+      });
+    }
     this.emit(eventType, { oldPath, newPath }, () => {
       Object.keys(entries).forEach((key) => {
         if (key.startsWith(oldPath)) {
@@ -733,7 +746,7 @@ var FileTree = class extends FileTreeElement {
       parentDir.checkEmpty();
     });
   }
-  // Select an entry by  its path
+  // Select an entry by its path
   select(path) {
     const entry = this.entries[path];
     if (!entry) throw new Error(localeStrings.PATH_DOES_NOT_EXIST(path));

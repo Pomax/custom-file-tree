@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Strings } from "../src/utils/strings.js";
 import { bootstrapPage } from "./utils.js";
 
 test.describe(`move events`, () => {
@@ -214,6 +215,17 @@ test.describe(`move events`, () => {
       }
     });
 
-    // TODO: FIXME: missing test for moving a dir into one of its own subdirs
+    test(`moving a directory into its own subdirectory`, async () => {
+      const eventPromise = utils.listenForEvent(`dir:move:error`);
+
+      const sourcePath = `dist/`;
+      const targetPath = `dist/old/`;
+      await utils.entryExists(sourcePath);
+      await utils.entryExists(targetPath);
+      await dragAndDrop(sourcePath, targetPath);
+      const { detail } = await eventPromise;
+      const { error } = detail;
+      expect(error).toBe(Strings.PATH_INSIDE_ITSELF(`dist/`));
+    });
   });
 });
