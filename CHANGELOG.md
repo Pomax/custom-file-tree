@@ -10,7 +10,7 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
-## v3.2.1 (July 20, 2024)
+## v3.2.3 (July 20, 2024)
 
 - [bugfix] the `file:click` and `dir:click` no longer double-wrap their event details (i.e. they no longer contain `{ detail: { detail: ... }}`).
 - touch event tests were added to the build/test runner.
