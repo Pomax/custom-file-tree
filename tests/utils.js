@@ -1,7 +1,8 @@
 import { expect } from "@playwright/test";
 
-export async function bootstrapPage(browser) {
-  const page = await browser.newPage();
+export async function bootstrapPage(browser, options={}) {
+  const context = await browser.newContext(options);
+  const page = await context.newPage();
   page.on("console", (msg) => console.log(msg.text()));
   await page.goto(`http://localhost:8000`);
   const utils = setupHelpers(page);

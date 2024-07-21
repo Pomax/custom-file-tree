@@ -148,6 +148,7 @@ var DefaultConfiguration = {
   dragImageOpacity: "0.5",
   dragThresholdPixels: 5,
   isPressHoldMode: false,
+  forceListen: false,
   contextMenuDelayMS: 900,
   pressHoldDelayMS: 400,
   pressHoldMargin: 25,
@@ -207,7 +208,8 @@ var DragDropTouch = class {
    * @returns
    */
   listen() {
-    if (!navigator.maxTouchPoints) return;
+    if (navigator.maxTouchPoints === 0 && !this.configuration.forceListen)
+      return;
     const opt = { passive: false, capture: false };
     this._dragRoot.addEventListener(
       "touchstart",
@@ -491,7 +493,10 @@ var DragDropTouch = class {
 function setupDragDropTouch(dragRoot = document, dropRoot = document, options) {
   new DragDropTouch(dragRoot, dropRoot, options);
 }
-if (import.meta.url.includes(`?autoload`)) setupDragDropTouch();
+if (import.meta.url.includes(`?autoload`))
+  setupDragDropTouch(document, document, {
+    forceListen: true
+  });
 export {
   setupDragDropTouch
 };
