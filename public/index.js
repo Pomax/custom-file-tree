@@ -50,5 +50,8 @@ const eventList = [
 ];
 
 eventList.forEach((type) =>
-  fileTree.addEventListener(type, ({ detail }) => detail.grant())
+  fileTree.addEventListener(type, ({ detail }) => {
+    // console.log(type);
+    detail.grant();
+  })
 );

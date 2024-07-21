@@ -101,7 +101,7 @@ test.describe(`move events`, () => {
       await utils.entryExists(finalPath);
     });
 
-    test(`move a file in a directory into another directory`, async () => {
+    test(`move a file from one directory to another directory`, async () => {
       const eventPromise = utils.listenForEvent(`file:move`);
 
       const sourcePath = `dist/README.md`;

@@ -3,7 +3,7 @@ function pointFrom(e, page = false) {
   const touch = e.touches[0];
   return {
     x: page ? touch.pageX : touch.clientX,
-    y: page ? touch.pageY : touch.clientY,
+    y: page ? touch.pageY : touch.clientY
   };
 }
 function copyProps(dst, src, props) {
@@ -22,13 +22,12 @@ function newForwardableEvent(type, srcEvent, target) {
     "screenX",
     "screenY",
     "offsetX",
-    "offsetY",
+    "offsetY"
   ];
   const evt = new Event(type, {
-      bubbles: true,
-      cancelable: true,
-    }),
-    touch = srcEvent.touches[0];
+    bubbles: true,
+    cancelable: true
+  }), touch = srcEvent.touches[0];
   evt.button = 0;
   evt.which = evt.buttons = 1;
   copyProps(evt, srcEvent, _kbdProps);
@@ -70,7 +69,7 @@ function copyComputedStyles(src, dst) {
   Object.keys(dst.dataset).forEach((key) => delete dst.dataset[key]);
 }
 function removeTroublesomeAttributes(dst) {
-  ["id", "class", "style", "draggable"].forEach(function (att) {
+  ["id", "class", "style", "draggable"].forEach(function(att) {
     dst.removeAttribute(att);
   });
 }
@@ -119,8 +118,7 @@ var DragDTO = class {
    * @returns
    */
   getData(type) {
-    let lcType = type.toLowerCase(),
-      data = this._data[lcType];
+    let lcType = type.toLowerCase(), data = this._data[lcType];
     if (lcType === "text" && data == null) {
       data = this._data["text/plain"];
     }
@@ -154,7 +152,7 @@ var DefaultConfiguration = {
   contextMenuDelayMS: 900,
   pressHoldDelayMS: 400,
   pressHoldMargin: 25,
-  pressHoldThresholdPixels: 0,
+  pressHoldThresholdPixels: 0
 };
 var DragDropTouch = class {
   _dragRoot;
@@ -188,7 +186,7 @@ var DragDropTouch = class {
    * @param options
    */
   constructor(dragRoot = document, dropRoot = document, options) {
-    this.configuration = { ...DefaultConfiguration, ...(options || {}) };
+    this.configuration = { ...DefaultConfiguration, ...options || {} };
     this._dragRoot = dragRoot;
     this._dropRoot = dropRoot;
     while (!this._dropRoot.elementFromPoint && this._dropRoot.parentNode)
@@ -223,8 +221,14 @@ var DragDropTouch = class {
       this._touchmove.bind(this),
       opt
     );
-    this._dragRoot.addEventListener("touchend", this._touchend.bind(this));
-    this._dragRoot.addEventListener("touchcancel", this._touchend.bind(this));
+    this._dragRoot.addEventListener(
+      "touchend",
+      this._touchend.bind(this)
+    );
+    this._dragRoot.addEventListener(
+      "touchcancel",
+      this._touchend.bind(this)
+    );
   }
   /**
    * ...docs go here...
@@ -245,11 +249,7 @@ var DragDropTouch = class {
       this._reset();
       let src = this._closestDraggable(e.target);
       if (src) {
-        if (
-          e.target &&
-          !this._dispatchEvent(e, "mousemove", e.target) &&
-          !this._dispatchEvent(e, "mousedown", e.target)
-        ) {
+        if (e.target && !this._dispatchEvent(e, "mousemove", e.target) && !this._dispatchEvent(e, "mousedown", e.target)) {
           this._dragSource = src;
           this._ptDown = pointFrom(e);
           this._lastTouch = e;
@@ -265,9 +265,7 @@ var DragDropTouch = class {
               this._isDragEnabled = true;
               this._touchmove(e);
             }, this.configuration.pressHoldDelayMS);
-          }
-          // We need this in order for taps to turn into clicks
-          else {
+          } else if (!e.isTrusted) {
             if (e.target !== this._lastTarget) {
               this._lastTarget = e.target;
             }
@@ -294,9 +292,7 @@ var DragDropTouch = class {
         return;
       }
       if (this._dragSource && !this._img && this._shouldStartDragging(e)) {
-        if (
-          this._dispatchEvent(this._lastTouch, "dragstart", this._dragSource)
-        ) {
+        if (this._dispatchEvent(this._lastTouch, "dragstart", this._dragSource)) {
           this._dragSource = null;
           return;
         }
@@ -366,13 +362,7 @@ var DragDropTouch = class {
    * @returns
    */
   _shouldHandlePressHoldMove(e) {
-    return (
-      this.configuration.isPressHoldMode &&
-      this._isDragEnabled &&
-      e &&
-      e.touches &&
-      e.touches.length
-    );
+    return this.configuration.isPressHoldMode && this._isDragEnabled && e && e.touches && e.touches.length;
   }
   /**
    * ...docs go here...
@@ -380,11 +370,7 @@ var DragDropTouch = class {
    * @returns
    */
   _shouldCancelPressHoldMove(e) {
-    return (
-      this.configuration.isPressHoldMode &&
-      !this._isDragEnabled &&
-      this._getDelta(e) > this.configuration.pressHoldMargin
-    );
+    return this.configuration.isPressHoldMode && !this._isDragEnabled && this._getDelta(e) > this.configuration.pressHoldMargin;
   }
   /**
    * ...docs go here...
@@ -393,11 +379,7 @@ var DragDropTouch = class {
    */
   _shouldStartDragging(e) {
     let delta = this._getDelta(e);
-    return (
-      delta > this.configuration.dragThresholdPixels ||
-      (this.configuration.isPressHoldMode &&
-        delta >= this.configuration.pressHoldThresholdPixels)
-    );
+    return delta > this.configuration.dragThresholdPixels || this.configuration.isPressHoldMode && delta >= this.configuration.pressHoldThresholdPixels;
   }
   /**
    * ...docs go here...
@@ -432,8 +414,7 @@ var DragDropTouch = class {
    * @returns
    */
   _getTarget(e) {
-    let pt = pointFrom(e),
-      el = this._dropRoot.elementFromPoint(pt.x, pt.y);
+    let pt = pointFrom(e), el = this._dropRoot.elementFromPoint(pt.x, pt.y);
     while (el && getComputedStyle(el).pointerEvents == "none") {
       el = el.parentElement;
     }
@@ -452,8 +433,7 @@ var DragDropTouch = class {
     copyStyle(src, this._img);
     this._img.style.top = this._img.style.left = "-9999px";
     if (!this._imgCustom) {
-      let rc = src.getBoundingClientRect(),
-        pt = pointFrom(e);
+      let rc = src.getBoundingClientRect(), pt = pointFrom(e);
       this._imgOffset = { x: pt.x - rc.left, y: pt.y - rc.top };
       this._img.style.opacity = this.configuration.dragImageOpacity;
     }
@@ -477,8 +457,7 @@ var DragDropTouch = class {
   _moveImage(e) {
     requestAnimationFrame(() => {
       if (this._img) {
-        let pt = pointFrom(e, true),
-          s = this._img.style;
+        let pt = pointFrom(e, true), s = this._img.style;
         s.position = "absolute";
         s.pointerEvents = "none";
         s.zIndex = "999999";
@@ -520,6 +499,8 @@ function setupDragDropTouch(dragRoot = document, dropRoot = document, options) {
 }
 if (import.meta.url.includes(`?autoload`))
   setupDragDropTouch(document, document, {
-    forceListen: true,
+    forceListen: true
   });
-export { setupDragDropTouch };
+export {
+  setupDragDropTouch
+};
