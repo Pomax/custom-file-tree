@@ -10,13 +10,18 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v3.2.1 (July 20, 2024)
+
+- [bugfix] the `file:click` and `dir:click` no longer double-wrap their event details (i.e. they no longer contain `{ detail: { detail: ... }}`).
+- touch event tests were added to the build/test runner.
+
+# Previous Versions
+
 ## v3.2.0 (July 17, 2024)
 
 - documented the `setFiles` and `select` functions on FileTree.
 - [bugfix/feature] errors are now `...:error` events rather than `throw`s, because the code was throwing errors in code paths where they could not be caught.
 - dev dependencies cleanup
-
-# Previous Versions
 
 ## v3.1.0 (July 17, 2024)
 
@@ -37,7 +42,7 @@ Full rewrite, with test coverage.
 - the top level "." dir no longer shows by default, which is a breaking change.
 - The top level "." dir will only show when using the new `show-top-level="true"` attribute on `<file-tree>`
 - File and dir entries are now persistent, with a `.state` variable that can be used as a persistent data store for the lifetime of the file tree (or until `setFiles` gets called).
-- There is a `setState(update)` function that can be used to  (synchronously) update the `state` variable. Note that this function is not required, you are free to modify `state` directly. (This isn't React, it's an HTML element)
+- There is a `setState(update)` function that can be used to (synchronously) update the `state` variable. Note that this function is not required, you are free to modify `state` directly. (This isn't React, it's an HTML element)
 
 ## v1.0.x (July 7, 2024)
 

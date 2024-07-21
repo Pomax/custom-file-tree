@@ -100,5 +100,28 @@ test.describe(`move events`, () => {
       await utils.entryDoesNotExist(sourcePath);
       await utils.entryExists(finalPath);
     });
+
+    test(`move a file in a directory into another directory`, async () => {
+      const eventPromise = utils.listenForEvent(`file:move`);
+
+      const sourcePath = `dist/README.md`;
+      await utils.entryExists(sourcePath);
+
+      const targetPath = `dist/old/`;
+      const finalPath = `dist/old/README.md`;
+      await utils.entryDoesNotExist(finalPath);
+
+      const sourceSelector = `[path="${sourcePath}"]`;
+      const targetSelector = `[path="${targetPath}"]`;
+      await touchDragEntry(sourceSelector, targetSelector);
+
+      const { detail } = await eventPromise;
+      const { oldPath, newPath } = detail;
+      expect(oldPath).toBe(sourcePath);
+      expect(newPath).toBe(finalPath);
+
+      await utils.entryDoesNotExist(sourcePath);
+      await utils.entryExists(finalPath);
+    });
   });
 });
