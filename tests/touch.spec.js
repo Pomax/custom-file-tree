@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { Strings } from "../src/utils/strings.js";
 import { bootstrapPage } from "./utils.js";
 
 test.describe(`move events`, () => {
@@ -15,37 +14,84 @@ test.describe(`move events`, () => {
     fileTree = utils.fileTree;
   });
 
-  async function touchDragEntry(source, target) {
-    const sourceSelector = `[path="${source}"]`;
-    const targetSelector = `[path="${target}"]`;
+  async function touchEntry(sourceSelector) {
+    await page.evaluate(
+      async ({ sourceSelector }) => {
+        const element = document.querySelector(sourceSelector);
+        globalThis.simulatedTouch.tap(element);
+      },
+      { sourceSelector }
+    );
+  }
 
+  async function touchDragEntry(sourceSelector, targetSelector) {
     await page.evaluate(
       async ({ sourceSelector, targetSelector }) => {
         const from = document.querySelector(sourceSelector);
         const to = document.querySelector(targetSelector);
-        Simulator.gestures.drag(from, to);
+        globalThis.simulatedTouch.drag(from, to);
       },
       { sourceSelector, targetSelector }
     );
   }
 
   /**
-   * All file:move event code paths
+   * Touch events
    */
   test.describe(`file:move`, () => {
-    const listenForFileMoveEvent = () => utils.listenForEvent(`file:move`);
-
-    test(`move a root file into a subdirectory`, async () => {
-      const eventPromise = listenForFileMoveEvent();
+    test(`click a file`, async () => {
+      const eventPromise = utils.listenForEvent(`file:click`);
 
       const sourcePath = `package.json`;
+      await utils.entryExists(sourcePath);
+
+      const sourceSelector = `[path="${sourcePath}"]`;
+      await touchEntry(sourceSelector);
+
+      const { detail } = await eventPromise;
+      expect(detail.path).toBe(sourcePath);
+    });
+
+    test(`click a dir`, async () => {
+      const eventPromise = utils.listenForEvent(`dir:click`);
+
+      const sourcePath = `dist/`;
+      await utils.entryExists(sourcePath);
+
+      const sourceSelector = `[path="${sourcePath}"]`;
+      await touchEntry(sourceSelector);
+
+      const { detail } = await eventPromise;
+      expect(detail.path).toBe(sourcePath);
+    });
+
+    test(`toggle a dir`, async () => {
+      const eventPromise = utils.listenForEvent(`dir:toggle`);
+
+      const sourcePath = `dist/`;
+      await utils.entryExists(sourcePath);
+
+      const sourceSelector = `[path="${sourcePath}"] > .icon`;
+      await touchEntry(sourceSelector);
+
+      const { detail } = await eventPromise;
+      expect(detail.path).toBe(sourcePath);
+    });
+
+    test(`move a root file into a subdirectory`, async () => {
+      const eventPromise = utils.listenForEvent(`file:move`);
+
+      const sourcePath = `package.json`;
+      await utils.entryExists(sourcePath);
+
       const targetPath = `src/`;
       const finalPath = targetPath + sourcePath;
-
-      await utils.entryExists(sourcePath);
       await utils.entryDoesNotExist(finalPath);
 
-      await touchDragEntry(sourcePath, targetPath);
+      const sourceSelector = `[path="${sourcePath}"]`;
+      const targetSelector = `[path="${targetPath}"]`;
+      await touchDragEntry(sourceSelector, targetSelector);
+
       const { detail } = await eventPromise;
       const { oldPath, newPath } = detail;
       expect(oldPath).toBe(sourcePath);

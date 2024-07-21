@@ -1,5 +1,8 @@
 // Add <file-tree> to our page and grab the element
 import "../dist/file-tree.esm.js";
+import { drag, tap } from "./touch-simulation.js";
+globalThis.simulatedTouch = { drag, tap };
+
 const fileTree = document.querySelector(`file-tree`);
 
 // Set some files. Intentionally terribly sorted.
