@@ -640,6 +640,7 @@ var FileTree = class extends FileTreeElement {
   // private function for initiating <file-entry> or <dir-entry> creation
   #addPath(path, content = void 0, eventType, immediate = false) {
     const { entries } = this;
+    if (!isFile(path) && !path.endsWith(`/`)) path += `/`;
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
         error: localeStrings.PATH_EXISTS(path)

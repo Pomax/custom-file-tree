@@ -62,6 +62,9 @@ class FileTree extends FileTreeElement {
   #addPath(path, content = undefined, eventType, immediate = false) {
     const { entries } = this;
 
+    // is this a dir but missing the trailing slash?
+    if (!isFile(path) && !path.endsWith(`/`)) path += `/`;
+
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
         error: Strings.PATH_EXISTS(path),
