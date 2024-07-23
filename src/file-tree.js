@@ -199,7 +199,7 @@ class FileTree extends FileTreeElement {
   select(path) {
     const entry = this.entries[path];
     if (!entry) throw new Error(Strings.PATH_DOES_NOT_EXIST(path));
-    entry.click();
+    entry.select();
   }
 
   // Entry selection depends on the element, so we hand that

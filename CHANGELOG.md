@@ -10,11 +10,15 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v3.2.6 (July 22, 2024)
+
+- [bugfix] filetree.select(path) generated a click event instead of selecting the relevant entry
+
+# Previous Versions
+
 ## v3.2.5 (July 22, 2024)
 
 - [bugfix] paths that don't end in `/` could lead to duplicate dir entries, breaking dir moving in the process.
-
-# Previous Versions
 
 ## v3.2.3 (July 20, 2024)
 
