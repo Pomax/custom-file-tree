@@ -12,7 +12,7 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 ## v3.2.6 (July 22, 2024)
 
-- [bugfix] filetree.select(path) generated a click event instead of selecting the relevant entry
+- [bugfix] the filetree `.select(path)` function generated a click event instead of selecting the relevant entry
 
 # Previous Versions
 
