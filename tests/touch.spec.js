@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { bootstrapPage } from "./utils.js";
 
-test.describe(`move events`, () => {
+test.describe(`touch events`, () => {
   let page;
   let fileTree;
   let utils;
@@ -18,7 +18,7 @@ test.describe(`move events`, () => {
     await page.evaluate(
       async ({ sourceSelector }) => {
         const element = document.querySelector(sourceSelector);
-        globalThis.simulatedTouch.tap(element);
+        await globalThis.simulatedTouch.tap(element);
       },
       { sourceSelector }
     );
@@ -29,7 +29,7 @@ test.describe(`move events`, () => {
       async ({ sourceSelector, targetSelector }) => {
         const from = document.querySelector(sourceSelector);
         const to = document.querySelector(targetSelector);
-        globalThis.simulatedTouch.drag(from, to);
+        await globalThis.simulatedTouch.drag(from, to);
       },
       { sourceSelector, targetSelector }
     );

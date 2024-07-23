@@ -13,8 +13,8 @@
     "postinstall": "playwright install",
     "server": "node server.js",
     "start": "npm run build && npm run server",
-    "test": "npm run start -- -- --test  && rm -rf test-results",
-    "test:integration": "playwright test tests --workers=1 --timeout 5000 --global-timeout 15000"
+    "test:integration": "playwright test tests --workers=1 --timeout 5000 --global-timeout 15000",
+    "test": "npm run start -- -- --test  && rm -rf test-results"
   },
   "repository": {
     "type": "git",

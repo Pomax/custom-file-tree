@@ -44,6 +44,7 @@ app.use((req, res) => {
 
 // Run the server, and trigger a client bundle rebuild every time script.js changes.
 app.listen(PORT, () => {
+  // Generate the server address notice
   const msg = `=   Server running on http://${HOSTNAME}:${PORT}   =`;
   const line = `=`.repeat(msg.length);
   const mid = `=${` `.repeat(msg.length - 2)}=`;

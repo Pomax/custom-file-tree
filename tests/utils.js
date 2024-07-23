@@ -137,7 +137,6 @@ export function setupHelpers(page) {
 
   // This is a scoped export, basically.
   return {
-    bootstrapPage,
     listenForEvent,
     entryExists,
     entryDoesNotExist,

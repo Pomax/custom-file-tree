@@ -144,12 +144,16 @@ var DragDTO = class {
 };
 
 // ts/drag-drop-touch.ts
+var { round } = Math;
 var DefaultConfiguration = {
-  dragImageOpacity: "0.5",
-  dragThresholdPixels: 5,
-  isPressHoldMode: false,
-  forceListen: false,
+  allowDragScroll: true,
   contextMenuDelayMS: 900,
+  dragImageOpacity: 0.5,
+  dragScrollPercentage: 10,
+  dragScrollSpeed: 10,
+  dragThresholdPixels: 5,
+  forceListen: false,
+  isPressHoldMode: false,
   pressHoldDelayMS: 400,
   pressHoldMargin: 25,
   pressHoldThresholdPixels: 0
@@ -167,6 +171,11 @@ var DragDropTouch = class {
   _img;
   _imgCustom;
   _imgOffset;
+  // Note that this typing is _not_ true for Node, because it does not follow
+  // the official JS Timers specification. However, Node does not have native
+  // support for typescript, and so by the time this code runs there is no
+  // problem. Similarly, native-typescript engines like Deno or Bun *do* follow
+  // the spec and so the following typing is correct when running in those.
   _pressHoldIntervalId;
   configuration;
   /**
@@ -208,25 +217,26 @@ var DragDropTouch = class {
    * @returns
    */
   listen() {
-    if (navigator.maxTouchPoints === 0 && !this.configuration.forceListen)
+    if (navigator.maxTouchPoints === 0 && !this.configuration.forceListen) {
       return;
+    }
     const opt = { passive: false, capture: false };
     this._dragRoot.addEventListener(
-      "touchstart",
+      `touchstart`,
       this._touchstart.bind(this),
       opt
     );
     this._dragRoot.addEventListener(
-      "touchmove",
+      `touchmove`,
       this._touchmove.bind(this),
       opt
     );
     this._dragRoot.addEventListener(
-      "touchend",
+      `touchend`,
       this._touchend.bind(this)
     );
     this._dragRoot.addEventListener(
-      "touchcancel",
+      `touchcancel`,
       this._touchend.bind(this)
     );
   }
@@ -249,13 +259,13 @@ var DragDropTouch = class {
       this._reset();
       let src = this._closestDraggable(e.target);
       if (src) {
-        if (e.target && !this._dispatchEvent(e, "mousemove", e.target) && !this._dispatchEvent(e, "mousedown", e.target)) {
+        if (e.target && !this._dispatchEvent(e, `mousemove`, e.target) && !this._dispatchEvent(e, `mousedown`, e.target)) {
           this._dragSource = src;
           this._ptDown = pointFrom(e);
           this._lastTouch = e;
           setTimeout(() => {
             if (this._dragSource === src && this._img === null) {
-              if (this._dispatchEvent(e, "contextmenu", src)) {
+              if (this._dispatchEvent(e, `contextmenu`, src)) {
                 this._reset();
               }
             }
@@ -286,31 +296,35 @@ var DragDropTouch = class {
     }
     if (this._shouldHandleMove(e) || this._shouldHandlePressHoldMove(e)) {
       let target = this._getTarget(e);
-      if (this._dispatchEvent(e, "mousemove", target)) {
+      if (this._dispatchEvent(e, `mousemove`, target)) {
         this._lastTouch = e;
         e.preventDefault();
         return;
       }
       if (this._dragSource && !this._img && this._shouldStartDragging(e)) {
-        if (this._dispatchEvent(this._lastTouch, "dragstart", this._dragSource)) {
+        if (this._dispatchEvent(this._lastTouch, `dragstart`, this._dragSource)) {
           this._dragSource = null;
           return;
         }
         this._createImage(e);
-        this._dispatchEvent(e, "dragenter", target);
+        this._dispatchEvent(e, `dragenter`, target);
       }
       if (this._img && this._dragSource) {
         this._lastTouch = e;
         e.preventDefault();
-        this._dispatchEvent(e, "drag", this._dragSource);
+        this._dispatchEvent(e, `drag`, this._dragSource);
         if (target !== this._lastTarget) {
           if (this._lastTarget)
-            this._dispatchEvent(this._lastTouch, "dragleave", this._lastTarget);
-          this._dispatchEvent(e, "dragenter", target);
+            this._dispatchEvent(this._lastTouch, `dragleave`, this._lastTarget);
+          this._dispatchEvent(e, `dragenter`, target);
           this._lastTarget = target;
         }
         this._moveImage(e);
-        this._isDropZone = this._dispatchEvent(e, "dragover", target);
+        this._isDropZone = this._dispatchEvent(e, `dragover`, target);
+        if (this.configuration.allowDragScroll) {
+          const delta = this._getHotRegionDelta(e);
+          globalThis.scrollBy(delta.x, delta.y);
+        }
       }
     }
   }
@@ -320,22 +334,25 @@ var DragDropTouch = class {
    * @returns
    */
   _touchend(e) {
-    if (!(this._lastTouch && e.target && this._lastTarget)) return;
+    if (!(this._lastTouch && e.target && this._lastTarget)) {
+      this._reset();
+      return;
+    }
     if (this._shouldHandle(e)) {
-      if (this._dispatchEvent(this._lastTouch, "mouseup", e.target)) {
+      if (this._dispatchEvent(this._lastTouch, `mouseup`, e.target)) {
         e.preventDefault();
         return;
       }
       if (!this._img) {
         this._dragSource = null;
-        this._dispatchEvent(this._lastTouch, "click", e.target);
+        this._dispatchEvent(this._lastTouch, `click`, e.target);
       }
       this._destroyImage();
       if (this._dragSource) {
-        if (e.type.indexOf("cancel") < 0 && this._isDropZone) {
-          this._dispatchEvent(this._lastTouch, "drop", this._lastTarget);
+        if (e.type.indexOf(`cancel`) < 0 && this._isDropZone) {
+          this._dispatchEvent(this._lastTouch, `drop`, this._lastTarget);
         }
-        this._dispatchEvent(this._lastTouch, "dragend", this._dragSource);
+        this._dispatchEvent(this._lastTouch, `dragend`, this._dragSource);
         this._reset();
       }
     }
@@ -393,7 +410,7 @@ var DragDropTouch = class {
     this._isDragEnabled = false;
     this._isDropZone = false;
     this._dataTransfer = new DragDTO(this);
-    clearInterval(this._pressHoldIntervalId);
+    clearTimeout(this._pressHoldIntervalId);
   }
   /**
    * ...docs go here...
@@ -401,12 +418,24 @@ var DragDropTouch = class {
    * @returns
    */
   _getDelta(e) {
-    if (!this._ptDown) return 0;
-    if (this.configuration.isPressHoldMode && !this._ptDown) {
-      return 0;
-    }
-    let p = pointFrom(e);
-    return Math.abs(p.x - this._ptDown.x) + Math.abs(p.y - this._ptDown.y);
+    if (!this._ptDown || this.configuration.isPressHoldMode) return 0;
+    const { x, y } = this._ptDown;
+    const p = pointFrom(e);
+    return ((p.x - x) ** 2 + (p.y - y) ** 2) ** 0.5;
+  }
+  /**
+   * ...docs go here...
+   * @param e
+   */
+  _getHotRegionDelta(e) {
+    const { clientX: x, clientY: y } = e.touches[0];
+    const { innerWidth: w, innerHeight: h } = globalThis;
+    const { dragScrollPercentage, dragScrollSpeed } = this.configuration;
+    const v1 = dragScrollPercentage / 100;
+    const v2 = 1 - v1;
+    const dx = x < w * v1 ? -dragScrollSpeed : x > w * v2 ? +dragScrollSpeed : 0;
+    const dy = y < h * v1 ? -dragScrollSpeed : y > h * v2 ? +dragScrollSpeed : 0;
+    return { x: dx, y: dy };
   }
   /**
    * ...docs go here...
@@ -415,7 +444,7 @@ var DragDropTouch = class {
    */
   _getTarget(e) {
     let pt = pointFrom(e), el = this._dropRoot.elementFromPoint(pt.x, pt.y);
-    while (el && getComputedStyle(el).pointerEvents == "none") {
+    while (el && getComputedStyle(el).pointerEvents == `none`) {
       el = el.parentElement;
     }
     return el;
@@ -431,11 +460,11 @@ var DragDropTouch = class {
     let src = this._imgCustom || this._dragSource;
     this._img = src.cloneNode(true);
     copyStyle(src, this._img);
-    this._img.style.top = this._img.style.left = "-9999px";
+    this._img.style.top = this._img.style.left = `-9999px`;
     if (!this._imgCustom) {
       let rc = src.getBoundingClientRect(), pt = pointFrom(e);
       this._imgOffset = { x: pt.x - rc.left, y: pt.y - rc.top };
-      this._img.style.opacity = this.configuration.dragImageOpacity;
+      this._img.style.opacity = `${this.configuration.dragImageOpacity}`;
     }
     this._moveImage(e);
     document.body.appendChild(this._img);
@@ -458,11 +487,11 @@ var DragDropTouch = class {
     requestAnimationFrame(() => {
       if (this._img) {
         let pt = pointFrom(e, true), s = this._img.style;
-        s.position = "absolute";
-        s.pointerEvents = "none";
-        s.zIndex = "999999";
-        s.left = Math.round(pt.x - this._imgOffset.x) + "px";
-        s.top = Math.round(pt.y - this._imgOffset.y) + "px";
+        s.position = `absolute`;
+        s.pointerEvents = `none`;
+        s.zIndex = `999999`;
+        s.left = `${round(pt.x - this._imgOffset.x)}px`;
+        s.top = `${round(pt.y - this._imgOffset.y)}px`;
       }
     });
   }
@@ -487,20 +516,27 @@ var DragDropTouch = class {
    */
   _closestDraggable(element) {
     for (let e = element; e !== null; e = e.parentElement) {
-      if (e.getAttribute("draggable") || e.draggable) {
+      if (e.getAttribute(`draggable`) || e.draggable) {
         return e;
       }
     }
     return null;
   }
 };
-function setupDragDropTouch(dragRoot = document, dropRoot = document, options) {
+function enableDragDropTouch(dragRoot = document, dropRoot = document, options) {
   new DragDropTouch(dragRoot, dropRoot, options);
 }
-if (import.meta.url.includes(`?autoload`))
-  setupDragDropTouch(document, document, {
+if (import.meta.url.includes(`?autoload`)) {
+  enableDragDropTouch(document, document, {
     forceListen: true
   });
+} else {
+  globalThis.DragDropTouch = {
+    enable: function(dragRoot = document, dropRoot = document, options) {
+      enableDragDropTouch(dragRoot, dropRoot, options);
+    }
+  };
+}
 export {
-  setupDragDropTouch
+  enableDragDropTouch
 };
