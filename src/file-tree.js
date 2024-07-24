@@ -12,6 +12,8 @@ import { Strings } from "./utils/strings.js";
  * operation, which is then handled by the file tree.
  */
 class FileTree extends FileTreeElement {
+  static observedAttributes = ["src"];
+  ready = false;
   isTree = true;
   entries = {};
 
@@ -29,6 +31,9 @@ class FileTree extends FileTreeElement {
   }
 
   clear() {
+    this.ready = false;
+    this.emit(`tree:clear`);
+    Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
     const rootDir = (this.rootDir = new DirEntry());
     rootDir.path = `.`;
@@ -41,15 +46,30 @@ class FileTree extends FileTreeElement {
     );
   }
 
+  attributeChangedCallback(name, _, value) {
+    if (name === `src` && value) {
+      this.#loadSource(value);
+    }
+  }
+
+  async #loadSource(url) {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data) this.setContent(data);
+  }
+
   /**
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
    */
-  setFiles(files = []) {
+  setContent(paths = []) {
     this.clear();
-    files.forEach((path) =>
-      this.#addPath(path, undefined, `tree:setfiles`, true),
-    );
+    paths.forEach((path) => {
+      const type = isFile(path) ? `file` : `dir`;
+      this.#addPath(path, undefined, `tree:add:${type}`, true);
+    });
+    this.ready = true;
+    return this.emit(`tree:ready`);
   }
 
   // create or upload
@@ -82,7 +102,7 @@ class FileTree extends FileTreeElement {
       this.#mkdir(entry).addEntry(entry);
     };
 
-    // During setFiles, we will not be asking for permission.
+    // We will not be asking for permission during setContent()
     if (immediate) return grant();
 
     this.emit(eventType, { path, content }, grant);

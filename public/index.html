@@ -35,7 +35,11 @@
 
     <h2>The element:</h2>
 
-    <file-tree show-top-level="true" remove-empty-dir="true"></file-tree>
+    <file-tree
+      src="/get-dir-listing"
+      show-top-level="true"
+      remove-empty-dir="true"
+    ></file-tree>
 
     <p>
       You can click files, drag files and directories around, create, rename,
@@ -49,22 +53,24 @@
 
     <p>
       It's an HTML element. The code is identical to other HTML elements, in
-      that you just write:
+      that you just write the tag and give it a source URL for the content:
     </p>
 
-    <pre><code>&lt;file-tree&gt;&lt;/file-tree&gt;</code></pre>
+    <pre><code>&lt;file-tree src="..."&gt;&lt;/file-tree&gt;</code></pre>
 
     <p>Or generate a <code>file-tree</code> element on the JS side:</p>
 
     <pre><code>const tree = document.createElement(`file-tree`);
-tree.setFiles([`a`, `list.of`, `file.paths`]);
+tree.setAttribute(`src`, `https://example.com/some-url-for/content`);
+// or
+tree.setContent([`a`, `list.of`, `file.paths`]);
 document.body.appendchild(tree);</code></pre>
 
     <p>And that's all you need as far as the page code is concerned.</p>
 
     <p>In this case we've also specified two extra attributes:</p>
 
-    <pre><code>&lt;file-tree show-top-level="true" remove-empty-dir="true"&gt;&lt;/file-tree&gt;</code></pre>
+    <pre><code>&lt;file-tree src="..." show-top-level="true" remove-empty-dir="true"&gt;&lt;/file-tree&gt;</code></pre>
 
     <p>
       The <code>show-top-level</code> attribute shows the normally hidden
@@ -86,32 +92,7 @@ document.body.appendchild(tree);</code></pre>
 import "../dist/file-tree.esm.js";
 const fileTree = document.querySelector(`file-tree`);
 
-// Set some files. Intentionally terribly sorted.
-const demoList = [
-  `dist/README.md`,
-  `dist/file-tree.esm.js`,
-  `dist/file-tree.esm.min.js`,
-  `dist/old/README.old`,
-  `dist/old/file-tree.esm.js`,
-  `dist/old/file-tree.esm.min.js`,
-  `public/index.html`,
-  `public/index.js`,
-  `public/README.md`,
-  `src/dir-entry.js`,
-  `src/file-entry.js`,
-  `src/file-tree.css`,
-  `src/file-tree.js`,
-  `src/README.md`,
-  `src/utils.js`,
-  `test/cake.because.why.not`,
-  `test/README.md`,
-  `package.json`,
-  `README.md`,
-];
-
-fileTree.setFiles(demoList);
-
-// Listen for, and grant every, file tree event
+// Then listen for, and grant every, file tree event:
 const eventList = [
   // The main event your users care about
   `file:click`,

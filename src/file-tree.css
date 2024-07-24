@@ -20,6 +20,7 @@ file-tree {
   --line-height: 1.5em;
   --indent: 1em;
   --entry-padding: 0.25em;
+
   --highlight-background: lightcyan;
   --highlight-border-color: blue;
   --drop-target-color: rgb(205, 255, 242);

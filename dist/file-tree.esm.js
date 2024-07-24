@@ -597,6 +597,8 @@ registry.define(`file-entry`, FileEntry);
 
 // src/file-tree.js
 var FileTree = class extends FileTreeElement {
+  static observedAttributes = ["src"];
+  ready = false;
   isTree = true;
   entries = {};
   constructor() {
@@ -610,6 +612,9 @@ var FileTree = class extends FileTreeElement {
     return this.rootDir;
   }
   clear() {
+    this.ready = false;
+    this.emit(`tree:clear`);
+    Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
     const rootDir = this.rootDir = new DirEntry();
     rootDir.path = `.`;
@@ -622,15 +627,28 @@ var FileTree = class extends FileTreeElement {
       () => this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`))
     );
   }
+  attributeChangedCallback(name, _, value) {
+    if (name === `src` && value) {
+      this.#loadSource(value);
+    }
+  }
+  async #loadSource(url) {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data) this.setContent(data);
+  }
   /**
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
    */
-  setFiles(files = []) {
+  setContent(paths = []) {
     this.clear();
-    files.forEach(
-      (path) => this.#addPath(path, void 0, `tree:setfiles`, true)
-    );
+    paths.forEach((path) => {
+      const type = isFile(path) ? `file` : `dir`;
+      this.#addPath(path, void 0, `tree:add:${type}`, true);
+    });
+    this.ready = true;
+    return this.emit(`tree:ready`);
   }
   // create or upload
   createEntry(path, content = void 0) {

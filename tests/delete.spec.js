@@ -1,56 +1,25 @@
 import { expect, test } from "@playwright/test";
+import { bootstrapPage } from "./utils.js";
 
 test.describe(`delete events`, () => {
   let page;
   let fileTree;
-  let eventPromise;
-
-  async function listenForEvent(eventType) {
-    eventPromise = page.evaluate(
-      (eventType) =>
-        new Promise((resolve) => {
-          document
-            .querySelector(`file-tree`)
-            .addEventListener(eventType, ({ type, detail }) =>
-              resolve({ type, detail })
-            );
-        }),
-      eventType
-    );
-  }
-
-  async function hasEntry(path) {
-    return page.evaluate((path) => {
-      const { entries } = document.querySelector(`file-tree`);
-      const entry = entries[path];
-      return !!(entry?.path === path);
-    }, path);
-  }
-
-  async function entryExists(path) {
-    return expect(await hasEntry(path)).toBe(true);
-  }
-
-  async function entryDoesNotExist(path) {
-    return expect(await hasEntry(path)).toBe(false);
-  }
+  let utils;
 
   test.beforeEach(async ({ browser }) => {
-    eventPromise = undefined;
-    page = await browser.newPage();
-    page.on("console", (msg) => console.log(msg.text()));
-    await page.goto(`http://localhost:8000`);
-    fileTree = page.locator(`file-tree`).first();
+    utils = await bootstrapPage(browser);
+    page = utils.page;
+    fileTree = utils.fileTree;
   });
 
   /**
    * All file:delete event code paths
    */
   test.describe(`file:delete`, () => {
-    const listenForFileDeleteEvent = () => listenForEvent(`file:delete`);
+    const listenForFileDeleteEvent = () => utils.listenForEvent(`file:delete`);
 
     test(`deleting a file at the root location`, async () => {
-      listenForFileDeleteEvent();
+      const eventPromise = listenForFileDeleteEvent();
 
       page.on(`dialog`, async (dialog) => {
         await dialog.accept();
@@ -58,16 +27,16 @@ test.describe(`delete events`, () => {
         const { detail } = await eventPromise;
         const { path } = detail;
         await expect(path).toBe(`README.md`);
-        await entryDoesNotExist(`README.md`);
+        await utils.entryDoesNotExist(`README.md`);
       });
 
-      await entryExists(`README.md`);
+      await utils.entryExists(`README.md`);
       await page.locator(`[path="README.md"]`).click();
       await page.locator(`[path="README.md"] > .delete-file`).click();
     });
 
     test(`deleting a file in a subdirectory`, async () => {
-      listenForFileDeleteEvent();
+      const eventPromise = listenForFileDeleteEvent();
 
       page.on(`dialog`, async (dialog) => {
         await dialog.accept();
@@ -75,10 +44,10 @@ test.describe(`delete events`, () => {
         const { detail } = await eventPromise;
         const { path } = detail;
         await expect(path).toBe(`dist/README.md`);
-        await entryDoesNotExist(`dist/README.md`);
+        await utils.entryDoesNotExist(`dist/README.md`);
       });
 
-      await entryExists(`dist/README.md`);
+      await utils.entryExists(`dist/README.md`);
       await page.locator(`[path="dist/README.md"]`).click();
       await page.locator(`[path="dist/README.md"] > .delete-file`).click();
     });
@@ -88,10 +57,10 @@ test.describe(`delete events`, () => {
    * All dir:delete event code paths
    */
   test.describe(`dir:delete`, () => {
-    const listenForDirDeleteEvent = () => listenForEvent(`dir:delete`);
+    const listenForDirDeleteEvent = () => utils.listenForEvent(`dir:delete`);
 
     test(`deleting a dir at the root location`, async () => {
-      listenForDirDeleteEvent();
+      const eventPromise = listenForDirDeleteEvent();
 
       page.on(`dialog`, async (dialog) => {
         await dialog.accept();
@@ -99,7 +68,7 @@ test.describe(`delete events`, () => {
         const { detail } = await eventPromise;
         const { path } = detail;
         await expect(path).toBe(`dist/`);
-        await entryDoesNotExist(`dist/`);
+        await utils.entryDoesNotExist(`dist/`);
 
         // verify no entries start with this path anymore
         const keys = await page.evaluate(() =>
@@ -108,13 +77,13 @@ test.describe(`delete events`, () => {
         expect(!keys.some((v) => v.startsWith(`dist/`))).toBe(true);
       });
 
-      await entryExists(`dist/`);
+      await utils.entryExists(`dist/`);
       await page.locator(`[path="dist/"] > entry-heading`).click();
       await page.locator(`[path="dist/"] > .delete-dir`).click();
     });
 
     test(`deleting a dir in another directory`, async () => {
-      listenForDirDeleteEvent();
+      const eventPromise = listenForDirDeleteEvent();
 
       page.on(`dialog`, async (dialog) => {
         await dialog.accept();
@@ -122,7 +91,7 @@ test.describe(`delete events`, () => {
         const { detail } = await eventPromise;
         const { path } = detail;
         await expect(path).toBe(`dist/old/`);
-        await entryDoesNotExist(`dist/old/`);
+        await utils.entryDoesNotExist(`dist/old/`);
 
         // verify no entries start with this path anymore
         const keys = await page.evaluate(() =>
@@ -132,7 +101,7 @@ test.describe(`delete events`, () => {
         expect(keys.some((v) => v.startsWith(`dist/`))).toBe(true);
       });
 
-      await entryExists(`dist/old/`);
+      await utils.entryExists(`dist/old/`);
       await page.locator(`[path="dist/old/"] > entry-heading`).click();
       await page.locator(`[path="dist/old/"] > .delete-dir`).click();
     });

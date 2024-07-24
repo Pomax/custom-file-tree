@@ -31,6 +31,31 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get(`/get-dir-listing`, (req, res) => {
+  res.setHeader(`Content-Type`, `application/json`);
+  res.send(
+    JSON.stringify([
+      `dist/README.md`,
+      `dist/file-tree.esm.js`,
+      `dist/file-tree.esm.min.js`,
+      `dist/old/README.old`,
+      `dist/old/file-tree.esm.js`,
+      `dist/old/file-tree.esm.min.js`,
+      `public/index.html`,
+      `public/index.js`,
+      `src/dir-entry.js`,
+      `src/file-entry.js`,
+      `src/file-tree.css`,
+      `src/file-tree.js`,
+      `src/utils.js`,
+      `test/cake.because.why.not`,
+      `test/cake.spec.js`,
+      `package.json`,
+      `README.md`,
+    ])
+  );
+});
+
 // static routes
 app.get(`/`, (req, res) => res.redirect(`/public`));
 app.use(`/`, express.static(`.`));
