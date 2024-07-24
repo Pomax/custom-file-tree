@@ -128,7 +128,7 @@ var FileTreeElement = class extends HTMLElement {
     return Array.from(this.root.querySelectorAll(qs));
   }
   select() {
-    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.root.unselect();
     this.classList.add(`selected`);
   }
   setState(stateUpdate) {
@@ -752,6 +752,10 @@ var FileTree = class extends FileTreeElement {
     const entry = this.entries[path];
     if (!entry) throw new Error(localeStrings.PATH_DOES_NOT_EXIST(path));
     entry.select();
+  }
+  // Counterpart to select()
+  unselect() {
+    this.find(`.selected`)?.classList.remove(`selected`);
   }
   // Entry selection depends on the element, so we hand that
   // off to the entry itself once granted. (if granted)

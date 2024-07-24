@@ -202,6 +202,11 @@ class FileTree extends FileTreeElement {
     entry.select();
   }
 
+  // Counterpart to select()
+  unselect() {
+    this.find(`.selected`)?.classList.remove(`selected`);
+  }
+
   // Entry selection depends on the element, so we hand that
   // off to the entry itself once granted. (if granted)
   selectEntry(entry, detail = {}) {

@@ -10,11 +10,15 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v3.3.0 (July 23, 2024)
+
+- Added `.unselect()` to force a highlight reset.
+
+# Previous Versions
+
 ## v3.2.6 (July 22, 2024)
 
 - [bugfix] the filetree `.select(path)` function generated a click event instead of selecting the relevant entry
-
-# Previous Versions
 
 ## v3.2.5 (July 22, 2024)
 

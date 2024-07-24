@@ -38,7 +38,7 @@ test.describe(`touch events`, () => {
   /**
    * Touch events
    */
-  test.describe(`file:move`, () => {
+  test.describe(`touch events`, () => {
     test(`click a file`, async () => {
       const eventPromise = utils.listenForEvent(`file:click`);
 
@@ -50,6 +50,10 @@ test.describe(`touch events`, () => {
 
       const { detail } = await eventPromise;
       expect(detail.path).toBe(sourcePath);
+
+      await expect(page.locator(sourceSelector)).toHaveClass(`selected`);
+      await page.evaluate(() => document.querySelector(`file-tree`).unselect());
+      await expect(page.locator(sourceSelector)).not.toHaveClass(`selected`);
     });
 
     test(`click a dir`, async () => {

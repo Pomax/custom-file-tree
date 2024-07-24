@@ -128,7 +128,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   select() {
-    this.root.find(`.selected`)?.classList.remove(`selected`);
+    this.root.unselect();
     this.classList.add(`selected`);
   }
 

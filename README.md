@@ -111,10 +111,11 @@ The following events will be emitted when certain errors occur. All errors have 
 
 ## Functions
 
-There are two functions supported by `<file-tree>`:
+There are three functions supported by `<file-tree>`:
 
 - `.setFiles(paths)`,<br>This function sets the file tree content, with `paths` being an array of strings, where each string represents a relative path that uses `/` as path delimiter.
 - `.select(path)`,<br>This function allows the programmatic selection of a directory or file entry without the user needing to click the entry. This function will throw if the provided path string does not match any of the paths in the file tree.
+- `.unselect()`,<br>This function allows the programmatic unselecting of whichever directory or file entry is currently selected, if there is one.
 
 ## Special attributes
 

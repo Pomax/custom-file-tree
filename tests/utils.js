@@ -7,7 +7,7 @@ export async function bootstrapPage(browser, options={}) {
   await page.goto(`http://localhost:8000`);
   const utils = setupHelpers(page);
   utils.page = page;
-  utils.fileTree = page.locator(`file-tree`).first();
+  utils.fileTree = await page.locator(`file-tree`).first();
   return utils;
 }
 
