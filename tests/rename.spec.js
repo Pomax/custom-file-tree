@@ -42,7 +42,7 @@ test.describe(`rename events`, () => {
       await utils.entryDoesNotExist(`newfile.txt`);
 
       await page.locator(`[path="README.md"]`).click();
-      await page.locator(`[path="README.md"] > .rename-file`).click();
+      await page.locator(`[path="README.md"] > .buttons .rename-file`).click();
     });
 
     test(`renaming a file in the "dist" directory`, async () => {
@@ -67,7 +67,9 @@ test.describe(`rename events`, () => {
       await utils.entryExists(`dist/README.md`);
       await utils.entryDoesNotExist(`dist/newfile.txt`);
       await page.locator(`[path="dist/README.md"]`).click();
-      await page.locator(`[path="dist/README.md"] > .rename-file`).click();
+      await page
+        .locator(`[path="dist/README.md"] > .buttons .rename-file`)
+        .click();
     });
 
     test(`renaming a file with dir delimiter should get rejected`, async () => {
@@ -85,7 +87,7 @@ test.describe(`rename events`, () => {
       await utils.entryExists(`README.md`);
       await utils.entryDoesNotExist(`dist/newfile.txt`);
       await page.locator(`[path="README.md"]`).click();
-      await page.locator(`[path="README.md"] > button.rename-file`).click();
+      await page.locator(`[path="README.md"] > .buttons .rename-file`).click();
     });
   });
 
@@ -125,7 +127,7 @@ test.describe(`rename events`, () => {
 
       await utils.entryExists(`dist/`);
       await page.locator(`[path="dist/"] > entry-heading`).click();
-      await page.locator(`[path="dist/"] > .rename-dir`).click();
+      await page.locator(`[path="dist/"] > .buttons .rename-dir`).click();
     });
 
     test(`renaming "dist/old" to "dist/newname"`, async () => {
@@ -158,7 +160,7 @@ test.describe(`rename events`, () => {
 
       await utils.entryExists(`dist/old/`);
       await page.locator(`[path="dist/old/"] > entry-heading`).click();
-      await page.locator(`[path="dist/old/"] > .rename-dir`).click();
+      await page.locator(`[path="dist/old/"] > .buttons .rename-dir`).click();
     });
   });
 });

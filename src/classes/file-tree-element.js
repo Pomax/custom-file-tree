@@ -135,6 +135,10 @@ export class FileTreeElement extends HTMLElement {
     return Array.from(this.root.querySelectorAll(qs));
   }
 
+  hasButton(className) {
+    return this.find(`& > .buttons .${className}`);
+  }
+
   select() {
     this.root.unselect();
     this.classList.add(`selected`);

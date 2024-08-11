@@ -54,6 +54,8 @@ file-tree {
 
 So you will have to update your own CSS accordingly.
 
+Similarly, any code that you've written for automatic button interaction using `querySelector` will need selectors like `[path="..."] > .create-dir` changed to `[path="..."] > .buttons .create-dir` instead.
+
 # Previous Versions
 
 ## v4.0.0 (July 23, 2024)

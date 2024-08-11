@@ -36,7 +36,7 @@ test.describe(`create events`, () => {
       });
 
       await utils.entryDoesNotExist(`newfile.txt`);
-      await page.locator(`[path="."] > .create-file`).click();
+      await page.locator(`[path="."] > .buttons .create-file`).click();
     });
 
     test(`creating a file in the "dist" directory`, async () => {
@@ -57,7 +57,7 @@ test.describe(`create events`, () => {
 
       await utils.entryDoesNotExist(`dist/newfile.txt`);
       await page.locator(`[path="dist/"] > entry-heading`).click();
-      await page.locator(`[path="dist/"] > .create-file`).click();
+      await page.locator(`[path="dist/"] > .buttons .create-file`).click();
     });
 
     test(`creating a file with dir delimiter should get rejected`, async () => {
@@ -72,7 +72,7 @@ test.describe(`create events`, () => {
         }
       });
       await utils.entryDoesNotExist(`dist/newfile.txt`);
-      await page.locator(`[path="."] > .create-file`).click();
+      await page.locator(`[path="."] > .buttons .create-file`).click();
     });
   });
 
@@ -99,7 +99,7 @@ test.describe(`create events`, () => {
       });
 
       await utils.entryDoesNotExist(`newdir/`);
-      await page.locator(`[path="."] > .create-dir`).click();
+      await page.locator(`[path="."] > .buttons .create-dir`).click();
     });
 
     test(`creating a directory inside the "dist" directory`, async () => {
@@ -120,7 +120,7 @@ test.describe(`create events`, () => {
 
       await utils.entryDoesNotExist(`dist/newdir/`);
       await page.locator(`[path="dist/"] > entry-heading`).click();
-      await page.locator(`[path="dist/"] > .create-dir`).click();
+      await page.locator(`[path="dist/"] > .buttons .create-dir`).click();
     });
 
     test(`creating a directory with a dir delimiter in it should fail`, async () => {
@@ -135,7 +135,7 @@ test.describe(`create events`, () => {
         }
       });
 
-      await page.locator(`[path="."] > .create-dir`).click();
+      await page.locator(`[path="."] > .buttons .create-dir`).click();
     });
   });
 });
