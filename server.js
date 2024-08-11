@@ -9,6 +9,7 @@ process.env.PORT = PORT;
 const HOSTNAME = process.env.HOSTNAME ?? `localhost`;
 process.env.HOSTNAME = HOSTNAME;
 
+const testing = process.argv.includes(`--test`);
 const npm = process.platform === `win32` ? `npm.cmd` : `npm`;
 
 // Set up the core server
@@ -76,7 +77,8 @@ app.listen(PORT, () => {
   console.log([``, line, mid, msg, mid, line, ``].join(`\n`));
 
   // are we running tests?
-  if (process.argv.includes(`--test`)) {
+  if (testing) {
+    console.log(`\nRUNNING IN TEST MODE\n`);
     const runner = spawn(npm, [`run`, `test:integration`], {
       stdio: `inherit`,
     });

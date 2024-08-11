@@ -35,7 +35,7 @@ class FileTree extends FileTreeElement {
     this.emit(`tree:clear`);
     Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = (this.rootDir = new DirEntry());
+    const rootDir = (this.rootDir = new DirEntry(true));
     rootDir.path = `.`;
     this.appendChild(rootDir);
   }

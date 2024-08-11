@@ -26,6 +26,14 @@ export class FileTreeElement extends HTMLElement {
       const heading = (this.heading = create(`entry-heading`));
       this.appendChild(heading);
     }
+
+    // set up our button container
+    this.buttons = this.find(`& > span.buttons`);
+    if (!this.buttons) {
+      const buttons = (this.buttons = create(`span`));
+      buttons.classList.add(`buttons`);
+      this.appendChild(buttons);
+    }
   }
 
   addExternalListener(target, eventName, handler, options = {}) {

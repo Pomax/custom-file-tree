@@ -10,9 +10,9 @@ import { Strings } from "../utils/strings.js";
 export class DirEntry extends FileTreeElement {
   isDir = true;
 
-  constructor(name, fullPath = name) {
-    super(name, fullPath);
-    this.addButtons();
+  constructor(rootDir = false) {
+    super();
+    this.addButtons(rootDir);
   }
 
   get path() {
@@ -58,12 +58,14 @@ export class DirEntry extends FileTreeElement {
     });
   }
 
-  addButtons() {
+  addButtons(rootDir) {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
+    if (!rootDir) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
 
   /**
@@ -77,7 +79,7 @@ export class DirEntry extends FileTreeElement {
     btn.classList.add(`rename-dir`);
     btn.title = Strings.RENAME_DIRECTORY;
     btn.textContent = `✏️`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, () => this.#rename());
   }
 
@@ -102,7 +104,7 @@ export class DirEntry extends FileTreeElement {
     btn.classList.add(`delete-dir`);
     btn.title = Strings.DELETE_DIRECTORY;
     btn.textContent = `🗑️`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, () => this.#deleteDir());
   }
 
@@ -124,7 +126,7 @@ export class DirEntry extends FileTreeElement {
     btn.title = Strings.CREATE_FILE;
     btn.textContent = `📄`;
     btn.addEventListener(`click`, () => this.#createFile());
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
 
   #createFile() {
@@ -151,7 +153,7 @@ export class DirEntry extends FileTreeElement {
     btn.title = Strings.CREATE_DIRECTORY;
     btn.textContent = `📁`;
     btn.addEventListener(`click`, () => this.#createDir());
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
 
   #createDir() {
@@ -177,7 +179,7 @@ export class DirEntry extends FileTreeElement {
     btn.textContent = `💻`;
     // This is fairly involved, so it's its own utility function.
     btn.addEventListener(`click`, () => uploadFilesFromDevice(this));
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
 
   /**
@@ -208,17 +210,17 @@ export class DirEntry extends FileTreeElement {
     const children = [...this.children];
     children.sort((a, b) => {
       // icon first (there can only be one)
-      if (a.tagName === `SPAN`) return -1;
-      if (b.tagName === `SPAN`) return 1;
+      if (a.tagName === `SPAN` && a.classList.contains(`icon`)) return -1;
+      if (b.tagName === `SPAN` && b.classList.contains(`icon`)) return 1;
 
       // then dir heading (there can only be one)
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
 
-      // then the buttons, and there are several.
-      if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
-      else if (a.tagName === `BUTTON`) return -1;
-      else if (b.tagName === `BUTTON`) return 1;
+      // then the buttons, which are a span but don't use the "icon" class:
+      if (a.tagName === `SPAN` && b.tagName === `SPAN`) return 0;
+      else if (a.tagName === `SPAN`) return -1;
+      else if (b.tagName === `SPAN`) return 1;
 
       // then dirs, sorted by name, if there are any.
       if (separateDirs) {

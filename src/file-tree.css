@@ -66,13 +66,13 @@ file-tree {
     entry has been selected by the user.
   */
 
-  & button {
+  & .buttons {
     display: none;
     height: var(--line-height);
   }
 
-  & .selected > button,
-  & [path="."] > button {
+  & .selected > .buttons,
+  & [path="."] > .buttons {
     display: inline-block;
   }
 

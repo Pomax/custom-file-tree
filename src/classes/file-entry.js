@@ -19,7 +19,7 @@ export class FileEntry extends FileTreeElement {
     btn.classList.add(`rename-file`);
     btn.title = Strings.RENAME_FILE;
     btn.textContent = `✏️`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
@@ -43,7 +43,7 @@ export class FileEntry extends FileTreeElement {
     btn.classList.add(`delete-file`);
     btn.title = Strings.DELETE_FILE;
     btn.textContent = `🗑️`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();

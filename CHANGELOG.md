@@ -10,6 +10,52 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v5.0.0 (August 11, 2024)
+
+- wrapped `<dir-entry>` and `<file-entry>` buttons in a `<span class="buttons">` element so that folks can more easily move the entire button collection around in their own CSS. **This is a breaking change** if you have CSS in place for overriding the default button placement.
+
+The relevant CSS rule changes are that the previous:
+
+```css
+file-tree {
+  ...
+
+  & button {
+    ...
+  }
+
+  & .selected > button,
+  & [path="."] > button {
+    ...
+  }
+
+  ...
+}
+```
+
+has become:
+
+```css
+file-tree {
+  ...
+
+  & .buttons {
+    ...
+  }
+
+  & .selected > .buttons,
+  & [path="."] > .buttons {
+    ...
+  }
+
+  ...
+}
+```
+
+So you will have to update your own CSS accordingly.
+
+# Previous Versions
+
 ## v4.0.0 (July 23, 2024)
 
 - Added support for the `src` attribute so the file tree can be bootstrapped purely in HTML, with changes to the attribute triggering reloads.
@@ -17,8 +63,6 @@ Note that there may be gaps in the version history, which may happen if a releas
 - Related, the file tree now generates events during `setContent()` and `src` attribute resolution, generating `tree:add:file` and `tree:add:dir` events. The documentation has been updated to include these events.
 - The file tree now generates a `tree:reset` event when a clear happens prior to assigning new content. There is, admittedly very little use for this event, but it's there now.
 - The file tree also generates a `tree:ready` event when it has finished building its content.
-
-# Previous Versions
 
 ## v3.3.0 (July 23, 2024)
 
