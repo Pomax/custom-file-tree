@@ -13,13 +13,13 @@ export class FileEntry extends FileTreeElement {
   }
 
   addRenameButton() {
-    if (this.find(`& > .rename-file`)) return;
+    if (this.hasButton(`rename-file`)) return;
 
     const btn = create(`button`);
     btn.classList.add(`rename-file`);
     btn.title = Strings.RENAME_FILE;
     btn.textContent = `✏️`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
@@ -37,13 +37,13 @@ export class FileEntry extends FileTreeElement {
   }
 
   addDeleteButton() {
-    if (this.find(`& > .delete-file`)) return;
+    if (this.hasButton(`delete-file`)) return;
 
     const btn = create(`button`);
     btn.classList.add(`delete-file`);
     btn.title = Strings.DELETE_FILE;
     btn.textContent = `🗑️`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();

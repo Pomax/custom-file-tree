@@ -32,7 +32,7 @@ test.describe(`delete events`, () => {
 
       await utils.entryExists(`README.md`);
       await page.locator(`[path="README.md"]`).click();
-      await page.locator(`[path="README.md"] > .delete-file`).click();
+      await page.locator(`[path="README.md"] > .buttons .delete-file`).click();
     });
 
     test(`deleting a file in a subdirectory`, async () => {
@@ -49,7 +49,7 @@ test.describe(`delete events`, () => {
 
       await utils.entryExists(`dist/README.md`);
       await page.locator(`[path="dist/README.md"]`).click();
-      await page.locator(`[path="dist/README.md"] > .delete-file`).click();
+      await page.locator(`[path="dist/README.md"] > .buttons .delete-file`).click();
     });
   });
 
@@ -79,7 +79,7 @@ test.describe(`delete events`, () => {
 
       await utils.entryExists(`dist/`);
       await page.locator(`[path="dist/"] > entry-heading`).click();
-      await page.locator(`[path="dist/"] > .delete-dir`).click();
+      await page.locator(`[path="dist/"] > .buttons .delete-dir`).click();
     });
 
     test(`deleting a dir in another directory`, async () => {
@@ -103,7 +103,7 @@ test.describe(`delete events`, () => {
 
       await utils.entryExists(`dist/old/`);
       await page.locator(`[path="dist/old/"] > entry-heading`).click();
-      await page.locator(`[path="dist/old/"] > .delete-dir`).click();
+      await page.locator(`[path="dist/old/"] > .buttons .delete-dir`).click();
     });
   });
 });

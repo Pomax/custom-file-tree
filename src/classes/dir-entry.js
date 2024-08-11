@@ -10,9 +10,9 @@ import { Strings } from "../utils/strings.js";
 export class DirEntry extends FileTreeElement {
   isDir = true;
 
-  constructor(name, fullPath = name) {
-    super(name, fullPath);
-    this.addButtons();
+  constructor(rootDir = false) {
+    super();
+    this.addButtons(rootDir);
   }
 
   get path() {
@@ -58,58 +58,13 @@ export class DirEntry extends FileTreeElement {
     });
   }
 
-  addButtons() {
+  addButtons(rootDir) {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
-  }
-
-  /**
-   * rename this dir.
-   */
-  addRenameButton() {
-    if (this.path === `.`) return;
-    if (this.find(`& > .rename-dir`)) return;
-
-    const btn = create(`button`);
-    btn.classList.add(`rename-dir`);
-    btn.title = Strings.RENAME_DIRECTORY;
-    btn.textContent = `✏️`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#rename());
-  }
-
-  #rename() {
-    const newName = prompt(Strings.RENAME_DIRECTORY_PROMPT, this.name)?.trim();
-    if (newName) {
-      if (newName.includes(`/`)) {
-        return alert(Strings.RENAME_DIRECTORY_MOVE_INSTEAD);
-      }
-      this.root.renameEntry(this, newName);
-    }
-  }
-
-  /**
-   * Remove this dir and everything in it
-   */
-  addDeleteButton() {
-    if (this.path === `.`) return;
-    if (this.find(`& > .delete-dir`)) return;
-
-    const btn = create(`button`);
-    btn.classList.add(`delete-dir`);
-    btn.title = Strings.DELETE_DIRECTORY;
-    btn.textContent = `🗑️`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#deleteDir());
-  }
-
-  #deleteDir() {
-    const msg = Strings.DELETE_DIRECTORY_PROMPT(this.path);
-    if (confirm(msg)) {
-      this.root.removeEntry(this);
+    if (!rootDir) {
+      this.addRenameButton();
+      this.addDeleteButton();
     }
   }
 
@@ -117,14 +72,14 @@ export class DirEntry extends FileTreeElement {
    * New file in this directory
    */
   createFileButton() {
-    if (this.find(`& > .create-file`)) return;
+    if (this.hasButton(`create-file`)) return;
 
     const btn = create(`button`);
     btn.classList.add(`create-file`);
     btn.title = Strings.CREATE_FILE;
     btn.textContent = `📄`;
     btn.addEventListener(`click`, () => this.#createFile());
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
 
   #createFile() {
@@ -144,14 +99,14 @@ export class DirEntry extends FileTreeElement {
    * New directory in this directory
    */
   createDirButton() {
-    if (this.find(`& > .create-dir`)) return;
+    if (this.hasButton(`create-dir`)) return;
 
     const btn = create(`button`);
     btn.classList.add(`create-dir`);
     btn.title = Strings.CREATE_DIRECTORY;
     btn.textContent = `📁`;
     btn.addEventListener(`click`, () => this.#createDir());
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
 
   #createDir() {
@@ -169,7 +124,7 @@ export class DirEntry extends FileTreeElement {
    * Upload files or an entire directory from your device
    */
   addUploadButton() {
-    if (this.find(`& > .upload`)) return;
+    if (this.hasButton(`upload`)) return;
 
     const btn = create(`button`);
     btn.classList.add(`upload`);
@@ -177,7 +132,54 @@ export class DirEntry extends FileTreeElement {
     btn.textContent = `💻`;
     // This is fairly involved, so it's its own utility function.
     btn.addEventListener(`click`, () => uploadFilesFromDevice(this));
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
+  }
+
+  /**
+   * rename this dir.
+   */
+  addRenameButton() {
+    if (this.path === `.`) return;
+    if (this.hasButton(`rename-dir`)) return;
+
+    const btn = create(`button`);
+    btn.classList.add(`rename-dir`);
+    btn.title = Strings.RENAME_DIRECTORY;
+    btn.textContent = `✏️`;
+    this.buttons.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#rename());
+  }
+
+  #rename() {
+    const newName = prompt(Strings.RENAME_DIRECTORY_PROMPT, this.name)?.trim();
+    if (newName) {
+      if (newName.includes(`/`)) {
+        return alert(Strings.RENAME_DIRECTORY_MOVE_INSTEAD);
+      }
+      this.root.renameEntry(this, newName);
+    }
+  }
+
+  /**
+   * Remove this dir and everything in it
+   */
+  addDeleteButton() {
+    if (this.path === `.`) return;
+    if (this.hasButton(`delete-dir`)) return;
+
+    const btn = create(`button`);
+    btn.classList.add(`delete-dir`);
+    btn.title = Strings.DELETE_DIRECTORY;
+    btn.textContent = `🗑️`;
+    this.buttons.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#deleteDir());
+  }
+
+  #deleteDir() {
+    const msg = Strings.DELETE_DIRECTORY_PROMPT(this.path);
+    if (confirm(msg)) {
+      this.root.removeEntry(this);
+    }
   }
 
   /**
@@ -208,17 +210,17 @@ export class DirEntry extends FileTreeElement {
     const children = [...this.children];
     children.sort((a, b) => {
       // icon first (there can only be one)
-      if (a.tagName === `SPAN`) return -1;
-      if (b.tagName === `SPAN`) return 1;
+      if (a.tagName === `SPAN` && a.classList.contains(`icon`)) return -1;
+      if (b.tagName === `SPAN` && b.classList.contains(`icon`)) return 1;
 
       // then dir heading (there can only be one)
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
 
-      // then the buttons, and there are several.
-      if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
-      else if (a.tagName === `BUTTON`) return -1;
-      else if (b.tagName === `BUTTON`) return 1;
+      // then the buttons, which are a span but don't use the "icon" class:
+      if (a.tagName === `SPAN` && b.tagName === `SPAN`) return 0;
+      else if (a.tagName === `SPAN`) return -1;
+      else if (b.tagName === `SPAN`) return 1;
 
       // then dirs, sorted by name, if there are any.
       if (separateDirs) {

@@ -9,6 +9,7 @@ process.env.PORT = PORT;
 const HOSTNAME = process.env.HOSTNAME ?? `localhost`;
 process.env.HOSTNAME = HOSTNAME;
 
+const testing = process.argv.includes(`--test`);
 const npm = process.platform === `win32` ? `npm.cmd` : `npm`;
 
 // Set up the core server
@@ -69,14 +70,9 @@ app.use((req, res) => {
 
 // Run the server, and trigger a client bundle rebuild every time script.js changes.
 app.listen(PORT, () => {
-  // Generate the server address notice
-  const msg = `=   Server running on http://${HOSTNAME}:${PORT}   =`;
-  const line = `=`.repeat(msg.length);
-  const mid = `=${` `.repeat(msg.length - 2)}=`;
-  console.log([``, line, mid, msg, mid, line, ``].join(`\n`));
-
   // are we running tests?
-  if (process.argv.includes(`--test`)) {
+  if (testing) {
+    console.log(`<< RUNNING SERVER IN TEST MODE >>`);
     const runner = spawn(npm, [`run`, `test:integration`], {
       stdio: `inherit`,
     });
@@ -86,6 +82,12 @@ app.listen(PORT, () => {
 
   // we're not, run in watch mode
   else {
+    // Generate the server address notice
+    const msg = `=   Server running on http://${HOSTNAME}:${PORT}   =`;
+    const line = `=`.repeat(msg.length);
+    const mid = `=${` `.repeat(msg.length - 2)}=`;
+    console.log([``, line, mid, msg, mid, line, ``].join(`\n`));
+
     try {
       watchForRebuild();
     } catch (e) {

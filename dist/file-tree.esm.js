@@ -48,6 +48,12 @@ var FileTreeElement = class extends HTMLElement {
       const heading = this.heading = create(`entry-heading`);
       this.appendChild(heading);
     }
+    this.buttons = this.find(`& > span.buttons`);
+    if (!this.buttons) {
+      const buttons = this.buttons = create(`span`);
+      buttons.classList.add(`buttons`);
+      this.appendChild(buttons);
+    }
   }
   addExternalListener(target, eventName, handler, options = {}) {
     const abortController = new AbortController();
@@ -126,6 +132,9 @@ var FileTreeElement = class extends HTMLElement {
   }
   findAllInTree(qs) {
     return Array.from(this.root.querySelectorAll(qs));
+  }
+  hasButton(className) {
+    return this.find(`& > .buttons .${className}`);
   }
   select() {
     this.root.unselect();
@@ -307,9 +316,9 @@ function processDragMove(dirEntry, entryId) {
 // src/classes/dir-entry.js
 var DirEntry = class extends FileTreeElement {
   isDir = true;
-  constructor(name, fullPath = name) {
-    super(name, fullPath);
-    this.addButtons();
+  constructor(rootDir = false) {
+    super();
+    this.addButtons(rootDir);
   }
   get path() {
     return super.path;
@@ -351,65 +360,26 @@ var DirEntry = class extends FileTreeElement {
       currentState: closed ? `closed` : `open`
     });
   }
-  addButtons() {
+  addButtons(rootDir) {
     this.createFileButton();
     this.createDirButton();
     this.addUploadButton();
-    this.addRenameButton();
-    this.addDeleteButton();
-  }
-  /**
-   * rename this dir.
-   */
-  addRenameButton() {
-    if (this.path === `.`) return;
-    if (this.find(`& > .rename-dir`)) return;
-    const btn = create(`button`);
-    btn.classList.add(`rename-dir`);
-    btn.title = localeStrings.RENAME_DIRECTORY;
-    btn.textContent = `\u270F\uFE0F`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#rename());
-  }
-  #rename() {
-    const newName = prompt(localeStrings.RENAME_DIRECTORY_PROMPT, this.name)?.trim();
-    if (newName) {
-      if (newName.includes(`/`)) {
-        return alert(localeStrings.RENAME_DIRECTORY_MOVE_INSTEAD);
-      }
-      this.root.renameEntry(this, newName);
-    }
-  }
-  /**
-   * Remove this dir and everything in it
-   */
-  addDeleteButton() {
-    if (this.path === `.`) return;
-    if (this.find(`& > .delete-dir`)) return;
-    const btn = create(`button`);
-    btn.classList.add(`delete-dir`);
-    btn.title = localeStrings.DELETE_DIRECTORY;
-    btn.textContent = `\u{1F5D1}\uFE0F`;
-    this.appendChild(btn);
-    btn.addEventListener(`click`, () => this.#deleteDir());
-  }
-  #deleteDir() {
-    const msg = localeStrings.DELETE_DIRECTORY_PROMPT(this.path);
-    if (confirm(msg)) {
-      this.root.removeEntry(this);
+    if (!rootDir) {
+      this.addRenameButton();
+      this.addDeleteButton();
     }
   }
   /**
    * New file in this directory
    */
   createFileButton() {
-    if (this.find(`& > .create-file`)) return;
+    if (this.hasButton(`create-file`)) return;
     const btn = create(`button`);
     btn.classList.add(`create-file`);
     btn.title = localeStrings.CREATE_FILE;
     btn.textContent = `\u{1F4C4}`;
     btn.addEventListener(`click`, () => this.#createFile());
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
   #createFile() {
     let fileName = prompt(localeStrings.CREATE_FILE_PROMPT)?.trim();
@@ -427,13 +397,13 @@ var DirEntry = class extends FileTreeElement {
    * New directory in this directory
    */
   createDirButton() {
-    if (this.find(`& > .create-dir`)) return;
+    if (this.hasButton(`create-dir`)) return;
     const btn = create(`button`);
     btn.classList.add(`create-dir`);
     btn.title = localeStrings.CREATE_DIRECTORY;
     btn.textContent = `\u{1F4C1}`;
     btn.addEventListener(`click`, () => this.#createDir());
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
   }
   #createDir() {
     let dirName = prompt(String.CREATE_DIRECTORY_PROMPT)?.trim();
@@ -449,13 +419,54 @@ var DirEntry = class extends FileTreeElement {
    * Upload files or an entire directory from your device
    */
   addUploadButton() {
-    if (this.find(`& > .upload`)) return;
+    if (this.hasButton(`upload`)) return;
     const btn = create(`button`);
     btn.classList.add(`upload`);
     btn.title = localeStrings.UPLOAD_FILES;
     btn.textContent = `\u{1F4BB}`;
     btn.addEventListener(`click`, () => uploadFilesFromDevice(this));
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
+  }
+  /**
+   * rename this dir.
+   */
+  addRenameButton() {
+    if (this.path === `.`) return;
+    if (this.hasButton(`rename-dir`)) return;
+    const btn = create(`button`);
+    btn.classList.add(`rename-dir`);
+    btn.title = localeStrings.RENAME_DIRECTORY;
+    btn.textContent = `\u270F\uFE0F`;
+    this.buttons.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#rename());
+  }
+  #rename() {
+    const newName = prompt(localeStrings.RENAME_DIRECTORY_PROMPT, this.name)?.trim();
+    if (newName) {
+      if (newName.includes(`/`)) {
+        return alert(localeStrings.RENAME_DIRECTORY_MOVE_INSTEAD);
+      }
+      this.root.renameEntry(this, newName);
+    }
+  }
+  /**
+   * Remove this dir and everything in it
+   */
+  addDeleteButton() {
+    if (this.path === `.`) return;
+    if (this.hasButton(`delete-dir`)) return;
+    const btn = create(`button`);
+    btn.classList.add(`delete-dir`);
+    btn.title = localeStrings.DELETE_DIRECTORY;
+    btn.textContent = `\u{1F5D1}\uFE0F`;
+    this.buttons.appendChild(btn);
+    btn.addEventListener(`click`, () => this.#deleteDir());
+  }
+  #deleteDir() {
+    const msg = localeStrings.DELETE_DIRECTORY_PROMPT(this.path);
+    if (confirm(msg)) {
+      this.root.removeEntry(this);
+    }
   }
   /**
    * Because the file-tree has a master list of directories, we should
@@ -481,13 +492,13 @@ var DirEntry = class extends FileTreeElement {
   sort(recursive = true, separateDirs = true) {
     const children = [...this.children];
     children.sort((a, b) => {
-      if (a.tagName === `SPAN`) return -1;
-      if (b.tagName === `SPAN`) return 1;
+      if (a.tagName === `SPAN` && a.classList.contains(`icon`)) return -1;
+      if (b.tagName === `SPAN` && b.classList.contains(`icon`)) return 1;
       if (a.tagName === `ENTRY-HEADING`) return -1;
       if (b.tagName === `ENTRY-HEADING`) return 1;
-      if (a.tagName === `BUTTON` && b.tagName === `BUTTON`) return 0;
-      else if (a.tagName === `BUTTON`) return -1;
-      else if (b.tagName === `BUTTON`) return 1;
+      if (a.tagName === `SPAN` && b.tagName === `SPAN`) return 0;
+      else if (a.tagName === `SPAN`) return -1;
+      else if (b.tagName === `SPAN`) return 1;
       if (separateDirs) {
         if (a.tagName === `DIR-ENTRY` && b.tagName === `DIR-ENTRY`) {
           a = a.path;
@@ -533,12 +544,12 @@ var FileEntry = class extends FileTreeElement {
     this.addEventHandling();
   }
   addRenameButton() {
-    if (this.find(`& > .rename-file`)) return;
+    if (this.hasButton(`rename-file`)) return;
     const btn = create(`button`);
     btn.classList.add(`rename-file`);
     btn.title = localeStrings.RENAME_FILE;
     btn.textContent = `\u270F\uFE0F`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
@@ -555,12 +566,12 @@ var FileEntry = class extends FileTreeElement {
     });
   }
   addDeleteButton() {
-    if (this.find(`& > .delete-file`)) return;
+    if (this.hasButton(`delete-file`)) return;
     const btn = create(`button`);
     btn.classList.add(`delete-file`);
     btn.title = localeStrings.DELETE_FILE;
     btn.textContent = `\u{1F5D1}\uFE0F`;
-    this.appendChild(btn);
+    this.buttons.appendChild(btn);
     btn.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
@@ -616,7 +627,7 @@ var FileTree = class extends FileTreeElement {
     this.emit(`tree:clear`);
     Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = this.rootDir = new DirEntry();
+    const rootDir = this.rootDir = new DirEntry(true);
     rootDir.path = `.`;
     this.appendChild(rootDir);
   }
