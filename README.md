@@ -64,7 +64,7 @@ There is [a live demo](https://pomax.github.io/custom-file-tree/public/) that sh
 
 Part of the functionality for this element is based on the HTML5 drag-and-drop API (for parts of the file tree itself, as well as dragging files and folders into it from your device), which is notoriously based on "mouse events" rather than "pointer events", meaning there is no touch support out of the box.
 
-However, **touch support can be trivially added** by loading the drag-drop-touch polyfill found over on https://github.com/Bernardo-Castilho/dragdroptouch:
+However, **touch support can be trivially added** by loading the drag-drop-touch polyfill found over on https://github.com/drag-drop-touch-js/dragdroptouch:
 
 ```html
 <script src="drag-drop-touch.esm.min.js?autoload" type="module"></script>
