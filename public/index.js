@@ -24,8 +24,12 @@ const eventList = [
   `dir:delete`,
 ];
 
+globalThis.__lastGrantData = undefined;
+
 eventList.forEach((type) =>
-  fileTree.addEventListener(type, ({ detail }) => detail.grant())
+  fileTree.addEventListener(type, ({ detail }) => {
+    globalThis.__lastGrantData = detail.grant();
+  })
 );
 
 const testContent = [

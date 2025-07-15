@@ -681,6 +681,7 @@ var FileTree = class extends FileTreeElement {
       entry.path = path;
       entries[path] = entry;
       this.#mkdir(entry).addEntry(entry);
+      return entry;
     };
     if (immediate) return grant();
     this.emit(eventType, { path, content }, grant);
@@ -750,6 +751,7 @@ var FileTree = class extends FileTreeElement {
       const { dirPath } = entries[newPath] = entry;
       let dir = dirPath ? entries[dirPath] : this.rootDir;
       dir.addEntry(entry);
+      return entry;
     });
   }
   // Deletes are a DOM removal of the entry itself, and a pruning
@@ -762,18 +764,24 @@ var FileTree = class extends FileTreeElement {
     const detail = { path };
     if (emptyDir) detail.emptyDir = true;
     this.emit(eventType, detail, () => {
+      const removed = [entry];
       if (isFile2 || emptyDir) {
         entry.remove();
         delete entries[path];
       } else {
         Object.entries(entries).forEach(([key, entry2]) => {
           if (key.startsWith(path)) {
+            removed.push(entry2);
             entry2.remove();
             delete entries[key];
           }
         });
       }
-      parentDir.checkEmpty();
+      try {
+        return removed;
+      } finally {
+        parentDir.checkEmpty();
+      }
     });
   }
   // Select an entry by its path
@@ -791,7 +799,10 @@ var FileTree = class extends FileTreeElement {
   selectEntry(entry, detail = {}) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
     detail.path = entry.path;
-    this.emit(eventType, detail, () => entry.select());
+    this.emit(eventType, detail, () => {
+      entry.select();
+      return entry;
+    });
   }
   toggleDirectory(entry, detail = {}) {
     const eventType = `dir:toggle`;

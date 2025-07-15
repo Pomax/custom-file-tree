@@ -10,6 +10,18 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v5.1.0 (July 15, 2025)
+
+Granting events now returns the element(s) involved:
+
+- granting a `click` event returns the file or dir entry in question,
+- granting a `create` event returns the file or dir entry in question,
+- granting a `rename` event returns the file or dir entry in question,
+- granting a `move` event returns the file or dir entry in question,
+- granting a `delete` event returns an _array_ of entries, containing either a single element if a file got deleted, or the dir entry _plus all descendants_ if a dir got deleted.
+
+# Previous Versions
+
 ## v5.0.0 (August 11, 2024)
 
 - wrapped `<dir-entry>` and `<file-entry>` buttons in a `<span class="buttons">` element so that folks can more easily move the entire button collection around in their own CSS. **This is a breaking change** if you have CSS in place for overriding the default button placement.
@@ -55,8 +67,6 @@ file-tree {
 So you will have to update your own CSS accordingly.
 
 Similarly, any code that you've written for automatic button interaction using `querySelector` will need selectors like `[path="..."] > .create-dir` changed to `[path="..."] > .buttons .create-dir` instead.
-
-# Previous Versions
 
 ## v4.0.0 (July 23, 2024)
 

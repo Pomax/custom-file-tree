@@ -73,8 +73,10 @@ app.listen(PORT, () => {
   // are we running tests?
   if (testing) {
     console.log(`<< RUNNING SERVER IN TEST MODE >>`);
+
     const runner = spawn(npm, [`run`, `test:integration`], {
       stdio: `inherit`,
+      shell: true,
     });
     runner.on(`close`, () => process.exit());
     runner.on(`error`, () => process.exit(1));

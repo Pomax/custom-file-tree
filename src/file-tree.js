@@ -100,6 +100,9 @@ class FileTree extends FileTreeElement {
 
       // Then add it to the actual DOM tree, after making sure its parent dir exists.
       this.#mkdir(entry).addEntry(entry);
+
+      // Finally, return the file or dir that got built.
+      return entry;
     };
 
     // We will not be asking for permission during setContent()
@@ -182,6 +185,9 @@ class FileTree extends FileTreeElement {
       const { dirPath } = (entries[newPath] = entry);
       let dir = dirPath ? entries[dirPath] : this.rootDir;
       dir.addEntry(entry);
+
+      // Finally, return the file or dir that got renamed/moved.
+      return entry;
     });
   }
 
@@ -196,22 +202,32 @@ class FileTree extends FileTreeElement {
     if (emptyDir) detail.emptyDir = true;
 
     this.emit(eventType, detail, () => {
+      const removed = [entry];
+
       // single instances are simple removals
       if (isFile || emptyDir) {
         entry.remove();
         delete entries[path];
       }
+
       // dirs need a mapping traversal to remove everything inside of it.
       else {
         Object.entries(entries).forEach(([key, entry]) => {
           if (key.startsWith(path)) {
+            removed.push(entry);
             entry.remove();
             delete entries[key];
           }
         });
       }
-      // And then we check whether we need to delete the parent, too.
-      parentDir.checkEmpty();
+
+      try {
+        // Finally, return the list of deleted entries
+        return removed;
+      } finally {
+        // And then we check whether we need to delete the parent, too.
+        parentDir.checkEmpty();
+      }
     });
   }
 
@@ -232,7 +248,10 @@ class FileTree extends FileTreeElement {
   selectEntry(entry, detail = {}) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
     detail.path = entry.path;
-    this.emit(eventType, detail, () => entry.select());
+    this.emit(eventType, detail, () => {
+      entry.select();
+      return entry;
+    });
   }
 
   toggleDirectory(entry, detail = {}) {

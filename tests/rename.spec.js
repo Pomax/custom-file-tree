@@ -31,8 +31,8 @@ test.describe(`rename events`, () => {
 
         const { detail } = await eventPromise;
         const { oldPath, newPath } = detail;
-        await expect(oldPath).toBe(`README.md`);
-        await expect(newPath).toBe(`newfile.txt`);
+        expect(oldPath).toBe(`README.md`);
+        expect(newPath).toBe(`newfile.txt`);
 
         await utils.entryDoesNotExist(`README.md`);
         await utils.entryExists(`newfile.txt`);
@@ -57,8 +57,8 @@ test.describe(`rename events`, () => {
 
         const { detail } = await eventPromise;
         const { oldPath, newPath } = detail;
-        await expect(oldPath).toBe(`dist/README.md`);
-        await expect(newPath).toBe(`dist/newfile.txt`);
+        expect(oldPath).toBe(`dist/README.md`);
+        expect(newPath).toBe(`dist/newfile.txt`);
 
         await utils.entryDoesNotExist(`dist/README.md`);
         await utils.entryExists(`dist/newfile.txt`);
@@ -109,8 +109,8 @@ test.describe(`rename events`, () => {
 
         const { detail } = await eventPromise;
         const { oldPath, newPath } = detail;
-        await expect(oldPath).toBe(`dist/`);
-        await expect(newPath).toBe(`newname/`);
+        expect(oldPath).toBe(`dist/`);
+        expect(newPath).toBe(`newname/`);
 
         // confirm all child content got renamed, too.
         for await (const path of [
@@ -142,8 +142,8 @@ test.describe(`rename events`, () => {
 
         const { detail } = await eventPromise;
         const { oldPath, newPath } = detail;
-        await expect(oldPath).toBe(`dist/old/`);
-        await expect(newPath).toBe(`dist/newname/`);
+        expect(oldPath).toBe(`dist/old/`);
+        expect(newPath).toBe(`dist/newname/`);
 
         // confirm all child content got renamed, too.
         for await (const path of [
