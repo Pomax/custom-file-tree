@@ -10,7 +10,7 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
-## v5.1.0 (July 15, 2025)
+## v5.2.0 (July 15, 2025)
 
 Granting events now returns the element(s) involved:
 
@@ -19,6 +19,8 @@ Granting events now returns the element(s) involved:
 - granting a `rename` event returns the file or dir entry in question,
 - granting a `move` event returns the file or dir entry in question,
 - granting a `delete` event returns an _array_ of entries, containing either a single element at index 0 if a file got deleted, or the dir entry at index 0 _plus all descendants_ in the subsequent indices, if a dir got deleted.
+
+Additionally, the `show-top-level` attribute was missing CSS to change the styling, which has been fixed. This introduces the `--highlight-background-bw` CSS variable for controlling the color of the button bar when the top level "." path is hidden.
 
 # Previous Versions
 

@@ -22,8 +22,28 @@ file-tree {
   --entry-padding: 0.25em;
 
   --highlight-background: lightcyan;
+  --highlight-background-bw: #ddd;
   --highlight-border-color: blue;
   --drop-target-color: rgb(205, 255, 242);
+
+  position: relative;
+
+  &:not([show-top-level]) {
+    padding-top: 0;
+    padding-left: 0;
+    dir-entry[path="."] {
+      & > span.icon,
+      & > entry-heading {
+        display: none;
+      }
+      & > .buttons {
+        width: calc(100% + 0.5em);
+        background: var(--highlight-background-bw);
+        text-align: center;
+        border-bottom: 1px solid black;
+      }
+    }
+  }
 
   /* All entries in the file tree have a handy icon */
 
