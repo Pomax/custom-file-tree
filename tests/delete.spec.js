@@ -43,7 +43,7 @@ test.describe(`delete events`, () => {
 
         const { detail } = await eventPromise;
         const { path } = detail;
-        expect(path).toBe(`dist/README.md`);
+        await expect(path).toBe(`dist/README.md`);
         await utils.entryDoesNotExist(`dist/README.md`);
       });
 

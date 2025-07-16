@@ -87,13 +87,18 @@ file-tree {
     cursor: default;
   }
 
-  .selected > entry-heading {
-    background: var(--highlight-background);
-    border: 1px solid var(--highlight-border-color);
-    margin-top: -1px;
-    margin-bottom: -1px;
-    padding-left: var(--entry-padding);
-    padding-right: var(--entry-padding);
+  .selected {
+    & > entry-heading {
+      background: var(--highlight-background);
+      border: 1px solid var(--highlight-border-color);
+      margin-top: -1px;
+      margin-bottom: -1px;
+      padding-left: var(--entry-padding);
+      padding-right: var(--entry-padding);
+    }
+    & .buttons {
+      max-height: 1em;
+    }
   }
 
   /* Drag and drop has its own visual cues */

@@ -221,13 +221,11 @@ class FileTree extends FileTreeElement {
         });
       }
 
-      try {
-        // Finally, return the list of deleted entries
-        return removed;
-      } finally {
-        // And then we check whether we need to delete the parent, too.
-        parentDir.checkEmpty();
-      }
+      // And then we check whether we need to delete the parent, too.
+      parentDir.checkEmpty();
+
+      // Finally, return the list of deleted entries
+      return removed;
     });
   }
 

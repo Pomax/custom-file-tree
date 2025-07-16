@@ -140,7 +140,24 @@ As mentioned above, events are "permission seeking", meaning that they are dispa
 
 If an event is not allowed to happen, your code can simply exit the event handler. The file-tree will remain as it was before the user tried to manipulate it.
 
-If an event is allowed to happen, your code must call `event.detail.grant()`, which lets the file tree perform the associated action.
+If an event is allowed to happen, your code must call `event.detail.grant()`, which lets the file tree perform the associated action. Note that for file and directory events, the `grant()` function will return a reference to the element in question (or, in the case of a `:delete` event, an array of elements) allowing you to perform state maintenance wrt the element. E.g:
+
+```js
+// Add some property (if not already there) when a file gets clicked
+tree.addEventListener(`file:click`, (evt) => {
+  const { detail } = evt;
+  const entry = detail.grant();
+  const { state } = entry;
+  entry.state.someProperty ??= new SomeObject();
+});
+
+// And then perform whatever cleanup is required when the file gets deleted
+tree.addEventListener(`file:delete`, (evt) => {
+  const { detail } = evt;
+  const [entry] = detail.grant();
+  entry.state.someProperty?.cleanup();
+});
+```
 
 ### Events relating to trees:
 

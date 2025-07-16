@@ -18,7 +18,7 @@ Granting events now returns the element(s) involved:
 - granting a `create` event returns the file or dir entry in question,
 - granting a `rename` event returns the file or dir entry in question,
 - granting a `move` event returns the file or dir entry in question,
-- granting a `delete` event returns an _array_ of entries, containing either a single element if a file got deleted, or the dir entry _plus all descendants_ if a dir got deleted.
+- granting a `delete` event returns an _array_ of entries, containing either a single element at index 0 if a file got deleted, or the dir entry at index 0 _plus all descendants_ in the subsequent indices, if a dir got deleted.
 
 # Previous Versions
 

@@ -777,11 +777,8 @@ var FileTree = class extends FileTreeElement {
           }
         });
       }
-      try {
-        return removed;
-      } finally {
-        parentDir.checkEmpty();
-      }
+      parentDir.checkEmpty();
+      return removed;
     });
   }
   // Select an entry by its path
