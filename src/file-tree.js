@@ -42,7 +42,7 @@ class FileTree extends FileTreeElement {
 
   connectedCallback() {
     this.addExternalListener(document, `dragend`, () =>
-      this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`)),
+      this.findAll(`.dragging`).forEach((e) => e.classList.remove(`dragging`))
     );
   }
 
@@ -64,10 +64,28 @@ class FileTree extends FileTreeElement {
    */
   setContent(paths = []) {
     this.clear();
+    paths.sort();
+
+    // remove all prefix strings, because those are dirs, not files.
+    for (let i = 0, j; i < paths.length; i++) {
+      let isDir = false;
+      let mark = paths[i];
+      for (j = i + 1; j < paths.length; j++) {
+        if (paths[j].startsWith(mark)) {
+          isDir = true;
+        } else break;
+      }
+      if (isDir) {
+        paths.splice(i--, 1);
+        i = j - 2; // once to counter i++, once to counter j++
+      }
+    }
+
     paths.forEach((path) => {
       const type = isFile(path) ? `file` : `dir`;
       this.#addPath(path, undefined, `tree:add:${type}`, true);
     });
+
     this.ready = true;
     return this.emit(`tree:ready`);
   }

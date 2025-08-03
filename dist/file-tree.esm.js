@@ -654,6 +654,20 @@ var FileTree = class extends FileTreeElement {
    */
   setContent(paths = []) {
     this.clear();
+    paths.sort();
+    for (let i = 0, j; i < paths.length; i++) {
+      let isDir = false;
+      let mark = paths[i];
+      for (j = i + 1; j < paths.length; j++) {
+        if (paths[j].startsWith(mark)) {
+          isDir = true;
+        } else break;
+      }
+      if (isDir) {
+        paths.splice(i--, 1);
+        i = j - 2;
+      }
+    }
     paths.forEach((path) => {
       const type = isFile(path) ? `file` : `dir`;
       this.#addPath(path, void 0, `tree:add:${type}`, true);

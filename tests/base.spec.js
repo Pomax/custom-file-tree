@@ -31,4 +31,25 @@ test.describe(`Basic tests`, () => {
     });
     expect(canBeCloned).toBe(true);
   });
+
+  test(`file-tree has the correct number of entries`, async () => {
+    const entryCount = await page.evaluate(() => {
+      return customElements.whenDefined(`file-tree`).then(() => {
+        const tree = document.querySelector(`file-tree`);
+        tree.setContent([
+          `a`,
+          `a/b.txt`,
+          `c`,
+          `c/d.txt`,
+          `.d`,
+          `.d/e`,
+          `f.g`,
+          `f.g/h`,
+        ]);
+        const set = tree.querySelectorAll(`file-entry,dir-entry`);
+        return set.length;
+      });
+    });
+    expect(entryCount).toBe(9);
+  });
 });
