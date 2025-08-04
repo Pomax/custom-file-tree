@@ -72,6 +72,24 @@ test.describe(`rename events`, () => {
         .click();
     });
 
+    test(`renaming a file by appending to the filename should work`, async () => {
+      page.on(`dialog`, async (dialog) => {
+        const type = dialog.type();
+        if (type === `alert`) {
+          expect(dialog.message()).toBe(Strings.RENAME_FILE_MOVE_INSTEAD);
+          await dialog.dismiss();
+          await utils.entryExists(`README.md`);
+          await utils.entryDoesNotExist(`README.md2`);
+        } else {
+          await dialog.accept(`README.md2`);
+        }
+      });
+      await utils.entryExists(`README.md`);
+      await utils.entryDoesNotExist(`README.md2`);
+      await page.locator(`[path="README.md"]`).click();
+      await page.locator(`[path="README.md"] > .buttons .rename-file`).click();
+    });
+
     test(`renaming a file with dir delimiter should get rejected`, async () => {
       page.on(`dialog`, async (dialog) => {
         const type = dialog.type();

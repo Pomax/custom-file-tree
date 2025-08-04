@@ -172,11 +172,14 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
     if (oldPath === newPath) return;
     if (newPath.startsWith(oldPath)) {
-      return this.emit(`${eventType}:error`, {
-        oldPath,
-        newPath,
-        error: Strings.PATH_INSIDE_ITSELF(oldPath),
-      });
+      const reduced = newPath.replace(oldPath, ``);
+      if (reduced.includes(`/`)) {
+        return this.emit(`${eventType}:error`, {
+          oldPath,
+          newPath,
+          error: Strings.PATH_INSIDE_ITSELF(oldPath),
+        });
+      }
     }
     if (entries[newPath]) {
       return this.emit(`${eventType}:error`, {
