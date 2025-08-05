@@ -74,6 +74,8 @@ If an event is not allowed to happen, your code can simply exit the event handle
 
 If an event is allowed to happen, your code must call `event.detail.grant()`, which lets the file tree perform the associated action.
 
+If you wish to receive a signal for when the tree has "in principle" finished building itself (because file/dir add operations may still be pending grants), you can listen for the `tree:ready` event.
+
 ## Events relating to files:
 
 Events are listed here as `name → detail object content`, with the `grant` function omitted from the detail object, as by definition all events come with a grant function.
