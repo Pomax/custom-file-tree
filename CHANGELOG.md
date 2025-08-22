@@ -10,11 +10,15 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v5.3.0 (August 21, 2025)
+
+- added an optional value to &lt;dir-entry&gt;.toggle() so that you can explicity set a dir to open (`toggle(true)`) or closed (`toggle(false)`), to align it with the standard DOM classList.toggle
+
+# Previous Versions
+
 ## v5.2.3 (August 4, 2025)
 
 - fixed bug that prevented renaming a file by adding text to the end of the filename.
-
-# Previous Versions
 
 ## v5.2.2 (August 3, 2025)
 

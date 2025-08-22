@@ -519,8 +519,8 @@ var DirEntry = class extends FileTreeElement {
       this.findAll(`& > dir-entry`).forEach((d) => d.sort(recursive));
     }
   }
-  toggle() {
-    this.classList.toggle(`closed`);
+  toggle(state) {
+    this.classList.toggle(`closed`, state);
   }
   toJSON() {
     return JSON.stringify(this.toValue());

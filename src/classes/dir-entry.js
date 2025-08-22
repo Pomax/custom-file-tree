@@ -248,8 +248,8 @@ export class DirEntry extends FileTreeElement {
     }
   }
 
-  toggle() {
-    this.classList.toggle(`closed`);
+  toggle(state) {
+    this.classList.toggle(`closed`, state);
   }
 
   toJSON() {
