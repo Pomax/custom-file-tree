@@ -44,6 +44,7 @@ else {
     `.data/tmp.lock`,
     `dist`,
     `dist/README.md`,
+    `dist/file-tree.css`,
     `dist/file-tree.esm.js`,
     `dist/file-tree.esm.min.js`,
     `dist/old/README.old`,

@@ -14,6 +14,8 @@
  * actual server's running on port 8000.
  */
 export class SocketInterface {
+  waitList = {};
+
   /**
    * Set up a websocket connection to a secure
    * endpoint for a given file tree element.
@@ -26,6 +28,10 @@ export class SocketInterface {
   async send(type, detail = {}) {
     detail.id = this.id;
     this.socket.send(JSON.stringify({ type, detail }));
+  }
+
+  async markWaiting(path, resolve) {
+    this.waitList[path] = resolve;
   }
 
   async connect(url) {
@@ -91,6 +97,22 @@ export class SocketInterface {
   }
 
   /**
+   * This is a special one time (well, ideally) operation for
+   * getting file content via websockets rather than via a
+   * REST API.
+   *
+   * The response will either be a string for textual data,
+   * or an array of ints for binary data, where each array
+   * element represents a byte value.
+   */
+  read(path) {
+    return new Promise((resolve) => {
+      this.markWaiting(path, resolve);
+      this.send(`file-tree:read`, { path });
+    });
+  }
+
+  /**
    * OT operation from file tree: inform the server of a path change.
    */
   move(oldPath, newPath) {
@@ -131,6 +153,17 @@ export class SocketInterface {
     const { id, fileTree } = this;
     if (by === id) return; // we sent this change
     fileTree.__create(path, isFile, when);
+  }
+
+  /**
+   * This is a special file content handler that
+   * lets the `read` function resolve with the
+   * content of the requested file.
+   */
+  onread({ path, data, when }) {
+    const { waitList } = this;
+    waitList[path]?.({ data, when });
+    delete waitList[path];
   }
 
   /**
@@ -193,10 +226,10 @@ export class SocketInterface {
    *    }
    * }
    */
-  ondelete({ path, isFile, when, by }) {
+  ondelete({ path, when, by }) {
     const { id, fileTree } = this;
     if (by === id) return; // we sent this change
-    fileTree.__delete(path, isFile, when);
+    fileTree.__delete(path, when);
   }
 }
 

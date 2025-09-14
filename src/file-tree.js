@@ -99,6 +99,11 @@ class FileTree extends FileTreeElement {
     this.#addPath(path, content, eventType);
   }
 
+  // get the file contents for an entry via a websocket connection
+  async loadEntry(path) {
+    return this.OT?.read(path);
+  }
+
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
     const oldPath = entry.path;
@@ -269,7 +274,7 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
     const entry = entries[path];
     entry.dispatchEvent(
-      new CustomEvent(`file-tree:update`, { detail: { update } })
+      new CustomEvent(`content:update`, { detail: { update } })
     );
   }
 

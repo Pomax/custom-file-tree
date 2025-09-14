@@ -70,6 +70,15 @@ export class FileEntry extends FileTreeElement {
     });
   }
 
+  // This function only works when connected through
+  // a websocket. Note that we do NOT store the data
+  // here, that's up to whoever is using this file-tree.
+  //
+  // The return type is { data: string|int[], when:datetime }
+  async load() {
+    return this.root.loadEntry(this.path);
+  }
+
   toJSON() {
     return JSON.stringify(this.toValue());
   }

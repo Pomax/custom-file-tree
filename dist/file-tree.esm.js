@@ -150,6 +150,7 @@ registry.define(`entry-heading`, EntryHeading);
 
 // src/classes/socket-interface.js
 var SocketInterface = class {
+  waitList = {};
   /**
    * Set up a websocket connection to a secure
    * endpoint for a given file tree element.
@@ -161,6 +162,9 @@ var SocketInterface = class {
   async send(type, detail = {}) {
     detail.id = this.id;
     this.socket.send(JSON.stringify({ type, detail }));
+  }
+  async markWaiting(path, resolve) {
+    this.waitList[path] = resolve;
   }
   async connect(url) {
     url = url.replace(`https://`, `wss://`);
@@ -211,6 +215,21 @@ var SocketInterface = class {
     this.send(`file-tree:create`, { path, isFile: isFile2 });
   }
   /**
+   * This is a special one time (well, ideally) operation for
+   * getting file content via websockets rather than via a
+   * REST API.
+   *
+   * The response will either be a string for textual data,
+   * or an array of ints for binary data, where each array
+   * element represents a byte value.
+   */
+  read(path) {
+    return new Promise((resolve) => {
+      this.markWaiting(path, resolve);
+      this.send(`file-tree:read`, { path });
+    });
+  }
+  /**
    * OT operation from file tree: inform the server of a path change.
    */
   move(oldPath, newPath) {
@@ -248,6 +267,16 @@ var SocketInterface = class {
     const { id, fileTree } = this;
     if (by === id) return;
     fileTree.__create(path, isFile2, when);
+  }
+  /**
+   * This is a special file content handler that
+   * lets the `read` function resolve with the
+   * content of the requested file.
+   */
+  onread({ path, data, when }) {
+    const { waitList } = this;
+    waitList[path]?.({ data, when });
+    delete waitList[path];
   }
   /**
    * Handle a move notification, which will tell us
@@ -307,10 +336,10 @@ var SocketInterface = class {
    *    }
    * }
    */
-  ondelete({ path, isFile: isFile2, when, by }) {
+  ondelete({ path, when, by }) {
     const { id, fileTree } = this;
     if (by === id) return;
-    fileTree.__delete(path, isFile2, when);
+    fileTree.__delete(path, when);
   }
 };
 async function waitForOpenWebSocket(socket, retries = 0, interval = 100) {
@@ -765,6 +794,14 @@ var FileEntry = class extends FileTreeElement {
       evt.dataTransfer.setData("id", this.dataset.id);
     });
   }
+  // This function only works when connected through
+  // a websocket. Note that we do NOT store the data
+  // here, that's up to whoever is using this file-tree.
+  //
+  // The return type is { data: string|int[], when:datetime }
+  async load() {
+    return this.root.loadEntry(this.path);
+  }
   toJSON() {
     return JSON.stringify(this.toValue());
   }
@@ -851,6 +888,10 @@ var FileTree = class extends FileTreeElement {
   createEntry(path, content = void 0) {
     let eventType = (isFile(path) ? `file` : `dir`) + `:create`;
     this.#addPath(path, content, eventType);
+  }
+  // get the file contents for an entry via a websocket connection
+  async loadEntry(path) {
+    return this.OT?.read(path);
   }
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
@@ -984,7 +1025,7 @@ var FileTree = class extends FileTreeElement {
     const { entries } = this;
     const entry = entries[path];
     entry.dispatchEvent(
-      new CustomEvent(`file-tree:update`, { detail: { update } })
+      new CustomEvent(`content:update`, { detail: { update } })
     );
   }
   // delete notification via websocket or immediate code path:

@@ -117,6 +117,196 @@ If you wish to associate data with `<file-entry>` and `<dir-entry>` elements, yo
 
 While in HTML context this should be obvious: this is done synchronously, unlike the similarly named function that you might be familiar with from frameworks like React or Preact. The `<file-tree>` is a normal HTML element and updates take effect immediately.
 
+## Connecting via Websocket
+
+The `<file-tree>` element can be told to connect via a secure websocket, rather than using REST operations, in which case things may change "on their own":
+
+Any "create", "move"/"rename", and "delete" operations that were initiated remotely will be applied to your `<file-tree>`, bypassing the `grant` mechanism.
+
+The "update" operation is somewhat special, as `<file-tree>` is agnostic about how you're dealing with file content, instead relying on you to hook into the `file:click` event to do whatever you want to do. However, file content changes _can_ be initiated by the server, in which case the relevant `<file-entry>` will generate a `content:update` event that you can listen for in your code:
+
+```js
+const entry = fileTree.querySelector(
+  `file-entry[path="my/favourite/file.txt"]`
+);
+entry.addEventListener(`content:update`, ({ detail }) => {
+  const { update } = detail;
+  // this update could be the full file content, or a diff, or some
+  // structured object, or really anything that the server that this
+  // file tree is connected to has decided constitutes "an update".
+});
+```
+
+### Implementing websockets client-side
+
+To use "out of the box" websocket functionality, create your `<file-tree>` element with a `websocket` attribute. With that set up, you can connect your tree to websocket endpoint using:
+
+```js
+if (fileTree.hasAttribute(`websocket`)) {
+  fileTree.connectViaWebSocket(`https://server.example.com`);
+}
+```
+
+The url can be either `https:` or `wss:`, but it _must_ be a secure URL. For what are hopefully incredibly obvious security reasons, websocket traffic for file tree operations will not work using insecure plain text transmission.
+
+When a connection is established, the file tree will automatically populate by sending a JSON-encoded `{ type: "file-tree:load" }` object to the server, and then waiting for the server to respond with a JSON-encoded `{ type: "file-tree:load", detail: { paths: [...] }}` where the `paths` content is the same as is used by the `setContent` function.
+
+### Implementing websockets server-side
+
+In order for a `<file-tree>` to talk to your server over websockets, you will need to implement the following contract, where each event is sent as a JSON encoded message:
+
+On connect, the server should generate a unique `id` that it can use to track call origins, so that it can track what to send to whom. When file trees connect, they will send a JSON-encoded `{ type: "file-tree:load" }` object, which should trigger a server response that is a a JSON-encoded `{ type: "file-tree:load", detail: { id, paths: [...] }}` where the `paths` content is an array of path strings, and the `id` is the unique `id` that was generated when the connection was established, so that clients know their server-side identity.
+
+#### - Create
+
+Create calls are sent by the client as:
+
+```
+{
+  type: "file-tree:create",
+  detail: {
+    id: the client's id,
+    path: "the entry's path string",
+    isFile: true if file creation, false if dir creation
+  }
+}
+```
+
+and should be transmitted to clients as:
+
+```
+{
+  type: "file-tree:create",
+  detail: {
+    by: id of the origin
+    path: "the entry's path string",
+    isFile: true if file, false if dir
+    when: the datetime int for when the server applied the create
+  }
+}
+```
+
+The `id` can be used in your code to identify other clients (e.g. to show "X did Y" notifications), and the `when` argument is effectively the server-side sequence number. Actions will always be applied in chronological order by the server, and clients can use the `when` value as a way to tell whether they're out of sync or not.
+
+#### - Move/rename
+
+Move/rename calls are sent by the client as:
+
+```
+{
+  type: "file-tree:move",
+  detail: {
+    id: the client's id,
+    oldPath: "the entry's path string",
+    newPath: "the entry's path string"
+  }
+}
+```
+
+and should be transmitted to clients as:
+
+```
+{
+  type: "file-tree:move",
+  detail: {
+    by: id of the origin
+    oldPath,
+    newPath,
+    when
+  }
+}
+```
+
+#### - Update
+
+Update calls are sent by the client as:
+
+```
+{
+  type: "file-tree:update",
+  detail: {
+    id: the client's id,
+    path: "the entry's path string",
+    update: the update payload
+  }
+}
+```
+
+Note that the update payload is up to whoever implements this client/server contract, because there are a million and one ways to "sync" content changes, from full-fat content updates to sending diff patches to sending operation transforms to even more creative solutions.
+
+Updates should be transmitted to clients as:
+
+```
+{
+  type: "file-tree:update",
+  detail: {
+    by: id of the origin
+    path,
+    update,
+    when
+  }
+}
+```
+
+#### - Delete
+
+Delete calls are sent by the client as:
+
+```
+{
+  type: "file-tree:delete",
+  detail: {
+    id: the client's id,
+    path: "the entry's path string",
+    removeParent: true if the parent dir should be removed if
+                  this delete leaves it empty; false otherwise.
+  }
+}
+```
+
+Deletes should be transmitted to clients as:
+
+```
+{
+  type: "file-tree:update",
+  detail: {
+    by: id of the origin
+    path,
+    when
+  }
+}
+```
+
+Note that deletes from the server to the client don't need to say whether to remove an empty dir: if the dir got removed, then the delete that clients will receive is for that dir, not the file whose removal triggered the empty dir deletion
+
+#### - Read
+
+There is a special `read` event that gets sent by the client as
+```
+{
+  type: "file-tree:read",
+  detail {
+    path: "the file's path"
+  }
+}
+```
+
+This is a request for the server to send the entire file's content back using the format:
+
+```
+{
+  type: "file-tree:read",
+  details {
+    data,
+    when
+  }
+}
+```
+
+In this response `data` is either a string or an array of ints. If the latter, this is binary data, where each array element represents a byte value.
+
+This call is (obviously) not forwarded to any other clients, and exists purely as a way to bootstrap a file's content synchronization, pending future `file-tree:update` messages.
+
 ## Customizing the styling
 
 If you don't like the default styling, just override it! This custom element uses normal CSS, so you're under no obligation to load the `file-tree.css` file, either load it and then override the parts you want to customize, or don't even load `file-tree.css` at all and come up with your own styling.
@@ -142,6 +332,7 @@ file-tree {
 ```
 
 For example, if you just want to customize the icons and colors, load the `file-tree.css` and then load your own overrides that set new values for those CSS variables. Nice and simple!
+
 
 # Contributing
 
