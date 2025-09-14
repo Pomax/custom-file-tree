@@ -200,9 +200,7 @@ export class DirEntry extends FileTreeElement {
   checkEmpty() {
     if (!this.removeEmptyDir) return;
     if (this.find(`dir-entry, file-entry`)) return;
-    // let's make the reason explicit:
-    const deleteBecauseWeAreEmpty = true;
-    this.root.removeEntry(this, deleteBecauseWeAreEmpty);
+    this.root.removeEntry(this);
   }
 
   // File tree sorting, with dirs at the top

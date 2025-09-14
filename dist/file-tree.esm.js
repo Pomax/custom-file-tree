@@ -74,7 +74,7 @@ var FileTreeElement = class extends HTMLElement {
     }
   }
   get removeEmptyDir() {
-    return this.root.getAttribute(`remove-empty-dir`);
+    return this.root.removeEmptyDir;
   }
   get name() {
     return this.getAttribute(`name`);
@@ -147,6 +147,178 @@ var FileTreeElement = class extends HTMLElement {
 var EntryHeading = class extends HTMLElement {
 };
 registry.define(`entry-heading`, EntryHeading);
+
+// src/classes/socket-interface.js
+var SocketInterface = class {
+  /**
+   * Set up a websocket connection to a secure
+   * endpoint for a given file tree element.
+   */
+  constructor(fileTree, url) {
+    this.fileTree = fileTree;
+    this.connect(url);
+  }
+  async send(type, detail = {}) {
+    detail.id = this.id;
+    this.socket.send(JSON.stringify({ type, detail }));
+  }
+  async connect(url) {
+    url = url.replace(`https://`, `wss://`);
+    if (!url.startsWith(`wss://`)) {
+      throw new Error(`Only secure URLs are supported.`);
+    }
+    this.wssURL = url;
+    const socket = this.socket = new WebSocket(url);
+    socket.addEventListener(`message`, ({ data }) => {
+      data = JSON.parse(data);
+      let { type } = data;
+      if (!type.startsWith(`file-tree:`)) return;
+      type = type.replace(`file-tree:`, ``);
+      const handlerName = `on${type}`;
+      const handler = this[handlerName].bind(this);
+      if (!handler) {
+        throw new Error(`Missing implementation for ${handlerName}.`);
+      }
+      handler(data.detail);
+    });
+    if (await waitForOpenWebSocket(socket)) {
+      this.send(`file-tree:load`);
+    } else {
+      throw new Error(`Could not establish websocket connection.`);
+    }
+  }
+  /**
+   * Build a tree off of a set of paths. This happens in
+   * response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:load",
+   *    "detail": {
+   *       "paths": []
+   *    }
+   * }
+   *
+   * where the `paths` payload is an array of strings.
+   */
+  onload({ paths, id }) {
+    this.id = id;
+    this.fileTree.setContent(paths, true);
+  }
+  /**
+   * OT operation from file tree: inform the server of a file or dir creation.
+   */
+  create(path, isFile2) {
+    this.send(`file-tree:create`, { path, isFile: isFile2 });
+  }
+  /**
+   * OT operation from file tree: inform the server of a path change.
+   */
+  move(oldPath, newPath) {
+    this.send(`file-tree:move`, { oldPath, newPath });
+  }
+  /**
+   * OT operation from file tree: inform the server of a content update.
+   */
+  update(path, update) {
+    this.send(`file-tree:update`, { path, update });
+  }
+  /**
+   * OT operation from file tree: inform the server of a deletion.
+   */
+  delete(path, removeParent) {
+    this.send(`file-tree:delete`, { path, removeParent });
+  }
+  /**
+   * Handle a create notification, which will tell us which
+   * path got created, and when that creation happened.
+   *
+   * This happens in response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:create",
+   *    "detail": {
+   *       "path": a path string
+   *       "isFile": a bool
+   *       "when": a server-side datetime int
+   *       "by": a uuid string
+   *    }
+   * }
+   */
+  oncreate({ path, isFile: isFile2, when, by }) {
+    const { id, fileTree } = this;
+    if (by === id) return;
+    fileTree.__create(path, isFile2, when);
+  }
+  /**
+   * Handle a move notification, which will tell us
+   * which path to rename, and when that rename happened.
+   *
+   * This happens in response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:move",
+   *    "detail": {
+   *       "oldPath": a path string
+   *       "newPath": a path string
+   *       "when": a server-side datetime int
+   *       "by": a uuid string
+   *    }
+   * }
+   */
+  onmove({ oldPath, newPath, when, by }) {
+    const { id, fileTree } = this;
+    if (by === id) return;
+    fileTree.__move(oldPath, newPath, when);
+  }
+  /**
+   * Handle a content update notification, which will tell
+   * us which file to update, and when that update happened.
+   *
+   * This happens in response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:update",
+   *    "detail": {
+   *       "path": a path string
+   *       "update": an update payload
+   *       "when": a server-side datetime int
+   *       "by": a uuid string
+   *    }
+   * }
+   */
+  onupdate({ path, update, when, by }) {
+    const { id, fileTree } = this;
+    if (by === id) return;
+    fileTree.__update(path, update);
+  }
+  /**
+   * Handle a delete notification, which will tell us
+   * which path got deleted, and when that delete happened.
+   *
+   * This happens in response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:delete",
+   *    "detail": {
+   *       "path": a path string
+   *       "isFile": a bool
+   *       "when": a server-side datetime int
+   *       "by": a uuid string
+   *    }
+   * }
+   */
+  ondelete({ path, isFile: isFile2, when, by }) {
+    const { id, fileTree } = this;
+    if (by === id) return;
+    fileTree.__delete(path, isFile2, when);
+  }
+};
+async function waitForOpenWebSocket(socket, retries = 0, interval = 100) {
+  if (retries === 10) return false;
+  if (socket.readyState === WebSocket.OPEN) return true;
+  const retry = () => waitForOpenWebSocket(socket, retries + 1, interval + 100);
+  return new Promise((resolve) => setTimeout(() => resolve(retry), interval));
+}
 
 // src/utils/strings.js
 var LOCALE_STRINGS = {
@@ -485,8 +657,7 @@ var DirEntry = class extends FileTreeElement {
   checkEmpty() {
     if (!this.removeEmptyDir) return;
     if (this.find(`dir-entry, file-entry`)) return;
-    const deleteBecauseWeAreEmpty = true;
-    this.root.removeEntry(this, deleteBecauseWeAreEmpty);
+    this.root.removeEntry(this);
   }
   // File tree sorting, with dirs at the top
   sort(recursive = true, separateDirs = true) {
@@ -622,6 +793,9 @@ var FileTree = class extends FileTreeElement {
   get parentDir() {
     return this.rootDir;
   }
+  get removeEmptyDir() {
+    return !!this.getAttribute(`remove-empty-dir`);
+  }
   clear() {
     this.ready = false;
     this.emit(`tree:clear`);
@@ -643,16 +817,14 @@ var FileTree = class extends FileTreeElement {
       this.#loadSource(value);
     }
   }
-  async #loadSource(url) {
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data) this.setContent(data);
+  async connectViaWebSocket(url, ConnectorClass = SocketInterface) {
+    this.OT = new ConnectorClass(this, url);
   }
   /**
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
    */
-  setContent(paths = []) {
+  setContent(paths = [], bypassOT = false) {
     this.clear();
     paths.sort();
     for (let i = 0, j; i < paths.length; i++) {
@@ -670,7 +842,7 @@ var FileTree = class extends FileTreeElement {
     }
     paths.forEach((path) => {
       const type = isFile(path) ? `file` : `dir`;
-      this.#addPath(path, void 0, `tree:add:${type}`, true);
+      this.#addPath(path, void 0, `tree:add:${type}`, true, bypassOT);
     });
     this.ready = true;
     return this.emit(`tree:ready`);
@@ -680,21 +852,53 @@ var FileTree = class extends FileTreeElement {
     let eventType = (isFile(path) ? `file` : `dir`) + `:create`;
     this.#addPath(path, content, eventType);
   }
+  // A rename is a relocation where only the last part of the path changed.
+  renameEntry(entry, newName) {
+    const oldPath = entry.path;
+    const pos = oldPath.lastIndexOf(entry.name);
+    let newPath = oldPath.substring(0, pos) + newName;
+    if (entry.isDir) newPath += `/`;
+    const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
+    this.#relocateEntry(oldPath, newPath, eventType);
+  }
+  // A move is a relocation where everything *but* the last part of the path may have changed.
+  moveEntry(entry, oldPath, newPath) {
+    const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
+    this.#relocateEntry(oldPath, newPath, eventType);
+  }
+  // Deletes are a DOM removal of the entry itself, and a pruning
+  // of the path -> entry map for any entry that started with the
+  // same path, so we don't end up with any orphans.
+  removeEntry(entry) {
+    const { path, isFile: isFile2, parentDir } = entry;
+    const eventType = (isFile2 ? `file` : `dir`) + `:delete`;
+    const detail = { path, emptyDir: this.removeEmptyDir };
+    this.emit(eventType, detail, () => {
+      const removed = this.__delete(path, isFile2);
+      parentDir.checkEmpty();
+      this.OT?.delete(path);
+      return removed;
+    });
+  }
+  // ================================================================================================
+  async #loadSource(url) {
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data) this.setContent(data);
+  }
   // private function for initiating <file-entry> or <dir-entry> creation
-  #addPath(path, content = void 0, eventType, immediate = false) {
+  #addPath(path, content = void 0, eventType, immediate = false, bypassOT = false) {
     const { entries } = this;
-    if (!isFile(path) && !path.endsWith(`/`)) path += `/`;
+    const fileEntry = isFile(path);
+    if (!fileEntry && !path.endsWith(`/`)) path += `/`;
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
         error: localeStrings.PATH_EXISTS(path)
       });
     }
     const grant = () => {
-      const EntryType = isFile(path) ? FileEntry : DirEntry;
-      const entry = new EntryType();
-      entry.path = path;
-      entries[path] = entry;
-      this.#mkdir(entry).addEntry(entry);
+      const entry = this.__create(path, fileEntry);
+      if (!bypassOT) this.OT?.create(path, fileEntry);
       return entry;
     };
     if (immediate) return grant();
@@ -721,22 +925,8 @@ var FileTree = class extends FileTreeElement {
     });
     return dir;
   }
-  // A rename is a relocation where only the last part of the path changed.
-  renameEntry(entry, newName) {
-    const oldPath = entry.path;
-    const pos = oldPath.lastIndexOf(entry.name);
-    let newPath = oldPath.substring(0, pos) + newName;
-    if (entry.isDir) newPath += `/`;
-    const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
-    this.#relocateEntry(entry, oldPath, newPath, eventType);
-  }
-  // A move is a relocation where everything *but* the last part of the path may have changed.
-  moveEntry(entry, oldPath, newPath) {
-    const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
-    this.#relocateEntry(entry, oldPath, newPath, eventType);
-  }
   // private function for initiating <file-entry> or <dir-entry> path changes
-  #relocateEntry(entry, oldPath, newPath, eventType) {
+  #relocateEntry(oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
     if (newPath.startsWith(oldPath)) {
@@ -757,47 +947,66 @@ var FileTree = class extends FileTreeElement {
       });
     }
     this.emit(eventType, { oldPath, newPath }, () => {
-      Object.keys(entries).forEach((key) => {
-        if (key.startsWith(oldPath)) {
-          const entry2 = entries[key];
-          entry2.updatePath(oldPath, newPath);
-          entries[entry2.path] = entry2;
-          delete entries[key];
-        }
-      });
-      const { dirPath } = entries[newPath] = entry;
-      let dir = dirPath ? entries[dirPath] : this.rootDir;
-      dir.addEntry(entry);
+      const entry = this.__move(oldPath, newPath);
+      this.OT?.move(oldPath, newPath);
       return entry;
     });
   }
-  // Deletes are a DOM removal of the entry itself, and a pruning
-  // of the path -> entry map for any entry that started with the
-  // same path, so we don't end up with any orphans.
-  removeEntry(entry, emptyDir = false) {
+  // ================================================================================================
+  // create notification via websocket or immediate code path:
+  __create(path, isFile2, when = -1) {
     const { entries } = this;
-    const { path, isFile: isFile2, parentDir } = entry;
-    const eventType = (isFile2 ? `file` : `dir`) + `:delete`;
-    const detail = { path };
-    if (emptyDir) detail.emptyDir = true;
-    this.emit(eventType, detail, () => {
-      const removed = [entry];
-      if (isFile2 || emptyDir) {
-        entry.remove();
-        delete entries[path];
-      } else {
-        Object.entries(entries).forEach(([key, entry2]) => {
-          if (key.startsWith(path)) {
-            removed.push(entry2);
-            entry2.remove();
-            delete entries[key];
-          }
-        });
-      }
-      parentDir.checkEmpty();
-      return removed;
-    });
+    const EntryType = isFile2 ? FileEntry : DirEntry;
+    const entry = entries[path] = new EntryType();
+    entry.path = path;
+    this.#mkdir(entry).addEntry(entry);
+    return entry;
   }
+  // move notification via websocket or immediate code path:
+  __move(oldPath, newPath, when) {
+    const { entries } = this;
+    const entry = entries[oldPath];
+    Object.keys(entries).forEach((key) => {
+      if (key.startsWith(oldPath)) {
+        const entry2 = entries[key];
+        entry2.updatePath(oldPath, newPath);
+        entries[entry2.path] = entry2;
+        delete entries[key];
+      }
+    });
+    const { dirPath } = entries[newPath] = entry;
+    let dir = dirPath ? entries[dirPath] : this.rootDir;
+    dir.addEntry(entry);
+    return entry;
+  }
+  // update notification via websocket or immediate code path:
+  __update(path, update) {
+    const { entries } = this;
+    const entry = entries[path];
+    entry.dispatchEvent(
+      new CustomEvent(`file-tree:update`, { detail: { update } })
+    );
+  }
+  // delete notification via websocket or immediate code path:
+  __delete(path, isFile2, when) {
+    const { entries } = this;
+    const entry = entries[path];
+    const removed = [entry];
+    if (isFile2) {
+      entry.remove();
+      delete entries[path];
+    } else {
+      Object.entries(entries).forEach(([key, entry2]) => {
+        if (key.startsWith(path)) {
+          removed.push(entry2);
+          entry2.remove();
+          delete entries[key];
+        }
+      });
+    }
+    return removed;
+  }
+  // ================================================================================================
   // Select an entry by its path
   select(path) {
     const entry = this.entries[path];
@@ -821,11 +1030,14 @@ var FileTree = class extends FileTreeElement {
   toggleDirectory(entry, detail = {}) {
     const eventType = `dir:toggle`;
     detail.path = entry.path;
-    this.emit(eventType, detail, () => entry.toggle());
+    this.emit(eventType, detail, () => {
+      entry.toggle();
+    });
   }
   sort() {
     this.rootDir.sort();
   }
+  // ================================================================================================
   toJSON() {
     return JSON.stringify(Object.keys(this.entries).sort());
   }

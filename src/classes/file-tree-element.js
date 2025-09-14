@@ -59,7 +59,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   get removeEmptyDir() {
-    return this.root.getAttribute(`remove-empty-dir`);
+    return this.root.removeEmptyDir;
   }
 
   get name() {
