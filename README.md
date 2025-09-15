@@ -258,8 +258,6 @@ Delete calls are sent by the client as:
   detail: {
     id: the client's id,
     path: "the entry's path string",
-    removeParent: true if the parent dir should be removed if
-                  this delete leaves it empty; false otherwise.
   }
 }
 ```

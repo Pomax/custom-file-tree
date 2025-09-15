@@ -129,8 +129,8 @@ export class SocketInterface {
   /**
    * OT operation from file tree: inform the server of a deletion.
    */
-  delete(path, removeParent) {
-    this.send(`file-tree:delete`, { path, removeParent });
+  delete(path) {
+    this.send(`file-tree:delete`, { path });
   }
 
   /**

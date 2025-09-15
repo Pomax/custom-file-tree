@@ -131,7 +131,10 @@ class FileTree extends FileTreeElement {
     this.emit(eventType, detail, () => {
       // grant
       const removed = this.__delete(path, isFile);
-      parentDir.checkEmpty();
+      const deleteParent = parentDir.checkEmpty();
+      // TODO: if deleteParent is true, then we need to
+      //       run that up until we run out of "deletes"
+      //       and then send the resulting path on
       this.OT?.delete(path);
       return removed;
     });

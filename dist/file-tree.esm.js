@@ -244,8 +244,8 @@ var SocketInterface = class {
   /**
    * OT operation from file tree: inform the server of a deletion.
    */
-  delete(path, removeParent) {
-    this.send(`file-tree:delete`, { path, removeParent });
+  delete(path) {
+    this.send(`file-tree:delete`, { path });
   }
   /**
    * Handle a create notification, which will tell us which
@@ -916,7 +916,7 @@ var FileTree = class extends FileTreeElement {
     const detail = { path, emptyDir: this.removeEmptyDir };
     this.emit(eventType, detail, () => {
       const removed = this.__delete(path, isFile2);
-      parentDir.checkEmpty();
+      const deleteParent = parentDir.checkEmpty();
       this.OT?.delete(path);
       return removed;
     });
