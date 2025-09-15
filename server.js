@@ -1,6 +1,6 @@
 import express from "express";
-import { setupFileTreeWebSocket } from "./file-tree-websocket.js";
-import { readdirSync, readFileSync, watch } from "node:fs";
+import { setupFileTreeWebSocket } from "./server-side-websockets.js";
+import { readdirSync, watch } from "node:fs";
 import { resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 
@@ -65,7 +65,7 @@ app.use(`/`, express.static(`.`));
 app.use((req, res) => res.status(404).send(`${req.url} not found`));
 
 // set up, unsurprisingly, websocket functionality
-const server = setupFileTreeWebSocket(app, dirList);
+const server = setupFileTreeWebSocket(app, "content");
 
 // Run the server, and trigger a client bundle rebuild every time script.js changes.
 server.listen(PORT, () => {

@@ -91,6 +91,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   updatePath(oldPath, newPath) {
+    // FIXME: we don't want `a.b` -> `a.bc` to rename `a.bd` to `a.bcd`!
     const regex = new RegExp(`^${oldPath}`);
     this.path = this.path.replace(regex, newPath);
   }

@@ -148,29 +148,32 @@ var EntryHeading = class extends HTMLElement {
 };
 registry.define(`entry-heading`, EntryHeading);
 
-// src/classes/socket-interface.js
-var SocketInterface = class {
+// src/classes/websocket-interface.js
+var WebSocketInterface = class {
   waitList = {};
   /**
    * Set up a websocket connection to a secure
    * endpoint for a given file tree element.
    */
-  constructor(fileTree, url) {
+  constructor(fileTree, url, basePath = `.`) {
     this.fileTree = fileTree;
-    this.connect(url);
+    this.connect(url, basePath);
   }
-  async send(type, detail = {}) {
-    detail.id = this.id;
-    this.socket.send(JSON.stringify({ type, detail }));
-  }
-  async markWaiting(path, resolve) {
-    this.waitList[path] = resolve;
-  }
-  async connect(url) {
+  /**
+   * Connect to a websocket server and let it know which
+   * base path this file tree wants to be linked to, so
+   * that it can be joined up with every other file tree
+   * that's looking at/working with the same base path.
+   *
+   * @param {*} url
+   * @param {*} basePath
+   */
+  async connect(url, basePath) {
     url = url.replace(`https://`, `wss://`);
     if (!url.startsWith(`wss://`)) {
       throw new Error(`Only secure URLs are supported.`);
     }
+    this.basePath = basePath;
     this.wssURL = url;
     const socket = this.socket = new WebSocket(url);
     socket.addEventListener(`message`, ({ data }) => {
@@ -186,11 +189,64 @@ var SocketInterface = class {
       handler(data.detail);
     });
     if (await waitForOpenWebSocket(socket)) {
-      this.send(`file-tree:load`);
+      this.send(`file-tree:load`, { basePath });
     } else {
       throw new Error(`Could not establish websocket connection.`);
     }
   }
+  /**
+   * Mark a specific path as awaiting a "read" result.
+   */
+  async markWaiting(path, resolve) {
+    this.waitList[path] = resolve;
+  }
+  /**
+   * Send a message to the server
+   */
+  async send(type, detail = {}) {
+    this.socket.send(JSON.stringify({ type, detail }));
+  }
+  // ==========================================================================
+  /**
+   * OT operation from file tree: inform the server of a file or dir creation.
+   */
+  async create(path, isFile2, content) {
+    this.send(`file-tree:create`, { path, isFile: isFile2, content });
+  }
+  /**
+   * OT operation from file tree: inform the server of a deletion.
+   */
+  async delete(path) {
+    this.send(`file-tree:delete`, { path });
+  }
+  /**
+   * OT operation from file tree: inform the server of a path change.
+   */
+  async move(oldPath, newPath) {
+    this.send(`file-tree:move`, { oldPath, newPath });
+  }
+  /**
+   * This is a special one time (well, ideally) operation for
+   * getting file content via websockets rather than via a
+   * REST API.
+   *
+   * The response will either be a string for textual data,
+   * or an array of ints for binary data, where each array
+   * element represents a byte value.
+   */
+  async read(path) {
+    return new Promise((resolve) => {
+      this.markWaiting(path, resolve);
+      this.send(`file-tree:read`, { path });
+    });
+  }
+  /**
+   * OT operation from file tree: inform the server of a content update.
+   */
+  async update(path, type, update) {
+    this.send(`file-tree:update`, { path, type, update });
+  }
+  // ==========================================================================
   /**
    * Build a tree off of a set of paths. This happens in
    * response to a message of the form:
@@ -204,48 +260,9 @@ var SocketInterface = class {
    *
    * where the `paths` payload is an array of strings.
    */
-  onload({ paths, id }) {
+  async onload({ id, paths }) {
     this.id = id;
     this.fileTree.setContent(paths, true);
-  }
-  /**
-   * OT operation from file tree: inform the server of a file or dir creation.
-   */
-  create(path, isFile2) {
-    this.send(`file-tree:create`, { path, isFile: isFile2 });
-  }
-  /**
-   * This is a special one time (well, ideally) operation for
-   * getting file content via websockets rather than via a
-   * REST API.
-   *
-   * The response will either be a string for textual data,
-   * or an array of ints for binary data, where each array
-   * element represents a byte value.
-   */
-  read(path) {
-    return new Promise((resolve) => {
-      this.markWaiting(path, resolve);
-      this.send(`file-tree:read`, { path });
-    });
-  }
-  /**
-   * OT operation from file tree: inform the server of a path change.
-   */
-  move(oldPath, newPath) {
-    this.send(`file-tree:move`, { oldPath, newPath });
-  }
-  /**
-   * OT operation from file tree: inform the server of a content update.
-   */
-  update(path, update) {
-    this.send(`file-tree:update`, { path, update });
-  }
-  /**
-   * OT operation from file tree: inform the server of a deletion.
-   */
-  delete(path) {
-    this.send(`file-tree:delete`, { path });
   }
   /**
    * Handle a create notification, which will tell us which
@@ -263,62 +280,10 @@ var SocketInterface = class {
    *    }
    * }
    */
-  oncreate({ path, isFile: isFile2, when, by }) {
+  async oncreate({ path, isFile: isFile2, from }) {
     const { id, fileTree } = this;
-    if (by === id) return;
-    fileTree.__create(path, isFile2, when);
-  }
-  /**
-   * This is a special file content handler that
-   * lets the `read` function resolve with the
-   * content of the requested file.
-   */
-  onread({ path, data, when }) {
-    const { waitList } = this;
-    waitList[path]?.({ data, when });
-    delete waitList[path];
-  }
-  /**
-   * Handle a move notification, which will tell us
-   * which path to rename, and when that rename happened.
-   *
-   * This happens in response to a message of the form:
-   *
-   * {
-   *    "type": "file-tree:move",
-   *    "detail": {
-   *       "oldPath": a path string
-   *       "newPath": a path string
-   *       "when": a server-side datetime int
-   *       "by": a uuid string
-   *    }
-   * }
-   */
-  onmove({ oldPath, newPath, when, by }) {
-    const { id, fileTree } = this;
-    if (by === id) return;
-    fileTree.__move(oldPath, newPath, when);
-  }
-  /**
-   * Handle a content update notification, which will tell
-   * us which file to update, and when that update happened.
-   *
-   * This happens in response to a message of the form:
-   *
-   * {
-   *    "type": "file-tree:update",
-   *    "detail": {
-   *       "path": a path string
-   *       "update": an update payload
-   *       "when": a server-side datetime int
-   *       "by": a uuid string
-   *    }
-   * }
-   */
-  onupdate({ path, update, when, by }) {
-    const { id, fileTree } = this;
-    if (by === id) return;
-    fileTree.__update(path, update);
+    if (from === id) return;
+    fileTree.__create(path, isFile2);
   }
   /**
    * Handle a delete notification, which will tell us
@@ -336,10 +301,62 @@ var SocketInterface = class {
    *    }
    * }
    */
-  ondelete({ path, when, by }) {
+  async ondelete({ path, from }) {
     const { id, fileTree } = this;
-    if (by === id) return;
-    fileTree.__delete(path, when);
+    if (from === id) return;
+    fileTree.__delete(path);
+  }
+  /**
+   * Handle a move notification, which will tell us
+   * which path to rename, and when that rename happened.
+   *
+   * This happens in response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:move",
+   *    "detail": {
+   *       "oldPath": a path string
+   *       "newPath": a path string
+   *       "when": a server-side datetime int
+   *       "by": a uuid string
+   *    }
+   * }
+   */
+  async onmove({ oldPath, newPath, from }) {
+    const { id, fileTree } = this;
+    if (from === id) return;
+    fileTree.__move(oldPath, newPath);
+  }
+  /**
+   * This is a special file content handler that
+   * lets the `read` function resolve with the
+   * content of the requested file.
+   */
+  async onread({ path, data }) {
+    const { waitList } = this;
+    waitList[path]?.({ data });
+    delete waitList[path];
+  }
+  /**
+   * Handle a content update notification, which will tell
+   * us which file to update, and when that update happened.
+   *
+   * This happens in response to a message of the form:
+   *
+   * {
+   *    "type": "file-tree:update",
+   *    "detail": {
+   *       "path": a path string
+   *       "update": an update payload
+   *       "when": a server-side datetime int
+   *       "by": a uuid string
+   *    }
+   * }
+   */
+  async onupdate({ path, type, update, from }) {
+    const { id, fileTree } = this;
+    if (from === id) return;
+    fileTree.__update(path, type, update);
   }
 };
 async function waitForOpenWebSocket(socket, retries = 0, interval = 100) {
@@ -802,6 +819,12 @@ var FileEntry = class extends FileTreeElement {
   async load() {
     return this.root.loadEntry(this.path);
   }
+  // This function only works when connected through
+  // a websocket. Note that we do NOT store the data
+  // here, that's up to whoever is using this file-tree.
+  async updateContent(type, update) {
+    this.root.updateEntry(this.path, type, update);
+  }
   toJSON() {
     return JSON.stringify(this.toValue());
   }
@@ -854,7 +877,7 @@ var FileTree = class extends FileTreeElement {
       this.#loadSource(value);
     }
   }
-  async connectViaWebSocket(url, ConnectorClass = SocketInterface) {
+  async connectViaWebSocket(url, ConnectorClass = WebSocketInterface) {
     this.OT = new ConnectorClass(this, url);
   }
   /**
@@ -893,6 +916,10 @@ var FileTree = class extends FileTreeElement {
   async loadEntry(path) {
     return this.OT?.read(path);
   }
+  // notify the server of a file content change
+  async updateEntry(path, type, update) {
+    return this.OT?.update(path, type, update);
+  }
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
     const oldPath = entry.path;
@@ -916,8 +943,9 @@ var FileTree = class extends FileTreeElement {
     const detail = { path, emptyDir: this.removeEmptyDir };
     this.emit(eventType, detail, () => {
       const removed = this.__delete(path, isFile2);
-      const deleteParent = parentDir.checkEmpty();
       this.OT?.delete(path);
+      detail.removed = removed;
+      setTimeout(() => parentDir.checkEmpty(), 10);
       return removed;
     });
   }
@@ -930,20 +958,22 @@ var FileTree = class extends FileTreeElement {
   // private function for initiating <file-entry> or <dir-entry> creation
   #addPath(path, content = void 0, eventType, immediate = false, bypassOT = false) {
     const { entries } = this;
-    const fileEntry = isFile(path);
-    if (!fileEntry && !path.endsWith(`/`)) path += `/`;
+    const isFileEntry = isFile(path);
+    if (!isFileEntry && !path.endsWith(`/`)) path += `/`;
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
         error: localeStrings.PATH_EXISTS(path)
       });
     }
+    const detail = { path, content };
     const grant = () => {
-      const entry = this.__create(path, fileEntry);
-      if (!bypassOT) this.OT?.create(path, fileEntry);
+      const entry = this.__create(path, isFileEntry);
+      if (!bypassOT) this.OT?.create(path, isFileEntry, content);
+      detail.entry = entry;
       return entry;
     };
     if (immediate) return grant();
-    this.emit(eventType, { path, content }, grant);
+    this.emit(eventType, detail, grant);
   }
   // Ensure that a dir exists (recursively).
   #mkdir({ dirPath }) {
@@ -987,15 +1017,17 @@ var FileTree = class extends FileTreeElement {
         error: localeStrings.PATH_EXISTS(newPath)
       });
     }
-    this.emit(eventType, { oldPath, newPath }, () => {
+    const detail = { oldPath, newPath };
+    this.emit(eventType, detail, () => {
       const entry = this.__move(oldPath, newPath);
       this.OT?.move(oldPath, newPath);
+      detail.entry = entry;
       return entry;
     });
   }
   // ================================================================================================
   // create notification via websocket or immediate code path:
-  __create(path, isFile2, when = -1) {
+  __create(path, isFile2) {
     const { entries } = this;
     const EntryType = isFile2 ? FileEntry : DirEntry;
     const entry = entries[path] = new EntryType();
@@ -1021,11 +1053,11 @@ var FileTree = class extends FileTreeElement {
     return entry;
   }
   // update notification via websocket or immediate code path:
-  __update(path, update) {
+  __update(path, type, update) {
     const { entries } = this;
     const entry = entries[path];
     entry.dispatchEvent(
-      new CustomEvent(`content:update`, { detail: { update } })
+      new CustomEvent(`content:update`, { detail: { type, update } })
     );
   }
   // delete notification via websocket or immediate code path:
@@ -1065,6 +1097,7 @@ var FileTree = class extends FileTreeElement {
     detail.path = entry.path;
     this.emit(eventType, detail, () => {
       entry.select();
+      detail.entry = entry;
       return entry;
     });
   }
@@ -1072,6 +1105,7 @@ var FileTree = class extends FileTreeElement {
     const eventType = `dir:toggle`;
     detail.path = entry.path;
     this.emit(eventType, detail, () => {
+      detail.entry = entry;
       entry.toggle();
     });
   }

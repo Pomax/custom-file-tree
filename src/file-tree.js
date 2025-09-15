@@ -1,5 +1,5 @@
 import { FileTreeElement } from "./classes/file-tree-element.js";
-import { SocketInterface } from "./classes/socket-interface.js";
+import { WebSocketInterface } from "./classes/websocket-interface.js";
 import { DirEntry } from "./classes/dir-entry.js";
 import { FileEntry } from "./classes/file-entry.js";
 import { registry, isFile } from "./utils/utils.js";
@@ -57,7 +57,7 @@ class FileTree extends FileTreeElement {
     }
   }
 
-  async connectViaWebSocket(url, ConnectorClass = SocketInterface) {
+  async connectViaWebSocket(url, ConnectorClass = WebSocketInterface) {
     this.OT = new ConnectorClass(this, url);
   }
 
@@ -104,6 +104,11 @@ class FileTree extends FileTreeElement {
     return this.OT?.read(path);
   }
 
+  // notify the server of a file content change
+  async updateEntry(path, type, update) {
+    return this.OT?.update(path, type, update);
+  }
+
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
     const oldPath = entry.path;
@@ -131,11 +136,13 @@ class FileTree extends FileTreeElement {
     this.emit(eventType, detail, () => {
       // grant
       const removed = this.__delete(path, isFile);
-      const deleteParent = parentDir.checkEmpty();
-      // TODO: if deleteParent is true, then we need to
-      //       run that up until we run out of "deletes"
-      //       and then send the resulting path on
       this.OT?.delete(path);
+      detail.removed = removed;
+      // We need to run this "later" because it might
+      // kick off another removeEntry call. And we want
+      // a reasonable pause so we're "sure" the message
+      // won't arrive at the same time.
+      setTimeout(() => parentDir.checkEmpty(), 10);
       return removed;
     });
   }
@@ -159,8 +166,8 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
 
     // is this a dir but missing the trailing slash?
-    const fileEntry = isFile(path);
-    if (!fileEntry && !path.endsWith(`/`)) path += `/`;
+    const isFileEntry = isFile(path);
+    if (!isFileEntry && !path.endsWith(`/`)) path += `/`;
 
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
@@ -169,16 +176,19 @@ class FileTree extends FileTreeElement {
     }
 
     // When granted, build the entry.
+    const detail = { path, content };
     const grant = () => {
-      const entry = this.__create(path, fileEntry);
-      if (!bypassOT) this.OT?.create(path, fileEntry);
+      // grant
+      const entry = this.__create(path, isFileEntry);
+      if (!bypassOT) this.OT?.create(path, isFileEntry, content);
+      detail.entry = entry;
       return entry;
     };
 
     // We will not be asking for permission during setContent()
     if (immediate) return grant();
 
-    this.emit(eventType, { path, content }, grant);
+    this.emit(eventType, detail, grant);
   }
 
   // Ensure that a dir exists (recursively).
@@ -224,10 +234,12 @@ class FileTree extends FileTreeElement {
         error: Strings.PATH_EXISTS(newPath),
       });
     }
-    this.emit(eventType, { oldPath, newPath }, () => {
+    const detail = { oldPath, newPath };
+    this.emit(eventType, detail, () => {
       // grant
       const entry = this.__move(oldPath, newPath);
       this.OT?.move(oldPath, newPath);
+      detail.entry = entry;
       return entry;
     });
   }
@@ -235,7 +247,7 @@ class FileTree extends FileTreeElement {
   // ================================================================================================
 
   // create notification via websocket or immediate code path:
-  __create(path, isFile, when = -1) {
+  __create(path, isFile) {
     const { entries } = this;
 
     const EntryType = isFile ? FileEntry : DirEntry;
@@ -273,11 +285,11 @@ class FileTree extends FileTreeElement {
   }
 
   // update notification via websocket or immediate code path:
-  __update(path, update) {
+  __update(path, type, update) {
     const { entries } = this;
     const entry = entries[path];
     entry.dispatchEvent(
-      new CustomEvent(`content:update`, { detail: { update } })
+      new CustomEvent(`content:update`, { detail: { type, update } })
     );
   }
 
@@ -329,6 +341,7 @@ class FileTree extends FileTreeElement {
     this.emit(eventType, detail, () => {
       // grant
       entry.select();
+      detail.entry = entry;
       return entry;
     });
   }
@@ -338,6 +351,7 @@ class FileTree extends FileTreeElement {
     detail.path = entry.path;
     this.emit(eventType, detail, () => {
       // grant
+      detail.entry = entry;
       entry.toggle();
     });
   }

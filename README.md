@@ -178,7 +178,7 @@ and should be transmitted to clients as:
 {
   type: "file-tree:create",
   detail: {
-    by: id of the origin
+    from: id of the origin
     path: "the entry's path string",
     isFile: true if file, false if dir
     when: the datetime int for when the server applied the create
@@ -208,12 +208,7 @@ and should be transmitted to clients as:
 ```
 {
   type: "file-tree:move",
-  detail: {
-    by: id of the origin
-    oldPath,
-    newPath,
-    when
-  }
+  detail: { from, oldPath, newPath, when }
 }
 ```
 
@@ -239,12 +234,7 @@ Updates should be transmitted to clients as:
 ```
 {
   type: "file-tree:update",
-  detail: {
-    by: id of the origin
-    path,
-    update,
-    when
-  }
+  detail: { from, path, update, when }
 }
 ```
 
@@ -267,11 +257,7 @@ Deletes should be transmitted to clients as:
 ```
 {
   type: "file-tree:update",
-  detail: {
-    by: id of the origin
-    path,
-    when
-  }
+  detail: { from, path, when }
 }
 ```
 
@@ -294,10 +280,7 @@ This is a request for the server to send the entire file's content back using th
 ```
 {
   type: "file-tree:read",
-  details {
-    data,
-    when
-  }
+  details { path, data, when }
 }
 ```
 

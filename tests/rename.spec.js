@@ -107,6 +107,10 @@ test.describe(`rename events`, () => {
       await page.locator(`[path="README.md"]`).click();
       await page.locator(`[path="README.md"] > .buttons .rename-file`).click();
     });
+
+    // TODO: we need a test with a.b and a.bd, where we rename a.b to a.bc.
+    //       The test should confirm that a.bd stays the same instead of
+    //       getting renamed to a.bcd due to startsWith replacement.
   });
 
   /**
