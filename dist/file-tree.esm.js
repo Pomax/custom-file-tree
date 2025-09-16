@@ -865,8 +865,8 @@ var FileTree = class extends FileTreeElement {
       this.#loadSource(value);
     }
   }
-  async connectViaWebSocket(url, ConnectorClass = WebSocketInterface) {
-    this.OT = new ConnectorClass(this, url);
+  async connectViaWebSocket(url, basePath = `.`, ConnectorClass = WebSocketInterface) {
+    this.OT = new ConnectorClass(this, url, basePath);
   }
   /**
    * Setting files is a destructive operation, clearing whatever is already

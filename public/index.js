@@ -34,7 +34,7 @@ eventList.forEach((type) =>
 
 // Are we running with a server for testing websockets?
 if (fileTree.hasAttribute(`websocket`)) {
-  fileTree.connectViaWebSocket(`https://localhost`);
+  fileTree.connectViaWebSocket(`https://localhost`, `.`);
 }
 
 // We are not, run purely in the browser.

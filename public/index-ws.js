@@ -21,7 +21,7 @@ fileTree.addEventListener(`file:click`, async ({ detail }) => {
     const { type, update } = evt.detail;
     if (type === `jsdiff`) {
       const { path } = entry;
-      content[path] ??= (await entry.load()).data;
+      if (!content[path]) return;
       const oldContent = content[path];
       const newContent = applyPatch(oldContent, update);
       content[path] = newContent;

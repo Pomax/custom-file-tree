@@ -10,11 +10,16 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v6.0.0 (September 15, 2025)
+
+- added websocket support to allow for real time, collaborative file system work by letting you connect the `<file-tree>` to a websocket server (as long as it speaks the correct "protocol").
+- added support for empty dirs by rewriting how `setContent` works, which now takes an object `{ dirs: [...], files: [...]}`. Technically both are optional, and the `dirs` list is only required if you need to bootstrap the file tree with empty directories (dirs with files in them will automatically get added in order to correctly place those files in the tree). **This is a breaking change.**
+
+# Previous Versions
+
 ## v5.3.0 (August 21, 2025)
 
 - added an optional value to &lt;dir-entry&gt;.toggle() so that you can explicity set a dir to open (`toggle(true)`) or closed (`toggle(false)`), to align it with the standard DOM classList.toggle
-
-# Previous Versions
 
 ## v5.2.3 (August 4, 2025)
 

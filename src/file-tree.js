@@ -57,8 +57,12 @@ class FileTree extends FileTreeElement {
     }
   }
 
-  async connectViaWebSocket(url, ConnectorClass = WebSocketInterface) {
-    this.OT = new ConnectorClass(this, url);
+  async connectViaWebSocket(
+    url,
+    basePath = `.`,
+    ConnectorClass = WebSocketInterface
+  ) {
+    this.OT = new ConnectorClass(this, url, basePath);
   }
 
   /**
