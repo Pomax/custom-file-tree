@@ -178,6 +178,11 @@ if (fileTree.hasAttribute(`websocket`)) {
   const url = `https://server.example.com`;
 
   // Which basepath should this file tree be looking at?
+  // For example, if the server has a `content` dir that
+  // is filled with project dirs, then a file tree connection
+  // "for a specific project" makes far more sense than a 
+  // conection that shows every single project dir.
+  // 
   // Note that this can be omitted if that path is `.`
   const basePath = `.`;
 

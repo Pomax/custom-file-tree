@@ -13,6 +13,85 @@ import {
   lstatSync,
 } from "node:fs";
 
+/**
+ * The default update handler is a diff/patch handler.
+ */
+const DEFAULT_HANDLER = function updateHandler(fullPath, type, update) {
+  if (type === `jsdiff`) {
+    const oldContent = readFileSync(fullPath).toString();
+    const newContent = applyPatch(oldContent, update);
+    writeFileSync(fullPath, newContent.toString());
+  } else {
+    console.warn(`Unknown update type "${type}" in file:update handler.`);
+  }
+};
+
+/**
+ * ...docs go here...
+ */
+export function setupFileTreeWebSocket(
+  app,
+  contentDir,
+  updateHandler = DEFAULT_HANDLER
+) {
+  // Set up websocket functionality
+  const server = http.createServer(app);
+  const wss = new WebSocketServer({ clientTracking: false, noServer: true });
+  server.on("upgrade", (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit(`connection`, ws, request);
+    });
+  });
+
+  wss.on("connection", (socket, request) => {
+    addFileTreeCommunication(socket, contentDir, updateHandler);
+  });
+
+  return server;
+}
+
+/**
+ * Anyone can use this function to tack file-tree compatible
+ * message handling to a websocket.
+ */
+export async function addFileTreeCommunication(
+  socket,
+  contentDir = `.`,
+  updateHandler = DEFAULT_HANDLER,
+  warnings = true
+) {
+  // Our websocket based request handler.
+  const otHandler = new OTHandler(socket, contentDir, updateHandler);
+
+  socket.on("message", (message) => {
+    // This will not throw, because a server shouldn't crash out.
+    let data = message.toString();
+    try {
+      data = JSON.parse(data);
+    } catch (e) {
+      if (warnings)
+        console.warn(
+          `Received incompatible data via websocket: message is not JSON.`,
+          data
+        );
+    }
+    if (!data) return;
+
+    // Is this something we know how to handle?
+    let { type } = data;
+    if (!type.startsWith(`file-tree:`)) return;
+    type = type.replace(`file-tree:`, ``);
+    const handlerName = `on${type}`;
+    const handler = otHandler[handlerName].bind(otHandler);
+    if (!handler) {
+      return console.warn(`Missing implementation for ${handlerName}.`);
+    }
+    handler(data.detail);
+  });
+}
+
+// ============================================================================
+
 const changelog = {};
 const actionIndex = {};
 const handlers = {
@@ -71,68 +150,7 @@ async function sendAll(basePath, action) {
   });
 }
 
-/**
- * ...docs go here...
- */
-const DEFAULT_HANDLER = function updateHandler(fullPath, type, update) {
-  if (type === `jsdiff`) {
-    const oldContent = readFileSync(fullPath).toString();
-    const newContent = applyPatch(oldContent, update);
-    writeFileSync(fullPath, newContent.toString());
-  }
-};
-
-/**
- * ...docs go here...
- */
-export function setupFileTreeWebSocket(
-  app,
-  contentDir,
-  updateHandler = DEFAULT_HANDLER
-) {
-  // Set up websocket functionality
-  const server = http.createServer(app);
-  const wss = new WebSocketServer({ clientTracking: false, noServer: true });
-  server.on("upgrade", (request, socket, head) => {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit(`connection`, ws, request);
-    });
-  });
-
-  wss.on("connection", (socket, request) => {
-    // Our websocket based request handler.
-    const handler = new OTHandler(socket, contentDir, updateHandler);
-    socket.on("error", console.error);
-
-    socket.on("message", (message) => {
-      // This will not throw, because a server shouldn't crash out.
-      let data = message.toString();
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        console.warn(
-          `Received incompatible data via websocket: message is not JSON.`,
-          data
-        );
-      }
-      if (!data) return;
-
-      // Is this something we know how to handle?
-      let { type } = data;
-      if (!type.startsWith(`file-tree:`)) return;
-      type = type.replace(`file-tree:`, ``);
-      const handlerName = `on${type}`;
-      const fn = handler[handlerName].bind(handler);
-      if (!fn)
-        return console.warn(`Missing implementation for ${handlerName}.`);
-
-      // It is: handle it.
-      fn(data.detail);
-    });
-  });
-
-  return server;
-}
+// ============================================================================
 
 /**
  * ...docs go here...
@@ -228,7 +246,7 @@ class OTHandler {
     const fullPath = this.getFullPath(path);
     if (!fullPath) return;
     rmSync(fullPath);
-    addAction(this, { action: `delete`, path, when });
+    addAction(this, { action: `delete`, path });
   }
 
   // This is not a transform, and so does not require

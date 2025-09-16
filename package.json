@@ -3,6 +3,9 @@
   "version": "5.3.0",
   "description": "Add the custom element to your page context using plain old HTML:",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "main": "src/file-tree.js",
   "scripts": {
     "build:base": "esbuild --bundle --format=esm --target=esnext ./src/file-tree.js",
@@ -12,7 +15,6 @@
     "build:content": "mkdir -p content && cp -r dist content && cp -r src/classes content && cp -r tests content && cp -r tests content/classes",
     "clean": "rm -rf ./dist",
     "lint": "prettier -w src/**/*.{css,js}",
-    "postinstall": "playwright install",
     "server": "node server.js",
     "start": "npm run clean && npm run build && npm run build:content && npm run server",
     "test:integration": "playwright test \"tests\" --workers=1 --timeout 5000 --global-timeout 15000",
