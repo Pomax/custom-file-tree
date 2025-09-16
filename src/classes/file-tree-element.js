@@ -90,10 +90,20 @@ export class FileTreeElement extends HTMLElement {
     this.setAttribute(`path`, path);
   }
 
-  updatePath(oldPath, newPath) {
-    // FIXME: we don't want `a.b` -> `a.bc` to rename `a.bd` to `a.bcd`!
+  updatePath(isFile, oldPath, newPath) {
+    // Is this an exact match?
+    if (this.path === oldPath) {
+      this.path = newPath;
+      return true;
+    }
+
+    // If this is a file rename, there can only be an exact match
+    if (isFile) return false;
+
+    // If this is a dir path, we need to do a prefix replacement.
     const regex = new RegExp(`^${oldPath}`);
     this.path = this.path.replace(regex, newPath);
+    return true;
   }
 
   get dirPath() {

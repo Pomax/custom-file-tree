@@ -1,24 +1,5 @@
 // src/utils/utils.js
 var create = (tag) => document.createElement(tag);
-function isFile(path) {
-  const parts = path.split(`/`).filter((v) => !!v);
-  if (parts.at(-1).includes(`.`)) return true;
-  const metaData = getPathMetaData(path);
-  return !!metaData.file;
-}
-function getPathMetaData(path) {
-  let metaData = {};
-  const args = path.substring(path.indexOf(`?`))?.split(`&`) || [];
-  args.forEach((v) => {
-    if (v.includes(`=`)) {
-      const [key, value] = v.split(`=`);
-      metaData[key] = value;
-    } else {
-      metaData[v] = true;
-    }
-  });
-  return metaData;
-}
 var registry = window.customElements;
 function getFileContent(file) {
   return new Promise((resolve, reject) => {
@@ -96,9 +77,15 @@ var FileTreeElement = class extends HTMLElement {
     heading.textContent = this.name;
     this.setAttribute(`path`, path);
   }
-  updatePath(oldPath, newPath) {
+  updatePath(isFile2, oldPath, newPath) {
+    if (this.path === oldPath) {
+      this.path = newPath;
+      return true;
+    }
+    if (isFile2) return false;
     const regex = new RegExp(`^${oldPath}`);
     this.path = this.path.replace(regex, newPath);
+    return true;
   }
   get dirPath() {
     let { path, name } = this;
@@ -222,8 +209,8 @@ var WebSocketInterface = class {
   /**
    * OT operation from file tree: inform the server of a path change.
    */
-  async move(oldPath, newPath) {
-    this.send(`file-tree:move`, { oldPath, newPath });
+  async move(isFile2, oldPath, newPath) {
+    this.send(`file-tree:move`, { isFile: isFile2, oldPath, newPath });
   }
   /**
    * This is a special one time (well, ideally) operation for
@@ -260,9 +247,9 @@ var WebSocketInterface = class {
    *
    * where the `paths` payload is an array of strings.
    */
-  async onload({ id, paths }) {
+  async onload({ id, dirs, files }) {
     this.id = id;
-    this.fileTree.setContent(paths, true);
+    this.fileTree.setContent({ dirs, files }, true);
   }
   /**
    * Handle a create notification, which will tell us which
@@ -322,10 +309,10 @@ var WebSocketInterface = class {
    *    }
    * }
    */
-  async onmove({ oldPath, newPath, from }) {
+  async onmove({ isFile: isFile2, oldPath, newPath, from }) {
     const { id, fileTree } = this;
     if (from === id) return;
-    fileTree.__move(oldPath, newPath);
+    fileTree.__move(isFile2, oldPath, newPath);
   }
   /**
    * This is a special file content handler that
@@ -418,16 +405,17 @@ async function processUpload(root, items, dirPath = ``) {
       const content = await getFileContent(item);
       const filePath = path + (item.webkitRelativePath || item.name);
       const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-      root.createEntry(entryPath, content);
+      root.createEntry(entryPath, true, content);
     } else if (item.isFile) {
       item.file(async (file) => {
         const content = await getFileContent(file);
         const filePath = path + file.name;
         const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-        root.createEntry(entryPath, content);
+        root.createEntry(entryPath, true, content);
       });
     } else if (item.isDirectory) {
       const updatedPath = path + item.name + "/";
+      root.createEntry(updatedPath, false);
       item.createReader().readEntries(async (entries) => {
         for (let entry of entries) await iterate(entry, updatedPath);
       });
@@ -608,7 +596,7 @@ var DirEntry = class extends FileTreeElement {
       if (this.path !== `.`) {
         fileName = this.path + fileName;
       }
-      this.root.createEntry(fileName);
+      this.root.createEntry(fileName, true);
     }
   }
   /**
@@ -630,7 +618,7 @@ var DirEntry = class extends FileTreeElement {
         return alert(localeStrings.CREATE_DIRECTORY_NO_NESTING);
       }
       let path = (this.path !== `.` ? this.path : ``) + dirName + `/`;
-      this.root.createEntry(path);
+      this.root.createEntry(path, false);
     }
   }
   /**
@@ -884,33 +872,28 @@ var FileTree = class extends FileTreeElement {
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
    */
-  setContent(paths = [], bypassOT = false) {
+  setContent({ dirs, files }, bypassOT = false) {
     this.clear();
-    paths.sort();
-    for (let i = 0, j; i < paths.length; i++) {
-      let isDir = false;
-      let mark = paths[i];
-      for (j = i + 1; j < paths.length; j++) {
-        if (paths[j].startsWith(mark)) {
-          isDir = true;
-        } else break;
-      }
-      if (isDir) {
-        paths.splice(i--, 1);
-        i = j - 2;
-      }
-    }
-    paths.forEach((path) => {
-      const type = isFile(path) ? `file` : `dir`;
-      this.#addPath(path, void 0, `tree:add:${type}`, true, bypassOT);
-    });
+    dirs?.forEach(
+      (path) => this.#addPath(
+        `${path}/`,
+        false,
+        void 0,
+        `tree:add:dir`,
+        true,
+        bypassOT
+      )
+    );
+    files?.forEach(
+      (path) => this.#addPath(path, true, void 0, `tree:add:file`, true, bypassOT)
+    );
     this.ready = true;
     return this.emit(`tree:ready`);
   }
   // create or upload
-  createEntry(path, content = void 0) {
-    let eventType = (isFile(path) ? `file` : `dir`) + `:create`;
-    this.#addPath(path, content, eventType);
+  createEntry(path, isFile2, content = void 0) {
+    let eventType = (isFile2 ? `file` : `dir`) + `:create`;
+    this.#addPath(path, isFile2, content, eventType);
   }
   // get the file contents for an entry via a websocket connection
   async loadEntry(path) {
@@ -922,17 +905,19 @@ var FileTree = class extends FileTreeElement {
   }
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
+    const isFile2 = !!entry.isFile;
     const oldPath = entry.path;
     const pos = oldPath.lastIndexOf(entry.name);
     let newPath = oldPath.substring(0, pos) + newName;
     if (entry.isDir) newPath += `/`;
     const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
-    this.#relocateEntry(oldPath, newPath, eventType);
+    this.#relocateEntry(isFile2, oldPath, newPath, eventType);
   }
   // A move is a relocation where everything *but* the last part of the path may have changed.
   moveEntry(entry, oldPath, newPath) {
+    const isFile2 = !!entry.isFile;
     const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
-    this.#relocateEntry(oldPath, newPath, eventType);
+    this.#relocateEntry(isFile2, oldPath, newPath, eventType);
   }
   // Deletes are a DOM removal of the entry itself, and a pruning
   // of the path -> entry map for any entry that started with the
@@ -953,13 +938,14 @@ var FileTree = class extends FileTreeElement {
   async #loadSource(url) {
     const response = await fetch(url);
     const data = await response.json();
-    if (data) this.setContent(data);
+    if (data) {
+      const { dirs, files } = data;
+      this.setContent({ dirs, files });
+    }
   }
   // private function for initiating <file-entry> or <dir-entry> creation
-  #addPath(path, content = void 0, eventType, immediate = false, bypassOT = false) {
+  #addPath(path, isFile2, content = void 0, eventType, immediate = false, bypassOT = false) {
     const { entries } = this;
-    const isFileEntry = isFile(path);
-    if (!isFileEntry && !path.endsWith(`/`)) path += `/`;
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
         error: localeStrings.PATH_EXISTS(path)
@@ -967,8 +953,8 @@ var FileTree = class extends FileTreeElement {
     }
     const detail = { path, content };
     const grant = () => {
-      const entry = this.__create(path, isFileEntry);
-      if (!bypassOT) this.OT?.create(path, isFileEntry, content);
+      const entry = this.__create(path, isFile2);
+      if (!bypassOT) this.OT?.create(path, isFile2, content);
       detail.entry = entry;
       return entry;
     };
@@ -997,7 +983,7 @@ var FileTree = class extends FileTreeElement {
     return dir;
   }
   // private function for initiating <file-entry> or <dir-entry> path changes
-  #relocateEntry(oldPath, newPath, eventType) {
+  #relocateEntry(isFile2, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
     if (newPath.startsWith(oldPath)) {
@@ -1019,8 +1005,8 @@ var FileTree = class extends FileTreeElement {
     }
     const detail = { oldPath, newPath };
     this.emit(eventType, detail, () => {
-      const entry = this.__move(oldPath, newPath);
-      this.OT?.move(oldPath, newPath);
+      const entry = this.__move(isFile2, oldPath, newPath);
+      this.OT?.move(isFile2, oldPath, newPath);
       detail.entry = entry;
       return entry;
     });
@@ -1036,15 +1022,17 @@ var FileTree = class extends FileTreeElement {
     return entry;
   }
   // move notification via websocket or immediate code path:
-  __move(oldPath, newPath, when) {
+  __move(isFile2, oldPath, newPath, when) {
     const { entries } = this;
     const entry = entries[oldPath];
     Object.keys(entries).forEach((key) => {
       if (key.startsWith(oldPath)) {
         const entry2 = entries[key];
-        entry2.updatePath(oldPath, newPath);
-        entries[entry2.path] = entry2;
-        delete entries[key];
+        const updated = entry2.updatePath(isFile2, oldPath, newPath);
+        if (updated) {
+          entries[entry2.path] = entry2;
+          delete entries[key];
+        }
       }
     });
     const { dirPath } = entries[newPath] = entry;

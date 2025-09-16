@@ -105,8 +105,8 @@ export class WebSocketInterface {
   /**
    * OT operation from file tree: inform the server of a path change.
    */
-  async move(oldPath, newPath) {
-    this.send(`file-tree:move`, { oldPath, newPath });
+  async move(isFile, oldPath, newPath) {
+    this.send(`file-tree:move`, { isFile, oldPath, newPath });
   }
 
   /**
@@ -147,9 +147,9 @@ export class WebSocketInterface {
    *
    * where the `paths` payload is an array of strings.
    */
-  async onload({ id, paths }) {
+  async onload({ id, dirs, files }) {
     this.id = id;
-    this.fileTree.setContent(paths, true);
+    this.fileTree.setContent({ dirs, files }, true);
   }
 
   /**
@@ -212,10 +212,10 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async onmove({ oldPath, newPath, from }) {
+  async onmove({ isFile, oldPath, newPath, from }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
-    fileTree.__move(oldPath, newPath);
+    fileTree.__move(isFile, oldPath, newPath);
   }
 
   /**

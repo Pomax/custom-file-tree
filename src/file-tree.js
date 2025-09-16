@@ -65,38 +65,29 @@ class FileTree extends FileTreeElement {
    * Setting files is a destructive operation, clearing whatever is already
    * in this tree in favour of new tree content.
    */
-  setContent(paths = [], bypassOT = false) {
+  setContent({ dirs, files }, bypassOT = false) {
     this.clear();
-    paths.sort();
-
-    // remove all prefix strings, because those are dirs, not files.
-    for (let i = 0, j; i < paths.length; i++) {
-      let isDir = false;
-      let mark = paths[i];
-      for (j = i + 1; j < paths.length; j++) {
-        if (paths[j].startsWith(mark)) {
-          isDir = true;
-        } else break;
-      }
-      if (isDir) {
-        paths.splice(i--, 1);
-        i = j - 2; // once to counter i++, once to counter j++
-      }
-    }
-
-    paths.forEach((path) => {
-      const type = isFile(path) ? `file` : `dir`;
-      this.#addPath(path, undefined, `tree:add:${type}`, true, bypassOT);
-    });
-
+    dirs?.forEach((path) =>
+      this.#addPath(
+        `${path}/`,
+        false,
+        undefined,
+        `tree:add:dir`,
+        true,
+        bypassOT
+      )
+    );
+    files?.forEach((path) =>
+      this.#addPath(path, true, undefined, `tree:add:file`, true, bypassOT)
+    );
     this.ready = true;
     return this.emit(`tree:ready`);
   }
 
   // create or upload
-  createEntry(path, content = undefined) {
-    let eventType = (isFile(path) ? `file` : `dir`) + `:create`;
-    this.#addPath(path, content, eventType);
+  createEntry(path, isFile, content = undefined) {
+    let eventType = (isFile ? `file` : `dir`) + `:create`;
+    this.#addPath(path, isFile, content, eventType);
   }
 
   // get the file contents for an entry via a websocket connection
@@ -111,18 +102,20 @@ class FileTree extends FileTreeElement {
 
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
+    const isFile = !!entry.isFile;
     const oldPath = entry.path;
     const pos = oldPath.lastIndexOf(entry.name);
     let newPath = oldPath.substring(0, pos) + newName;
     if (entry.isDir) newPath += `/`;
     const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
-    this.#relocateEntry(oldPath, newPath, eventType);
+    this.#relocateEntry(isFile, oldPath, newPath, eventType);
   }
 
   // A move is a relocation where everything *but* the last part of the path may have changed.
   moveEntry(entry, oldPath, newPath) {
+    const isFile = !!entry.isFile;
     const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
-    this.#relocateEntry(oldPath, newPath, eventType);
+    this.#relocateEntry(isFile, oldPath, newPath, eventType);
   }
 
   // Deletes are a DOM removal of the entry itself, and a pruning
@@ -152,22 +145,22 @@ class FileTree extends FileTreeElement {
   async #loadSource(url) {
     const response = await fetch(url);
     const data = await response.json();
-    if (data) this.setContent(data);
+    if (data) {
+      const { dirs, files } = data;
+      this.setContent({ dirs, files });
+    }
   }
 
   // private function for initiating <file-entry> or <dir-entry> creation
   #addPath(
     path,
+    isFile,
     content = undefined,
     eventType,
     immediate = false,
     bypassOT = false
   ) {
     const { entries } = this;
-
-    // is this a dir but missing the trailing slash?
-    const isFileEntry = isFile(path);
-    if (!isFileEntry && !path.endsWith(`/`)) path += `/`;
 
     if (entries[path]) {
       return this.emit(`${eventType}:error`, {
@@ -179,8 +172,8 @@ class FileTree extends FileTreeElement {
     const detail = { path, content };
     const grant = () => {
       // grant
-      const entry = this.__create(path, isFileEntry);
-      if (!bypassOT) this.OT?.create(path, isFileEntry, content);
+      const entry = this.__create(path, isFile);
+      if (!bypassOT) this.OT?.create(path, isFile, content);
       detail.entry = entry;
       return entry;
     };
@@ -214,7 +207,7 @@ class FileTree extends FileTreeElement {
   }
 
   // private function for initiating <file-entry> or <dir-entry> path changes
-  #relocateEntry(oldPath, newPath, eventType) {
+  #relocateEntry(isFile, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
     if (newPath.startsWith(oldPath)) {
@@ -237,8 +230,8 @@ class FileTree extends FileTreeElement {
     const detail = { oldPath, newPath };
     this.emit(eventType, detail, () => {
       // grant
-      const entry = this.__move(oldPath, newPath);
-      this.OT?.move(oldPath, newPath);
+      const entry = this.__move(isFile, oldPath, newPath);
+      this.OT?.move(isFile, oldPath, newPath);
       detail.entry = entry;
       return entry;
     });
@@ -259,7 +252,7 @@ class FileTree extends FileTreeElement {
   }
 
   // move notification via websocket or immediate code path:
-  __move(oldPath, newPath, when) {
+  __move(isFile, oldPath, newPath, when) {
     const { entries } = this;
     const entry = entries[oldPath];
 
@@ -269,9 +262,11 @@ class FileTree extends FileTreeElement {
     Object.keys(entries).forEach((key) => {
       if (key.startsWith(oldPath)) {
         const entry = entries[key];
-        entry.updatePath(oldPath, newPath);
-        entries[entry.path] = entry;
-        delete entries[key];
+        const updated = entry.updatePath(isFile, oldPath, newPath);
+        if (updated) {
+          entries[entry.path] = entry;
+          delete entries[key];
+        }
       }
     });
 

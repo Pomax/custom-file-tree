@@ -22,6 +22,8 @@ export function uploadFilesFromDevice({ root, path }) {
 }
 
 export async function processUpload(root, items, dirPath = ``) {
+  // FIXME: we need to add support for empty directories.
+
   async function iterate(item, path = ``) {
     // Direct file drop? And note the dir check, which is due to
     // the fact that our tests need to shim the directory drop
@@ -30,7 +32,7 @@ export async function processUpload(root, items, dirPath = ``) {
       const content = await getFileContent(item);
       const filePath = path + (item.webkitRelativePath || item.name);
       const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-      root.createEntry(entryPath, content);
+      root.createEntry(entryPath, true, content);
     }
 
     // File input dialog result (for files)
@@ -39,16 +41,14 @@ export async function processUpload(root, items, dirPath = ``) {
         const content = await getFileContent(file);
         const filePath = path + file.name;
         const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-        root.createEntry(entryPath, content);
+        root.createEntry(entryPath, true, content);
       });
     }
 
     // File input dialog result (for directories)
     else if (item.isDirectory) {
-      // NOTE: This will skip empty dirs, which is unfortunately by design. The
-      //       whole "uploading an entire folder" isn't part of the standard, so
-      //       all browser makers (lol, all two of them) support a limited version.
       const updatedPath = path + item.name + "/";
+      root.createEntry(updatedPath, false);
       item.createReader().readEntries(async (entries) => {
         for (let entry of entries) await iterate(entry, updatedPath);
       });

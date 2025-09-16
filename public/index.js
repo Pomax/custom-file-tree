@@ -39,10 +39,21 @@ if (fileTree.hasAttribute(`websocket`)) {
 
 // We are not, run purely in the browser.
 else {
-  const testContent = [
+  const dirs = [
+    // note that we don't *need* this list, unless
+    // we want to include empty dirs, because we
+    // won't see those as part of a file path.
     `.data`,
-    `.data/tmp.lock`,
     `dist`,
+    `dist/old`,
+    `public`,
+    `src`,
+    `test`,
+    `empty`,
+  ];
+
+  const files = [
+    `.data/tmp.lock`,
     `dist/README.md`,
     `dist/file-tree.css`,
     `dist/file-tree.esm.js`,
@@ -50,23 +61,20 @@ else {
     `dist/old/README.old`,
     `dist/old/file-tree.esm.js`,
     `dist/old/file-tree.esm.min.js`,
-    `public`,
     `public/index.html`,
     `public/index.js`,
     `public/README.md`,
-    `src`,
     `src/dir-entry.js`,
     `src/file-entry.js`,
     `src/file-tree.css`,
     `src/file-tree.js`,
     `src/README.md`,
     `src/utils.js`,
-    `test`,
     `test/cake.because.why.not`,
     `test/README.md`,
     `package.json`,
     `README.md`,
   ];
 
-  fileTree.setContent(testContent);
+  fileTree.setContent({ dirs, files });
 }

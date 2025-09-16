@@ -59,7 +59,10 @@
     <pre><code>const tree = document.createElement(`file-tree`);
 tree.setAttribute(`src`, `https://example.com/some-url-for/content`);
 // or
-tree.setContent([`a`, `list.of`, `file.paths`]);
+tree.setContent({
+  dirs: [`.ssh`, `Documents`, `tmp`],
+  files: [`.ssh/config`, `Documents/test.txt`, `root.file`]
+});
 document.body.appendchild(tree);</code></pre>
 
     <p>And that's all you need as far as the page code is concerned.</p>

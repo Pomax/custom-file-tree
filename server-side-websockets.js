@@ -10,6 +10,7 @@ import {
   rmSync,
   writeFileSync,
   globSync,
+  lstatSync,
 } from "node:fs";
 
 const changelog = {};
@@ -180,8 +181,16 @@ class OTHandler {
   onload({ basePath }) {
     this.basePath = basePath;
     addHandler(this);
-    const paths = globSync(`./**/*`, { cwd: this.contentDir });
-    this.send(`load`, { id: this.id, paths });
+    const dirs = [];
+    const files = globSync(`./**/*`, { cwd: this.contentDir }).filter(
+      (path) => {
+        const s = lstatSync(join(this.contentDir, path));
+        if (s.isFile()) return true;
+        dirs.push(path);
+        return false;
+      }
+    );
+    this.send(`load`, { id: this.id, dirs, files });
   }
 
   async oncreate({ path, isFile, content = `` }) {
@@ -196,14 +205,14 @@ class OTHandler {
     addAction(this, { action: `create`, path, isFile, content });
   }
 
-  async onmove({ oldPath, newPath }) {
+  async onmove({ isFile, oldPath, newPath }) {
     // console.log(`on move in ${this.basePath}:`, { oldPath, newPath });
     const fullOldPath = this.getFullPath(oldPath);
     if (!fullOldPath) return;
     const fullNewPath = this.getFullPath(newPath);
     if (!fullNewPath) return;
     renameSync(fullOldPath, fullNewPath);
-    addAction(this, { action: `move`, oldPath, newPath });
+    addAction(this, { action: `move`, isFile, oldPath, newPath });
   }
 
   async onupdate({ path, type, update }) {

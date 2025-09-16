@@ -91,7 +91,7 @@ export class DirEntry extends FileTreeElement {
       if (this.path !== `.`) {
         fileName = this.path + fileName;
       }
-      this.root.createEntry(fileName);
+      this.root.createEntry(fileName, true);
     }
   }
 
@@ -116,7 +116,7 @@ export class DirEntry extends FileTreeElement {
         return alert(Strings.CREATE_DIRECTORY_NO_NESTING);
       }
       let path = (this.path !== `.` ? this.path : ``) + dirName + `/`;
-      this.root.createEntry(path);
+      this.root.createEntry(path, false);
     }
   }
 
