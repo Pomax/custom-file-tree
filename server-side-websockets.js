@@ -223,7 +223,7 @@ class OTHandler {
       this.send(`terminate`, { reconnect: true });
       this.unload();
     }
-    const actions = changelog.filter((a) => a.seqnum < seqnum);
+    const actions = changelog.filter((a) => a.seqnum > seqnum);
     for (const { type, detail } of actions) {
       this.send(type, detail);
       // send all "missing actions" at 10ms intervals
