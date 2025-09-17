@@ -223,11 +223,17 @@ class OTHandler {
       this.send(`terminate`, { reconnect: true });
       this.unload();
     }
-    const actions = changelog.filter((a) => a.seqnum > seqnum);
+
+    // build the list of "messages missed":
+    const actions = changelog
+      .filter((a) => a.seqnum > seqnum)
+      .sort((a, b) => a.seqnum - b.seqnum);
+
+    // Then send those at 15ms intervals so the (hopefully!)
+    // arrive in sequence with plenty of time to process them.
     for (const { type, detail } of actions) {
       this.send(type, detail);
-      // send all "missing actions" at 10ms intervals
-      await new Promise((resolve) => resolve, 10);
+      await new Promise((resolve) => resolve, 15);
     }
   }
 
