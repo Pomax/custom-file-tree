@@ -144,7 +144,9 @@ var WebSocketInterface = class {
    */
   constructor(fileTree, url, basePath = `.`) {
     this.fileTree = fileTree;
-    this.connect(url, basePath);
+    this.url = url;
+    this.basePath = basePath;
+    this.connect();
   }
   /**
    * Connect to a websocket server and let it know which
@@ -155,13 +157,11 @@ var WebSocketInterface = class {
    * @param {*} url
    * @param {*} basePath
    */
-  async connect(url, basePath) {
+  async connect(url = this.url, basePath = this.basePath) {
     url = url.replace(`https://`, `wss://`);
     if (!url.startsWith(`wss://`)) {
       throw new Error(`Only secure URLs are supported.`);
     }
-    this.basePath = basePath;
-    this.wssURL = url;
     const socket = this.socket = new WebSocket(url);
     socket.addEventListener(`message`, ({ data }) => {
       data = JSON.parse(data);
@@ -192,6 +192,12 @@ var WebSocketInterface = class {
    */
   async send(type, detail = {}) {
     this.socket.send(JSON.stringify({ type, detail }));
+  }
+  checkSync(seqnum) {
+    if (seqnum === this.seqnum + 1) {
+      return this.seqnum = seqnum;
+    }
+    this.send(`file-tree:sync`, { seqnum: this.seqnum });
   }
   // ==========================================================================
   /**
@@ -247,9 +253,21 @@ var WebSocketInterface = class {
    *
    * where the `paths` payload is an array of strings.
    */
-  async onload({ id, dirs, files }) {
+  async onload({ id, dirs, files, seqnum }) {
     this.id = id;
+    this.seqnum = seqnum;
     this.fileTree.setContent({ dirs, files }, true);
+  }
+  /**
+   * Something has gone horribly wrong, and we need to
+   * terminate this connection. If `reconnect` is true
+   * we are allowed to reconnect so that we're back
+   * in a good state.
+   */
+  async onterminate({ id, reconnect }) {
+    if (this.id !== id) return;
+    this.socket.close();
+    if (reconnect) this.connect();
   }
   /**
    * Handle a create notification, which will tell us which
@@ -267,8 +285,10 @@ var WebSocketInterface = class {
    *    }
    * }
    */
-  async oncreate({ path, isFile: isFile2, from }) {
+  async oncreate({ path, isFile: isFile2, from, seqnum }) {
     const { id, fileTree } = this;
+    if (seqnum !== this.seqnum + 1) return this.read(path);
+    this.seqnum = seqnum;
     if (from === id) return;
     fileTree.__create(path, isFile2);
   }
@@ -288,7 +308,7 @@ var WebSocketInterface = class {
    *    }
    * }
    */
-  async ondelete({ path, from }) {
+  async ondelete({ path, from, seqnum }) {
     const { id, fileTree } = this;
     if (from === id) return;
     fileTree.__delete(path);
@@ -865,6 +885,15 @@ var FileTree = class extends FileTreeElement {
       this.#loadSource(value);
     }
   }
+  /**
+   * Connect to a websocket server. You can provide
+   * a custom websocket interface class, but then 
+   * you better know what you're doing =)
+   * 
+   * @param {*} url 
+   * @param {*} basePath 
+   * @param {*} ConnectorClass 
+   */
   async connectViaWebSocket(url, basePath = `.`, ConnectorClass = WebSocketInterface) {
     this.OT = new ConnectorClass(this, url, basePath);
   }

@@ -22,7 +22,9 @@ export class WebSocketInterface {
    */
   constructor(fileTree, url, basePath = `.`) {
     this.fileTree = fileTree;
-    this.connect(url, basePath);
+    this.url = url;
+    this.basePath = basePath;
+    this.connect();
   }
 
   /**
@@ -34,15 +36,13 @@ export class WebSocketInterface {
    * @param {*} url
    * @param {*} basePath
    */
-  async connect(url, basePath) {
+  async connect(url = this.url, basePath = this.basePath) {
     url = url.replace(`https://`, `wss://`);
     if (!url.startsWith(`wss://`)) {
       throw new Error(`Only secure URLs are supported.`);
     }
 
     // Set up our socket connection, and our message handler
-    this.basePath = basePath;
-    this.wssURL = url;
     const socket = (this.socket = new WebSocket(url));
 
     // Set up our message handling
@@ -84,6 +84,17 @@ export class WebSocketInterface {
    */
   async send(type, detail = {}) {
     this.socket.send(JSON.stringify({ type, detail }));
+  }
+
+  checkSync(seqnum) {
+    if (seqnum === this.seqnum + 1) {
+      return (this.seqnum = seqnum);
+    }
+
+    // We're desynced, which means we'll need to ask the
+    // server for everything that's happened since our
+    // own sequence number, so we can apply those changes
+    this.send(`file-tree:sync`, { seqnum: this.seqnum });
   }
 
   // ==========================================================================
@@ -147,9 +158,22 @@ export class WebSocketInterface {
    *
    * where the `paths` payload is an array of strings.
    */
-  async onload({ id, dirs, files }) {
+  async onload({ id, dirs, files, seqnum }) {
     this.id = id;
+    this.seqnum = seqnum;
     this.fileTree.setContent({ dirs, files }, true);
+  }
+
+  /**
+   * Something has gone horribly wrong, and we need to
+   * terminate this connection. If `reconnect` is true
+   * we are allowed to reconnect so that we're back
+   * in a good state.
+   */
+  async onterminate({ id, reconnect }) {
+    if (this.id !== id) return;
+    this.socket.close();
+    if (reconnect) this.connect();
   }
 
   /**
@@ -168,8 +192,11 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async oncreate({ path, isFile, from }) {
+  async oncreate({ path, isFile, from, seqnum }) {
     const { id, fileTree } = this;
+    // are we out of sync?
+    if (seqnum !== this.seqnum + 1) return this.read(path);
+    this.seqnum = seqnum;
     if (from === id) return; // we sent this change
     fileTree.__create(path, isFile);
   }
@@ -190,7 +217,7 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async ondelete({ path, from }) {
+  async ondelete({ path, from, seqnum }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
     fileTree.__delete(path);

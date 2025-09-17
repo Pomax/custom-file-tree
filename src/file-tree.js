@@ -57,6 +57,15 @@ class FileTree extends FileTreeElement {
     }
   }
 
+  /**
+   * Connect to a websocket server. You can provide
+   * a custom websocket interface class, but then 
+   * you better know what you're doing =)
+   * 
+   * @param {*} url 
+   * @param {*} basePath 
+   * @param {*} ConnectorClass 
+   */
   async connectViaWebSocket(
     url,
     basePath = `.`,
