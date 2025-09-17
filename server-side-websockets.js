@@ -169,11 +169,9 @@ async function sendAll(basePath, action) {
  * provided as part of the constructor call.
  */
 class OTHandler {
-  constructor(socket, contentDir, updateHandler) {
+  constructor(socket, contentDir, updateHandler = () => {}) {
     this.id = randomUUID();
-    this.socket = socket;
-    this.contentDir = contentDir;
-    this.updateHandler = updateHandler ?? (() => {});
+    Object.assign(this, { socket, contentDir, updateHandler });
   }
 
   unload() {

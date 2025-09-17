@@ -21,9 +21,7 @@ export class WebSocketInterface {
    * endpoint for a given file tree element.
    */
   constructor(fileTree, url, basePath = `.`) {
-    this.fileTree = fileTree;
-    this.url = url;
-    this.basePath = basePath;
+    Object.assign(this, { fileTree, url, basePath });
     this.connect();
   }
 
