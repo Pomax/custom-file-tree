@@ -25,12 +25,6 @@ fileTree.addEventListener(`file:click`, async ({ detail }) => {
         if (!content[path]) return;
         const oldContent = content[path];
         const newContent = applyPatch(oldContent, update);
-        if (newContent == `false`) {
-          console.log({
-            oldContent,
-            update,
-          });
-        }
         content[path] = newContent;
         if (entry === currentEntry) updateEditor();
       }
