@@ -143,7 +143,7 @@ function addAction({ basePath, id }, action) {
   action.when = Date.now();
   action.seqnum = seqnums[basePath]++;
   changelog[basePath].push(action);
-  sendAll(basePath, action);
+  broadcast(basePath, action);
 }
 
 /**
@@ -151,10 +151,11 @@ function addAction({ basePath, id }, action) {
  * including the sender, so that they know
  * that the server processed it.
  */
-async function sendAll(basePath, action) {
+async function broadcast(basePath, action) {
   handlers[basePath].forEach((handler) => {
     if (handler.unreliable) return;
     const { action: type, ...detail } = action;
+    // console.log(`broadcasting [${basePath}]:[${detail.seqnum}]`)
     handler.send(type, detail);
   });
 }
@@ -213,7 +214,8 @@ class OTHandler {
         return false;
       }
     );
-    this.send(`load`, { id: this.id, dirs, files, reconnect });
+    const seqnum = seqnums[basePath] - 1;
+    this.send(`load`, { id: this.id, dirs, files, seqnum, reconnect });
   }
 
   async onsync({ seqnum }) {
@@ -225,7 +227,7 @@ class OTHandler {
     }
 
     // build the list of "messages missed":
-    const actions = changelog
+    const actions = changelog[this.basePath]
       .filter((a) => a.seqnum > seqnum)
       .sort((a, b) => a.seqnum - b.seqnum);
 
