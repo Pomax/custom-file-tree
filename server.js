@@ -1,7 +1,29 @@
 import express from "express";
+import { setupFileTreeWebSocket } from "./server-side-websockets.js";
 import { readdirSync, watch } from "node:fs";
 import { resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
+
+const dirList = [
+  `dist/README.md`,
+  `dist/file-tree.css`,
+  `dist/file-tree.esm.js`,
+  `dist/file-tree.esm.min.js`,
+  `dist/old/README.old`,
+  `dist/old/file-tree.esm.js`,
+  `dist/old/file-tree.esm.min.js`,
+  `public/index.html`,
+  `public/index.js`,
+  `src/dir-entry.js`,
+  `src/file-entry.js`,
+  `src/file-tree.css`,
+  `src/file-tree.js`,
+  `src/utils.js`,
+  `test/cake.because.why.not`,
+  `test/cake.spec.js`,
+  `package.json`,
+  `README.md`,
+];
 
 const PORT = process.env.PORT ?? 8000;
 process.env.PORT = PORT;
@@ -34,42 +56,19 @@ app.use((req, res, next) => {
 
 app.get(`/get-dir-listing`, (req, res) => {
   res.setHeader(`Content-Type`, `application/json`);
-  res.send(
-    JSON.stringify([
-      `dist/README.md`,
-      `dist/file-tree.esm.js`,
-      `dist/file-tree.esm.min.js`,
-      `dist/old/README.old`,
-      `dist/old/file-tree.esm.js`,
-      `dist/old/file-tree.esm.min.js`,
-      `public/index.html`,
-      `public/index.js`,
-      `src/dir-entry.js`,
-      `src/file-entry.js`,
-      `src/file-tree.css`,
-      `src/file-tree.js`,
-      `src/utils.js`,
-      `test/cake.because.why.not`,
-      `test/cake.spec.js`,
-      `package.json`,
-      `README.md`,
-    ])
-  );
+  res.send(JSON.stringify(dirList));
 });
 
 // static routes
 app.get(`/`, (req, res) => res.redirect(`/public`));
 app.use(`/`, express.static(`.`));
-app.use((req, res) => {
-  if (req.query.preview) {
-    res.status(404).send(`Preview not found`);
-  } else {
-    res.status(404).send(`${req.url} not found`);
-  }
-});
+app.use((req, res) => res.status(404).send(`${req.url} not found`));
+
+// set up, unsurprisingly, websocket functionality
+const server = setupFileTreeWebSocket(app, "content");
 
 // Run the server, and trigger a client bundle rebuild every time script.js changes.
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   // are we running tests?
   if (testing) {
     console.log(`<< RUNNING SERVER IN TEST MODE >>`);

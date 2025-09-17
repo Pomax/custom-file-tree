@@ -105,5 +105,8 @@ test.describe(`delete events`, () => {
       await page.locator(`[path="dist/old/"] > entry-heading`).click();
       await page.locator(`[path="dist/old/"] > .buttons .delete-dir`).click();
     });
+
+    // TODO: we need a test for deleting d.e in a/b/c/d.e to see if that
+    //       cleans up the entire a/b/c directory chain.
   });
 });

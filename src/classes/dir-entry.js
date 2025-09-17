@@ -91,7 +91,7 @@ export class DirEntry extends FileTreeElement {
       if (this.path !== `.`) {
         fileName = this.path + fileName;
       }
-      this.root.createEntry(fileName);
+      this.root.createEntry(fileName, true);
     }
   }
 
@@ -116,7 +116,7 @@ export class DirEntry extends FileTreeElement {
         return alert(Strings.CREATE_DIRECTORY_NO_NESTING);
       }
       let path = (this.path !== `.` ? this.path : ``) + dirName + `/`;
-      this.root.createEntry(path);
+      this.root.createEntry(path, false);
     }
   }
 
@@ -200,9 +200,7 @@ export class DirEntry extends FileTreeElement {
   checkEmpty() {
     if (!this.removeEmptyDir) return;
     if (this.find(`dir-entry, file-entry`)) return;
-    // let's make the reason explicit:
-    const deleteBecauseWeAreEmpty = true;
-    this.root.removeEntry(this, deleteBecauseWeAreEmpty);
+    this.root.removeEntry(this);
   }
 
   // File tree sorting, with dirs at the top

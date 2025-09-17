@@ -107,6 +107,20 @@ test.describe(`rename events`, () => {
       await page.locator(`[path="README.md"]`).click();
       await page.locator(`[path="README.md"] > .buttons .rename-file`).click();
     });
+
+    test(`renaming a file that's a prefix for another file does not touch the other file`, async () => {
+      page.on(`dialog`, async (dialog) => {
+        await dialog.accept(`cake.txt1`);
+        await utils.entryDoesNotExist(`cake.txt`);
+        await utils.entryExists(`cake.txt1`);
+        await utils.entryExists(`cake.txt2`);
+        await utils.entryDoesNotExist(`cake.txt12`);
+      });
+      await utils.entryExists(`cake.txt`);
+      await utils.entryExists(`cake.txt2`);
+      await page.locator(`[path="cake.txt"]`).click();
+      await page.locator(`[path="cake.txt"] > .buttons .rename-file`).click();
+    });
   });
 
   /**

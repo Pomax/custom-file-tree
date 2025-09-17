@@ -32,24 +32,30 @@ test.describe(`Basic tests`, () => {
     expect(canBeCloned).toBe(true);
   });
 
-  test(`file-tree has the correct number of entries`, async () => {
+  test(`file-tree filters out dirs`, async () => {
     const entryCount = await page.evaluate(() => {
       return customElements.whenDefined(`file-tree`).then(() => {
         const tree = document.querySelector(`file-tree`);
-        tree.setContent([
-          `a`,
-          `a/b.txt`,
-          `c`,
-          `c/d.txt`,
-          `.d`,
-          `.d/e`,
-          `f.g`,
-          `f.g/h`,
-        ]);
+        tree.setContent({
+          dirs: [`a`, `c`, `.d`, `f.g`],
+          files: [`a/b.txt`, `c/d.txt`, `.d/e`, `f.g/h`],
+        });
         const set = tree.querySelectorAll(`file-entry,dir-entry`);
         return set.length;
       });
     });
     expect(entryCount).toBe(9);
+  });
+
+  test(`file-tree does not filter filename prefix matches`, async () => {
+    const entryCount = await page.evaluate(() => {
+      return customElements.whenDefined(`file-tree`).then(() => {
+        const tree = document.querySelector(`file-tree`);
+        tree.setContent({ files: [`a.txt`, `a.txt2`] });
+        const set = tree.querySelectorAll(`file-entry`);
+        return set.length;
+      });
+    });
+    expect(entryCount).toBe(2);
   });
 });

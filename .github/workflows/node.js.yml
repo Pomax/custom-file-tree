@@ -7,14 +7,18 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  RUNNING_GITHUB_ACTION: "true"
+
 jobs:
   build:
 
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [22.x, 24.]
+        node-version: [22.x, 24.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -23,5 +27,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+    - run: sudo rm /var/lib/man-db/auto-update
     - run: npm ci
+    - run: npx playwright install chromium
     - run: npm test

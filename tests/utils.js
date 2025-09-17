@@ -1,26 +1,30 @@
 import { expect } from "@playwright/test";
 
-const testContent = [
-  `dist/README.md`,
-  `dist/file-tree.esm.js`,
-  `dist/file-tree.esm.min.js`,
-  `dist/old/README.old`,
-  `dist/old/file-tree.esm.js`,
-  `dist/old/file-tree.esm.min.js`,
-  `public/index.html`,
-  `public/index.js`,
-  `public/README.md`,
-  `src/dir-entry.js`,
-  `src/file-entry.js`,
-  `src/file-tree.css`,
-  `src/file-tree.js`,
-  `src/README.md`,
-  `src/utils.js`,
-  `test/cake.because.why.not`,
-  `test/README.md`,
-  `package.json`,
-  `README.md`,
-];
+const testContent = {
+  files: [
+    `dist/README.md`,
+    `dist/file-tree.esm.js`,
+    `dist/file-tree.esm.min.js`,
+    `dist/old/README.old`,
+    `dist/old/file-tree.esm.js`,
+    `dist/old/file-tree.esm.min.js`,
+    `public/index.html`,
+    `public/index.js`,
+    `public/README.md`,
+    `src/dir-entry.js`,
+    `src/file-entry.js`,
+    `src/file-tree.css`,
+    `src/file-tree.js`,
+    `src/README.md`,
+    `src/utils.js`,
+    `test/cake.because.why.not`,
+    `test/README.md`,
+    `package.json`,
+    `README.md`,
+    `cake.txt`,
+    `cake.txt2`,
+  ],
+};
 
 export async function bootstrapPage(browser, options = {}) {
   const context = await browser.newContext(options);
