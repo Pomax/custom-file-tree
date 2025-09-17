@@ -13,6 +13,9 @@ import {
   lstatSync,
 } from "node:fs";
 
+// Scope all events to the file tree
+const FILETREE_PREFIX = `file-tree:`;
+
 /**
  * The default update handler is a diff/patch handler.
  */
@@ -79,8 +82,8 @@ export async function addFileTreeCommunication(
 
     // Is this something we know how to handle?
     let { type } = data;
-    if (!type.startsWith(`file-tree:`)) return;
-    type = type.replace(`file-tree:`, ``);
+    if (!type.startsWith(FILETREE_PREFIX)) return;
+    type = type.replace(FILETREE_PREFIX, ``);
     const handlerName = `on${type}`;
     const handler = otHandler[handlerName].bind(otHandler);
     if (!handler) {
@@ -92,60 +95,67 @@ export async function addFileTreeCommunication(
 
 // ============================================================================
 
+const seqnums = {};
 const changelog = {};
-const actionIndex = {};
-const handlers = {
-  sequenceIndex: [],
-};
+const handlers = {};
 
 /**
- * ...docs go here...
+ * Ensure we're aware of this path
+ */
+function init(basePath) {
+  if (seqnums[basePath]) return;
+  handlers[basePath] ??= new Set();
+  changelog[basePath] = [];
+  seqnums[basePath] = 1;
+}
+
+/**
+ * Add a handler for events relating to
+ * a specific folder's content.
  */
 function addHandler(otHandler) {
   const { basePath } = otHandler;
-  handlers[basePath] ??= new Set();
-  const set = handlers[basePath];
-  set.add(otHandler);
+  init(basePath);
+  handlers[basePath].add(otHandler);
 }
 
 /**
- * ...docs go here...
+ * Do the obvious thing
  */
 function removeHandler(otHandler) {
-  const { basePath } = otHandler;
-  handlers[basePath].delete(otHandler);
+  handlers[otHandler.basePath].delete(otHandler);
 }
 
 /**
- * ...docs go here...
+ * Save an action to the list of transformations
+ * that have been applied to this folder's content
+ * since we started "looking" at it.
+ *
+ * Each action tracks who initiated it, when the
+ * server received it, and which operation in the
+ * sequence of transformations this is, so that
+ * clients can tell whether or not they missed
+ * any operations (and if so, request a full
+ * sync via the file-tree:read operations).
  */
 function addAction({ basePath, id }, action) {
-  changelog[basePath] ??= [];
-  const list = changelog[basePath];
-  const index = handlers.sequenceIndex;
-  const when = Date.now();
-  actionIndex[when] = index;
   action.from = id;
-  action.when = when;
-  index.push(action.when);
-  list.push(action);
-  sendAll(basePath, action);
+  action.when = Date.now();
+  action.seqnum = seqnums[basePath]++;
+  changelog[basePath].push(action);
+  broadcast(basePath, action);
 }
 
 /**
- * ...docs go here...
+ * Broadcast an action to all listeners,
+ * including the sender, so that they know
+ * that the server processed it.
  */
-async function sendAll(basePath, action) {
+async function broadcast(basePath, action) {
   handlers[basePath].forEach((handler) => {
     if (handler.unreliable) return;
-    /*
-      // catch this handler up
-      const last = handler.lastSynced;
-      const lastIndex = actionIndex[last];
-      const actions = changelog[basePath].slice(lastIndex + 1);
-      actions.forEach(({ type, ...detail }) => handler.send(type, detail));
-    */
     const { action: type, ...detail } = action;
+    // console.log(`broadcasting [${basePath}]:[${detail.seqnum}]`)
     handler.send(type, detail);
   });
 }
@@ -153,34 +163,30 @@ async function sendAll(basePath, action) {
 // ============================================================================
 
 /**
- * ...docs go here...
+ * An "operational transform" handler for file system operations,
+ * with a "change type agnostic" file content update handling
+ * mechanism that signals content updates, but does not process
+ * them itself, instead relying on the `updateHandler` function
+ * provided as part of the constructor call.
  */
 class OTHandler {
-  constructor(socket, contentDir, updateHandler) {
+  constructor(socket, contentDir, updateHandler = () => {}) {
     this.id = randomUUID();
-    this.socket = socket;
-    this.contentDir = contentDir;
-    this.lastSynced = -1;
-    this.updateHandler = updateHandler ?? (() => {});
+    Object.assign(this, { socket, contentDir, updateHandler });
   }
 
   unload() {
     removeHandler(this);
     this.unreliable = true;
     this.socket.close();
-    this.lastSynced = -1;
     delete this.contentDir;
     delete this.basePath;
   }
 
-  // TODO: rather than merely send a payload, what we really need
-  //       to do is send any outstanding changes, which may require
-  //       change collapsing. We're not doing that right now.
-
   send(type, detail) {
+    type = FILETREE_PREFIX + type;
     try {
-      this.socket.send(JSON.stringify({ type: `file-tree:${type}`, detail }));
-      if (detail.when) this.lastSynced = detail.when;
+      this.socket.send(JSON.stringify({ type, detail }));
     } catch (e) {
       // Well that's a problem...? Make sure we don't
       // try to use this handler anymore because the
@@ -190,13 +196,13 @@ class OTHandler {
   }
 
   getFullPath(path) {
-    if (path.includes(`..`)) return false;
+    if ([`..`, `:`].some((e) => path.includes(e))) return false;
     return join(this.contentDir, this.basePath, path);
   }
 
   // ==========================================================================
 
-  onload({ basePath }) {
+  async onload({ basePath, reconnect }) {
     this.basePath = basePath;
     addHandler(this);
     const dirs = [];
@@ -208,8 +214,32 @@ class OTHandler {
         return false;
       }
     );
-    this.send(`load`, { id: this.id, dirs, files });
+    const seqnum = seqnums[basePath] - 1;
+    this.send(`load`, { id: this.id, dirs, files, seqnum, reconnect });
   }
+
+  async onsync({ seqnum }) {
+    if (seqnum > seqnums[this.basePath]) {
+      // this shouldn't be possible. Whatever this client
+      // is doing, it needs to stop and reconnect.
+      this.send(`terminate`, { reconnect: true });
+      this.unload();
+    }
+
+    // build the list of "messages missed":
+    const actions = changelog[this.basePath]
+      .filter((a) => a.seqnum > seqnum)
+      .sort((a, b) => a.seqnum - b.seqnum);
+
+    // Then send those at 15ms intervals so the (hopefully!)
+    // arrive in sequence with plenty of time to process them.
+    for (const { type, detail } of actions) {
+      this.send(type, detail);
+      await new Promise((resolve) => resolve, 15);
+    }
+  }
+
+  // ==========================================================================
 
   async oncreate({ path, isFile, content = `` }) {
     // console.log(`on create in ${this.basePath}:`, { path, isFile });
@@ -237,6 +267,7 @@ class OTHandler {
     // console.log(`on update in ${this.basePath}:`, { path, update });
     const fullPath = this.getFullPath(path);
     if (!fullPath) return;
+    // pass this update on to the update handler function
     this.updateHandler(fullPath, type, update);
     addAction(this, { action: `update`, type, path, update });
   }

@@ -1,12 +1,5 @@
 export const create = (tag) => document.createElement(tag);
 
-export function isFile(path) {
-  const parts = path.split(`/`).filter((v) => !!v);
-  if (parts.at(-1).includes(`.`)) return true;
-  const metaData = getPathMetaData(path);
-  return !!metaData.file;
-}
-
 export function getPathMetaData(path) {
   let metaData = {};
   const args = path.substring(path.indexOf(`?`))?.split(`&`) || [];

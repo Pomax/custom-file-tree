@@ -14,15 +14,24 @@
  * actual server's running on port 8000.
  */
 export class WebSocketInterface {
+  // A list used to await content responses
+  // from the server, so that users can just
+  // "await" entry.load() calls.
   waitList = {};
+
+  // An "optimistically applied" list of
+  // pending actions that have been sent
+  // off to the server, and have hopefully
+  // been accepted, but may need undoing.
+  pending = [];
 
   /**
    * Set up a websocket connection to a secure
    * endpoint for a given file tree element.
    */
   constructor(fileTree, url, basePath = `.`) {
-    this.fileTree = fileTree;
-    this.connect(url, basePath);
+    Object.assign(this, { fileTree, url, basePath });
+    this.connect();
   }
 
   /**
@@ -34,15 +43,13 @@ export class WebSocketInterface {
    * @param {*} url
    * @param {*} basePath
    */
-  async connect(url, basePath) {
+  async connect(url = this.url, basePath = this.basePath) {
     url = url.replace(`https://`, `wss://`);
     if (!url.startsWith(`wss://`)) {
       throw new Error(`Only secure URLs are supported.`);
     }
 
     // Set up our socket connection, and our message handler
-    this.basePath = basePath;
-    this.wssURL = url;
     const socket = (this.socket = new WebSocket(url));
 
     // Set up our message handling
@@ -51,7 +58,7 @@ export class WebSocketInterface {
       data = JSON.parse(data);
 
       // Is this something we know how to handle?
-      let { type } = data;
+      let { type, detail } = data;
       if (!type.startsWith(`file-tree:`)) return;
       type = type.replace(`file-tree:`, ``);
       const handlerName = `on${type}`;
@@ -61,7 +68,7 @@ export class WebSocketInterface {
       }
 
       // It is: handle it.
-      handler(data.detail);
+      if (this.checkSync(type, detail.seqnum)) handler(detail);
     });
 
     // And as last step, request the dir list
@@ -83,7 +90,74 @@ export class WebSocketInterface {
    * Send a message to the server
    */
   async send(type, detail = {}) {
-    this.socket.send(JSON.stringify({ type, detail }));
+    const action = { type, detail };
+    this.pending.push(action);
+    this.socket.send(JSON.stringify(action));
+  }
+
+  /**
+   * Verify that we're (a) in sync with respect to the
+   * sequence numbering for this folder, and (b) in sync
+   * with respect to which operation we thought we were
+   * going to see (if we're expecting our own operation(s)
+   * as next one(s) in the sequence).
+   * @param {*} type
+   * @param {*} seqnum
+   * @returns
+   */
+  checkSync(type, seqnum) {
+    // loading the dir tree and reading file content
+    // should bypass the sequence number check: the
+    // first should *set* the sequence number, and
+    // the second is not a transform and so is not
+    // an action that needs sequence verification.
+    if (type === `load`) return true;
+    if (type === `read`) return true;
+
+    // Is this in-sequence?
+    if (seqnum === this.seqnum + 1) {
+      // Are we expecting acknowledgement(s)?
+      const { pending } = this;
+      if (pending.length) {
+        if (pending[0].type === type) {
+          pending.shift();
+        } else {
+          // That's not what we expected, roll back our
+          // change(s) because the server didn't okay them.
+          this.rollback(pending.reverse());
+        }
+      }
+      return (this.seqnum = seqnum);
+    }
+
+    // We're desynced, which means we'll need to ask the
+    // server for everything that's happened since our
+    // own sequence number, so we can apply those changes
+    this.send(`file-tree:sync`, { seqnum: this.seqnum });
+  }
+
+  /**
+   * Do we need to roll back any optimistic changes?
+   */
+  rollback(latestToOldest) {
+    this.pending = [];
+    for (const { type, detail } of latestToOldest) {
+      if (type === `create`) {
+        this.fileTree.__delete(detail.path);
+      }
+      if (type === `delete`) {
+        this.fileTree.__create(detail.path, detail.isFile);
+        this.read(path);
+      }
+      if (type === `move`) {
+        this.fileTree.__move(detail.isFile, detail.newPath, detail.oldPath);
+      }
+      if (type === `update`) {
+        // TODO: add code that lets users specify a content rollback function.
+        //       However, for now just reload the file from the server.
+        this.read(path);
+      }
+    }
   }
 
   // ==========================================================================
@@ -147,9 +221,22 @@ export class WebSocketInterface {
    *
    * where the `paths` payload is an array of strings.
    */
-  async onload({ id, dirs, files }) {
+  async onload({ id, dirs, files, seqnum }) {
     this.id = id;
+    this.seqnum = seqnum;
     this.fileTree.setContent({ dirs, files }, true);
+  }
+
+  /**
+   * Something has gone horribly wrong, and we need to
+   * terminate this connection. If `reconnect` is true
+   * we are allowed to reconnect so that we're back
+   * in a good state.
+   */
+  async onterminate({ id, reconnect }) {
+    if (this.id !== id) return;
+    this.socket.close();
+    if (reconnect) this.connect();
   }
 
   /**
@@ -168,7 +255,7 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async oncreate({ path, isFile, from }) {
+  async oncreate({ path, isFile, from, seqnum }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
     fileTree.__create(path, isFile);
@@ -190,7 +277,7 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async ondelete({ path, from }) {
+  async ondelete({ path, from, seqnum }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
     fileTree.__delete(path);
