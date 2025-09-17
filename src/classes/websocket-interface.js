@@ -114,12 +114,17 @@ export class WebSocketInterface {
     if (type === `load`) return true;
     if (type === `read`) return true;
 
+    // Is this in-sequence?
     if (seqnum === this.seqnum + 1) {
-      if (this.pending.length) {
-        if (this.pending[0].type !== type) {
-          this.rollback();
+      // Are we expecting acknowledgement(s)?
+      const { pending } = this;
+      if (pending.length) {
+        if (pending[0].type === type) {
+          pending.shift();
         } else {
-          this.pending.shift();
+          // That's not what we expected, roll back our
+          // change(s) because the server didn't okay them.
+          this.rollback(pending.reverse());
         }
       }
       return (this.seqnum = seqnum);
@@ -134,10 +139,9 @@ export class WebSocketInterface {
   /**
    * Do we need to roll back any optimistic changes?
    */
-  rollback() {
-    const list = this.pending.reverse();
+  rollback(latestToOldest) {
     this.pending = [];
-    for (const { type, detail } of list) {
+    for (const { type, detail } of latestToOldest) {
       if (type === `create`) {
         this.fileTree.__delete(detail.path);
       }

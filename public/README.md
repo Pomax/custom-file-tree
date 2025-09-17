@@ -33,4 +33,4 @@ On the client side, the websocket code can be found in the [websocket-interface.
       1. if the sequence number is "the next action":
          1. if it's "from us", and the change matches what we we do nothing
          1. if it's from "someone else", it calls the appropriate file tree function.
-      1. if it's not, we missed a bunch of messages: request a "replay" of all messages we missed so we can get caught up.
+      1. if it's not, we missed a bunch of messages: request a "replay" of all messages we missed, to catch us up.

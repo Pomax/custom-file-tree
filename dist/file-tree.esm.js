@@ -215,11 +215,12 @@ var WebSocketInterface = class {
     if (type === `load`) return true;
     if (type === `read`) return true;
     if (seqnum === this.seqnum + 1) {
-      if (this.pending.length) {
-        if (this.pending[0].type !== type) {
-          this.rollback();
+      const { pending } = this;
+      if (pending.length) {
+        if (pending[0].type === type) {
+          pending.shift();
         } else {
-          this.pending.shift();
+          this.rollback(pending.reverse());
         }
       }
       return this.seqnum = seqnum;
@@ -229,10 +230,9 @@ var WebSocketInterface = class {
   /**
    * Do we need to roll back any optimistic changes?
    */
-  rollback() {
-    const list = this.pending.reverse();
+  rollback(latestToOldest) {
     this.pending = [];
-    for (const { type, detail } of list) {
+    for (const { type, detail } of latestToOldest) {
       if (type === `create`) {
         this.fileTree.__delete(detail.path);
       }

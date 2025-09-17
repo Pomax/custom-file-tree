@@ -1,15 +1,26 @@
 import { expect, test } from "@playwright/test";
 import { exec } from "node:child_process";
 
-// These tests all use two "tabs" to confirm that synchronization works.
-if (process.env.RUNNING_GITHUB_ACTION) {
-  console.log(`Running GitHub action: not running secure websocket tests.`);
-} else {
-  test.describe(`Websocket tests`, () => {
-    let page1, page2;
-    let editor1, editor2;
-    const websocketURL = `https://localhost/public/websocket.html`;
+const websocketURL = `https://localhost/public/websocket.html`;
 
+/**
+ * IFFE wrapped because we don't want these tests to run if
+ * the github actions env var is set. We can't run caddy in
+ * that environment, so there's no point even trying to run
+ * these can-only-fail-without-https tests =)
+ */
+(function () {
+  if (process.env.RUNNING_GITHUB_ACTION) {
+    return console.log(
+      `Running GitHub action: not running secure websocket tests.`
+    );
+  }
+
+  // These tests all use two "tabs" to confirm that synchronization works.
+  let page1, page2;
+  let editor1, editor2;
+
+  test.describe(`Websocket tests`, () => {
     test.beforeAll(() => exec(`caddy start`));
     test.afterAll(() => exec(`caddy stop`));
 
@@ -107,4 +118,15 @@ if (process.env.RUNNING_GITHUB_ACTION) {
       await e1.locator(`.buttons .delete-file`).click();
     });
   });
-}
+
+  // TODO: we need more test before we can be confident everything works
+
+  /*
+    - equivalent tests for directories
+    - failure modes:
+      - bad sequencing
+      - rejected actions
+      - rejected content edits
+  */
+
+})();
