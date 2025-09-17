@@ -2,7 +2,7 @@ import { FileTreeElement } from "./classes/file-tree-element.js";
 import { WebSocketInterface } from "./classes/websocket-interface.js";
 import { DirEntry } from "./classes/dir-entry.js";
 import { FileEntry } from "./classes/file-entry.js";
-import { registry, isFile } from "./utils/utils.js";
+import { registry } from "./utils/utils.js";
 import { Strings } from "./utils/strings.js";
 
 /**

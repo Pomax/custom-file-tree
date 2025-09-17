@@ -17,17 +17,26 @@ fileTree.addEventListener(`file:click`, async ({ detail }) => {
   currentEntry = entry;
   updateEditor();
 
-  entry.addEventListener(`content:update`, async (evt) => {
-    const { type, update } = evt.detail;
-    if (type === `jsdiff`) {
-      const { path } = entry;
-      if (!content[path]) return;
-      const oldContent = content[path];
-      const newContent = applyPatch(oldContent, update);
-      content[path] = newContent;
-      if (entry === currentEntry) updateEditor();
-    }
-  });
+  if (!entry.updateListener) {
+    const updateListener = (entry.updateListener = async (evt) => {
+      const { type, update } = evt.detail;
+      if (type === `jsdiff`) {
+        const { path } = entry;
+        if (!content[path]) return;
+        const oldContent = content[path];
+        const newContent = applyPatch(oldContent, update);
+        if (newContent == `false`) {
+          console.log({
+            oldContent,
+            update,
+          });
+        }
+        content[path] = newContent;
+        if (entry === currentEntry) updateEditor();
+      }
+    });
+    entry.addEventListener(`content:update`, updateListener);
+  }
 });
 
 editor.addEventListener(`input`, ({ target: panel }) => {
