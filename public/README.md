@@ -14,7 +14,9 @@ For the demo, content changes use `jsdiff`, which assumes your content is plain 
 
 ## Client-side
 
-On the client side, the websocket code can be found in the [websocket-interface.js](../src/classes/websocket-interface.js) class, which sits between the `<file-tree>` element and the remote filesystem and acts as mediator: any changes made in the file tree trigger the equivalent action in the websocket interface, which packs up the action and sends it off to the server for processing and then broadcasting (because even if you perform an action in your browser, that action may not be allowd on the server, and so may need to be rolled back!).
+On the client side, the websocket code can be found in the [index-ws.js](../public/index-ws.js) file, which shows off how you'd set up a client that loads up files in response to selection in the file tree, and is able to sync content for files between different users via the server.
+
+For the details "how it works" code, have a look at the [websocket-interface.js](../src/classes/websocket-interface.js) class, which sits between the `<file-tree>` element and the remote filesystem and acts as mediator: any changes made in the file tree trigger the equivalent action in the websocket interface, which packs up the action and sends it off to the server for processing and then broadcasting (because even if you perform an action in your browser, that action may not be allowd on the server, and so may need to be rolled back!).
 
 ## Operational flow
 
