@@ -29,8 +29,8 @@ export class WebSocketInterface {
    * Set up a websocket connection to a secure
    * endpoint for a given file tree element.
    */
-  constructor(fileTree, url, basePath = `.`) {
-    Object.assign(this, { fileTree, url, basePath });
+  constructor(fileTree, url, basePath = `.`, keepAliveInterval = 60_000) {
+    Object.assign(this, { fileTree, url, basePath, keepAliveInterval });
     this.connect();
   }
 
@@ -71,9 +71,21 @@ export class WebSocketInterface {
       if (this.checkSync(type, detail.seqnum)) handler(detail);
     });
 
+    // Set up keep-alive functionality
+    let keepAliveTimer;
+    const keepAlive = () => {
+      this.send(`file-tree:keepalive`, { basePath });
+      keepAliveTimer = setTimeout(keepAlive, this.keepAliveInterval);
+    };
+
+    socket.addEventListener(`close`, () => {
+      clearTimeout(keepAliveTimer);
+    });
+
     // And as last step, request the dir list
     if (await waitForOpenWebSocket(socket)) {
       this.send(`file-tree:load`, { basePath });
+      keepAlive();
     } else {
       throw new Error(`Could not establish websocket connection.`);
     }
@@ -255,10 +267,16 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async oncreate({ path, isFile, from, seqnum }) {
+  async oncreate({ path, isFile, from }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
-    fileTree.__create(path, isFile);
+    const entry = fileTree.__create(path, isFile);
+    // Because this bypasses the normal event system,
+    // we need a way for user code to know that a file
+    // was created by the OT system:
+    fileTree.dispatchEvent(
+      new CustomEvent(`ot:created`, { detail: { entry, path, isFile } }),
+    );
   }
 
   /**
@@ -277,10 +295,16 @@ export class WebSocketInterface {
    *    }
    * }
    */
-  async ondelete({ path, from, seqnum }) {
+  async ondelete({ path, from }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
-    fileTree.__delete(path);
+    const entries = fileTree.__delete(path);
+    // Because this bypasses the normal event system,
+    // we need a way for user code to know that a file
+    // was deleted by the OT system:
+    fileTree.dispatchEvent(
+      new CustomEvent(`ot:deleted`, { detail: { entries, path } }),
+    );
   }
 
   /**
@@ -302,7 +326,15 @@ export class WebSocketInterface {
   async onmove({ isFile, oldPath, newPath, from }) {
     const { id, fileTree } = this;
     if (from === id) return; // we sent this change
-    fileTree.__move(isFile, oldPath, newPath);
+    const entry = fileTree.__move(isFile, oldPath, newPath);
+    // Because this bypasses the normal event system,
+    // we need a way for user code to know that a file
+    // was moved by the OT system:
+    fileTree.dispatchEvent(
+      new CustomEvent(`ot:moved`, {
+        detail: { entry, isFile, oldPath, newPath },
+      }),
+    );
   }
 
   /**
@@ -334,8 +366,7 @@ export class WebSocketInterface {
    */
   async onupdate({ path, type, update, from }) {
     const { id, fileTree } = this;
-    if (from === id) return; // we sent this change
-    fileTree.__update(path, type, update);
+    fileTree.__update(path, type, update, from === id);
   }
 }
 

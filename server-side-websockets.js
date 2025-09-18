@@ -202,6 +202,10 @@ class OTHandler {
 
   // ==========================================================================
 
+  async onkeepalive({ basePath }) {
+    // does nothing in this demo, but it's there for you to use!
+  }
+
   async onload({ basePath, reconnect }) {
     this.basePath = basePath;
     addHandler(this);
