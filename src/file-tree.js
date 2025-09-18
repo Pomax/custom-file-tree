@@ -59,12 +59,12 @@ class FileTree extends FileTreeElement {
 
   /**
    * Connect to a websocket server. You can provide
-   * a custom websocket interface class, but then 
+   * a custom websocket interface class, but then
    * you better know what you're doing =)
-   * 
-   * @param {*} url 
-   * @param {*} basePath 
-   * @param {*} ConnectorClass 
+   *
+   * @param {*} url
+   * @param {*} basePath
+   * @param {*} ConnectorClass
    */
   async connectViaWebSocket(
     url,
@@ -183,10 +183,10 @@ class FileTree extends FileTreeElement {
 
     // When granted, build the entry.
     const detail = { path, content };
-    const grant = () => {
+    const grant = (processedContent = content) => {
       // grant
       const entry = this.__create(path, isFile);
-      if (!bypassOT) this.OT?.create(path, isFile, content);
+      if (!bypassOT) this.OT?.create(path, isFile, processedContent);
       detail.entry = entry;
       return entry;
     };
@@ -293,11 +293,11 @@ class FileTree extends FileTreeElement {
   }
 
   // update notification via websocket or immediate code path:
-  __update(path, type, update) {
+  __update(path, type, update, ours) {
     const { entries } = this;
     const entry = entries[path];
     entry.dispatchEvent(
-      new CustomEvent(`content:update`, { detail: { type, update } })
+      new CustomEvent(`content:update`, { detail: { type, update, ours } })
     );
   }
 

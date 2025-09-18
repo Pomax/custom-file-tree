@@ -19,7 +19,7 @@ const websocketURL = `https://localhost/public/websocket.html`;
   // These tests all use two "tabs" to confirm that synchronization works.
   let page1, page2;
   let editor1, editor2;
-
+  
   test.describe(`Websocket tests`, () => {
     test.beforeAll(() => exec(`caddy start`));
     test.afterAll(() => exec(`caddy stop`));
@@ -128,5 +128,4 @@ const websocketURL = `https://localhost/public/websocket.html`;
       - rejected actions
       - rejected content edits
   */
-
 })();
