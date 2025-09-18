@@ -1,1 +1,0 @@
-events should include a reference to the element itself, so we can tack things onto/remove things from its associated state.
