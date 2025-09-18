@@ -960,8 +960,8 @@ var FileTree = class extends FileTreeElement {
    * @param {*} basePath
    * @param {*} ConnectorClass
    */
-  async connectViaWebSocket(url, basePath = `.`, ConnectorClass = WebSocketInterface) {
-    this.OT = new ConnectorClass(this, url, basePath);
+  async connectViaWebSocket(url, basePath = `.`, keepAliveInterval = 6e4, ConnectorClass = WebSocketInterface) {
+    this.OT = new ConnectorClass(this, url, basePath, keepAliveInterval);
   }
   /**
    * Setting files is a destructive operation, clearing whatever is already
@@ -1137,9 +1137,7 @@ var FileTree = class extends FileTreeElement {
   }
   // update notification via websocket or immediate code path:
   __update(path2, type, update, ours) {
-    const { entries } = this;
-    const entry = entries[path2];
-    entry.dispatchEvent(
+    this.entries[path2]?.dispatchEvent(
       new CustomEvent(`content:update`, { detail: { type, update, ours } })
     );
   }
