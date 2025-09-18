@@ -150,8 +150,8 @@ var WebSocketInterface = class {
    * Set up a websocket connection to a secure
    * endpoint for a given file tree element.
    */
-  constructor(fileTree, url, basePath = `.`) {
-    Object.assign(this, { fileTree, url, basePath });
+  constructor(fileTree, url, basePath = `.`, keepAliveInterval = 6e4) {
+    Object.assign(this, { fileTree, url, basePath, keepAliveInterval });
     this.connect();
   }
   /**
@@ -181,8 +181,17 @@ var WebSocketInterface = class {
       }
       if (this.checkSync(type, detail.seqnum)) handler(detail);
     });
+    let keepAliveTimer;
+    const keepAlive = () => {
+      this.send(`file-tree:keepalive`, { basePath });
+      keepAliveTimer = setTimeout(keepAlive, this.keepAliveInterval);
+    };
+    socket.addEventListener(`close`, () => {
+      clearTimeout(keepAliveTimer);
+    });
     if (await waitForOpenWebSocket(socket)) {
       this.send(`file-tree:load`, { basePath });
+      keepAlive();
     } else {
       throw new Error(`Could not establish websocket connection.`);
     }
@@ -334,10 +343,13 @@ var WebSocketInterface = class {
    *    }
    * }
    */
-  async oncreate({ path: path2, isFile, from, seqnum }) {
+  async oncreate({ path: path2, isFile, from }) {
     const { id, fileTree } = this;
     if (from === id) return;
-    fileTree.__create(path2, isFile);
+    const entry = fileTree.__create(path2, isFile);
+    fileTree.dispatchEvent(
+      new CustomEvent(`ot:created`, { detail: { entry, path: path2, isFile } })
+    );
   }
   /**
    * Handle a delete notification, which will tell us
@@ -355,10 +367,13 @@ var WebSocketInterface = class {
    *    }
    * }
    */
-  async ondelete({ path: path2, from, seqnum }) {
+  async ondelete({ path: path2, from }) {
     const { id, fileTree } = this;
     if (from === id) return;
-    fileTree.__delete(path2);
+    const entries = fileTree.__delete(path2);
+    fileTree.dispatchEvent(
+      new CustomEvent(`ot:deleted`, { detail: { entries, path: path2 } })
+    );
   }
   /**
    * Handle a move notification, which will tell us
@@ -379,7 +394,12 @@ var WebSocketInterface = class {
   async onmove({ isFile, oldPath, newPath, from }) {
     const { id, fileTree } = this;
     if (from === id) return;
-    fileTree.__move(isFile, oldPath, newPath);
+    const entry = fileTree.__move(isFile, oldPath, newPath);
+    fileTree.dispatchEvent(
+      new CustomEvent(`ot:moved`, {
+        detail: { entry, isFile, oldPath, newPath }
+      })
+    );
   }
   /**
    * This is a special file content handler that
@@ -409,8 +429,7 @@ var WebSocketInterface = class {
    */
   async onupdate({ path: path2, type, update, from }) {
     const { id, fileTree } = this;
-    if (from === id) return;
-    fileTree.__update(path2, type, update);
+    fileTree.__update(path2, type, update, from === id);
   }
 };
 async function waitForOpenWebSocket(socket, retries = 0, interval = 100) {
@@ -934,15 +953,15 @@ var FileTree = class extends FileTreeElement {
   }
   /**
    * Connect to a websocket server. You can provide
-   * a custom websocket interface class, but then 
+   * a custom websocket interface class, but then
    * you better know what you're doing =)
-   * 
-   * @param {*} url 
-   * @param {*} basePath 
-   * @param {*} ConnectorClass 
+   *
+   * @param {*} url
+   * @param {*} basePath
+   * @param {*} ConnectorClass
    */
-  async connectViaWebSocket(url, basePath = `.`, ConnectorClass = WebSocketInterface) {
-    this.OT = new ConnectorClass(this, url, basePath);
+  async connectViaWebSocket(url, basePath = `.`, keepAliveInterval = 6e4, ConnectorClass = WebSocketInterface) {
+    this.OT = new ConnectorClass(this, url, basePath, keepAliveInterval);
   }
   /**
    * Setting files is a destructive operation, clearing whatever is already
@@ -1028,9 +1047,9 @@ var FileTree = class extends FileTreeElement {
       });
     }
     const detail = { path: path2, content };
-    const grant = () => {
+    const grant = (processedContent = content) => {
       const entry = this.__create(path2, isFile);
-      if (!bypassOT) this.OT?.create(path2, isFile, content);
+      if (!bypassOT) this.OT?.create(path2, isFile, processedContent);
       detail.entry = entry;
       return entry;
     };
@@ -1117,11 +1136,9 @@ var FileTree = class extends FileTreeElement {
     return entry;
   }
   // update notification via websocket or immediate code path:
-  __update(path2, type, update) {
-    const { entries } = this;
-    const entry = entries[path2];
-    entry.dispatchEvent(
-      new CustomEvent(`content:update`, { detail: { type, update } })
+  __update(path2, type, update, ours) {
+    this.entries[path2]?.dispatchEvent(
+      new CustomEvent(`content:update`, { detail: { type, update, ours } })
     );
   }
   // delete notification via websocket or immediate code path:

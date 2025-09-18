@@ -59,19 +59,20 @@ class FileTree extends FileTreeElement {
 
   /**
    * Connect to a websocket server. You can provide
-   * a custom websocket interface class, but then 
+   * a custom websocket interface class, but then
    * you better know what you're doing =)
-   * 
-   * @param {*} url 
-   * @param {*} basePath 
-   * @param {*} ConnectorClass 
+   *
+   * @param {*} url
+   * @param {*} basePath
+   * @param {*} ConnectorClass
    */
   async connectViaWebSocket(
     url,
     basePath = `.`,
+    keepAliveInterval = 60_000,
     ConnectorClass = WebSocketInterface
   ) {
-    this.OT = new ConnectorClass(this, url, basePath);
+    this.OT = new ConnectorClass(this, url, basePath, keepAliveInterval);
   }
 
   /**
@@ -140,7 +141,7 @@ class FileTree extends FileTreeElement {
     const detail = { path, emptyDir: this.removeEmptyDir };
 
     this.emit(eventType, detail, () => {
-      // grant
+      // grant: delete
       const removed = this.__delete(path, isFile);
       this.OT?.delete(path);
       detail.removed = removed;
@@ -183,10 +184,10 @@ class FileTree extends FileTreeElement {
 
     // When granted, build the entry.
     const detail = { path, content };
-    const grant = () => {
-      // grant
+    const grant = (processedContent = content) => {
+      // grant: create
       const entry = this.__create(path, isFile);
-      if (!bypassOT) this.OT?.create(path, isFile, content);
+      if (!bypassOT) this.OT?.create(path, isFile, processedContent);
       detail.entry = entry;
       return entry;
     };
@@ -242,7 +243,7 @@ class FileTree extends FileTreeElement {
     }
     const detail = { oldPath, newPath };
     this.emit(eventType, detail, () => {
-      // grant
+      // grant: move
       const entry = this.__move(isFile, oldPath, newPath);
       this.OT?.move(isFile, oldPath, newPath);
       detail.entry = entry;
@@ -293,11 +294,9 @@ class FileTree extends FileTreeElement {
   }
 
   // update notification via websocket or immediate code path:
-  __update(path, type, update) {
-    const { entries } = this;
-    const entry = entries[path];
-    entry.dispatchEvent(
-      new CustomEvent(`content:update`, { detail: { type, update } })
+  __update(path, type, update, ours) {
+    this.entries[path]?.dispatchEvent(
+      new CustomEvent(`content:update`, { detail: { type, update, ours } })
     );
   }
 
@@ -347,7 +346,7 @@ class FileTree extends FileTreeElement {
     const eventType = (entry.isFile ? `file` : `dir`) + `:click`;
     detail.path = entry.path;
     this.emit(eventType, detail, () => {
-      // grant
+      // grant: select
       entry.select();
       detail.entry = entry;
       return entry;
@@ -358,7 +357,7 @@ class FileTree extends FileTreeElement {
     const eventType = `dir:toggle`;
     detail.path = entry.path;
     this.emit(eventType, detail, () => {
-      // grant
+      // grant: toggle
       detail.entry = entry;
       entry.toggle();
     });
