@@ -43,7 +43,7 @@ export async function processUpload(root, items, dirPath = ``) {
         const content = await getFileContent(file);
         const filePath = path + file.name;
         const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-        root.createEntry(entryPath, true, content);
+        root.createEntry(entryPath, true, content, bulkUpload);
       });
     }
 
@@ -51,7 +51,7 @@ export async function processUpload(root, items, dirPath = ``) {
     else if (item.isDirectory) {
       bulkUpload = true;
       const updatedPath = path + item.name + "/";
-      root.createEntry(updatedPath, false);
+      root.createEntry(updatedPath, false, false, bulkUpload);
       item.createReader().readEntries(async (entries) => {
         for (let entry of entries) await iterate(entry, updatedPath);
       });
