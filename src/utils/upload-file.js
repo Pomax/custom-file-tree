@@ -22,7 +22,9 @@ export function uploadFilesFromDevice({ root, path }) {
 }
 
 export async function processUpload(root, items, dirPath = ``) {
-  // FIXME: we need to add support for empty directories.
+  let bulkUpload = items.length > 1;
+
+  // TODO: do we need to add support for empty directories?
 
   async function iterate(item, path = ``) {
     // Direct file drop? And note the dir check, which is due to
@@ -32,7 +34,7 @@ export async function processUpload(root, items, dirPath = ``) {
       const content = await getFileContent(item);
       const filePath = path + (item.webkitRelativePath || item.name);
       const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-      root.createEntry(entryPath, true, content);
+      root.createEntry(entryPath, true, content, bulkUpload);
     }
 
     // File input dialog result (for files)
@@ -47,6 +49,7 @@ export async function processUpload(root, items, dirPath = ``) {
 
     // File input dialog result (for directories)
     else if (item.isDirectory) {
+      bulkUpload = true;
       const updatedPath = path + item.name + "/";
       root.createEntry(updatedPath, false);
       item.createReader().readEntries(async (entries) => {

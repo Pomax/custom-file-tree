@@ -84,24 +84,34 @@ class FileTree extends FileTreeElement {
     dirs?.forEach((path) =>
       this.#addPath(
         `${path}/`,
-        false,
-        undefined,
+        false, // isFile
+        undefined, // content
+        true, // bulk
         `tree:add:dir`,
-        true,
+        true, //immediately create the entry
         bypassOT
       )
     );
+
     files?.forEach((path) =>
-      this.#addPath(path, true, undefined, `tree:add:file`, true, bypassOT)
+      this.#addPath(
+        path,
+        true, // isFile
+        undefined, // content
+        true, // bulk
+        `tree:add:file`,
+        true, // immediately create the entry
+        bypassOT
+      )
     );
     this.ready = true;
     return this.emit(`tree:ready`);
   }
 
   // create or upload
-  createEntry(path, isFile, content = undefined) {
+  createEntry(path, isFile, content = undefined, bulk = false) {
     let eventType = (isFile ? `file` : `dir`) + `:create`;
-    this.#addPath(path, isFile, content, eventType);
+    this.#addPath(path, isFile, content, bulk, eventType);
   }
 
   // get the file contents for an entry via a websocket connection
@@ -170,6 +180,7 @@ class FileTree extends FileTreeElement {
     path,
     isFile,
     content = undefined,
+    bulk = false,
     eventType,
     immediate = false,
     bypassOT = false
@@ -183,7 +194,7 @@ class FileTree extends FileTreeElement {
     }
 
     // When granted, build the entry.
-    const detail = { path, content };
+    const detail = { path, content, bulk };
     const grant = (processedContent = content) => {
       // grant: create
       const entry = this.__create(path, isFile);

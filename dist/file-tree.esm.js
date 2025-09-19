@@ -486,12 +486,13 @@ function uploadFilesFromDevice({ root, path: path2 }) {
   upload.click();
 }
 async function processUpload(root, items, dirPath = ``) {
+  let bulkUpload = items.length > 1;
   async function iterate(item, path2 = ``) {
     if (item instanceof File && !item.isDirectory) {
       const content = await getFileContent(item);
       const filePath = path2 + (item.webkitRelativePath || item.name);
       const entryPath = (dirPath === `.` ? `` : dirPath) + filePath;
-      root.createEntry(entryPath, true, content);
+      root.createEntry(entryPath, true, content, bulkUpload);
     } else if (item.isFile) {
       item.file(async (file) => {
         const content = await getFileContent(file);
@@ -500,6 +501,7 @@ async function processUpload(root, items, dirPath = ``) {
         root.createEntry(entryPath, true, content);
       });
     } else if (item.isDirectory) {
+      bulkUpload = true;
       const updatedPath = path2 + item.name + "/";
       root.createEntry(updatedPath, false);
       item.createReader().readEntries(async (entries) => {
@@ -973,22 +975,39 @@ var FileTree = class extends FileTreeElement {
       (path2) => this.#addPath(
         `${path2}/`,
         false,
+        // isFile
         void 0,
+        // content
+        true,
+        // bulk
         `tree:add:dir`,
         true,
+        //immediately create the entry
         bypassOT
       )
     );
     files?.forEach(
-      (path2) => this.#addPath(path2, true, void 0, `tree:add:file`, true, bypassOT)
+      (path2) => this.#addPath(
+        path2,
+        true,
+        // isFile
+        void 0,
+        // content
+        true,
+        // bulk
+        `tree:add:file`,
+        true,
+        // immediately create the entry
+        bypassOT
+      )
     );
     this.ready = true;
     return this.emit(`tree:ready`);
   }
   // create or upload
-  createEntry(path2, isFile, content = void 0) {
+  createEntry(path2, isFile, content = void 0, bulk = false) {
     let eventType = (isFile ? `file` : `dir`) + `:create`;
-    this.#addPath(path2, isFile, content, eventType);
+    this.#addPath(path2, isFile, content, bulk, eventType);
   }
   // get the file contents for an entry via a websocket connection
   async loadEntry(path2) {
@@ -1039,14 +1058,14 @@ var FileTree = class extends FileTreeElement {
     }
   }
   // private function for initiating <file-entry> or <dir-entry> creation
-  #addPath(path2, isFile, content = void 0, eventType, immediate = false, bypassOT = false) {
+  #addPath(path2, isFile, content = void 0, bulk = false, eventType, immediate = false, bypassOT = false) {
     const { entries } = this;
     if (entries[path2]) {
       return this.emit(`${eventType}:error`, {
         error: localeStrings.PATH_EXISTS(path2)
       });
     }
-    const detail = { path: path2, content };
+    const detail = { path: path2, content, bulk };
     const grant = (processedContent = content) => {
       const entry = this.__create(path2, isFile);
       if (!bypassOT) this.OT?.create(path2, isFile, processedContent);
