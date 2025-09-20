@@ -82,13 +82,11 @@ export class WebSocketInterface {
       clearTimeout(keepAliveTimer);
     });
 
-    // And as last step, request the dir list
-    if (await waitForOpenWebSocket(socket)) {
+    // And as last step, request the dir list and start the keepalive
+    socket.addEventListener(`open`, () => {
       this.send(`file-tree:load`, { basePath });
       keepAlive();
-    } else {
-      throw new Error(`Could not establish websocket connection.`);
-    }
+    });
   }
 
   /**
@@ -368,16 +366,4 @@ export class WebSocketInterface {
     const { id, fileTree } = this;
     fileTree.__update(path, type, update, from === id);
   }
-}
-
-/**
- * Simple backing-off, retry-capped socket state monitor.
- * Eventually returns either true if the socket's ready
- * to receive data, or false if the socket is not working.
- */
-async function waitForOpenWebSocket(socket, retries = 0, interval = 100) {
-  if (retries === 10) return false;
-  if (socket.readyState === WebSocket.OPEN) return true;
-  const retry = () => waitForOpenWebSocket(socket, retries + 1, interval + 100);
-  return new Promise((resolve) => setTimeout(() => resolve(retry), interval));
 }

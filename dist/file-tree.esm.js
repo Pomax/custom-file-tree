@@ -189,12 +189,10 @@ var WebSocketInterface = class {
     socket.addEventListener(`close`, () => {
       clearTimeout(keepAliveTimer);
     });
-    if (await waitForOpenWebSocket(socket)) {
+    socket.addEventListener(`open`, () => {
       this.send(`file-tree:load`, { basePath });
       keepAlive();
-    } else {
-      throw new Error(`Could not establish websocket connection.`);
-    }
+    });
   }
   /**
    * Mark a specific path as awaiting a "read" result.
@@ -432,12 +430,6 @@ var WebSocketInterface = class {
     fileTree.__update(path2, type, update, from === id);
   }
 };
-async function waitForOpenWebSocket(socket, retries = 0, interval = 100) {
-  if (retries === 10) return false;
-  if (socket.readyState === WebSocket.OPEN) return true;
-  const retry = () => waitForOpenWebSocket(socket, retries + 1, interval + 100);
-  return new Promise((resolve) => setTimeout(() => resolve(retry), interval));
-}
 
 // src/utils/strings.js
 var LOCALE_STRINGS = {
