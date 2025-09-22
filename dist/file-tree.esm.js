@@ -1,6 +1,7 @@
 // src/utils/utils.js
 var create = (tag) => document.createElement(tag);
-var registry = window.customElements;
+var registry = globalThis.customElements ?? { define: () => {
+} };
 function getFileContent(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

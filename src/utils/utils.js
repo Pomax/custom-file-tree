@@ -14,7 +14,7 @@ export function getPathMetaData(path) {
   return metaData;
 }
 
-export const registry = window.customElements;
+export const registry = globalThis.customElements ?? { define: () => {} };
 
 export /*async*/ function getFileContent(file) {
   return new Promise((resolve, reject) => {
