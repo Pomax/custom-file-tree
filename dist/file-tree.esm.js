@@ -139,6 +139,12 @@ registry.define(`entry-heading`, EntryHeading);
 // src/classes/websocket-interface.js
 var FILE_TREE_PREFIX = `file-tree:`;
 var WebSocketInterface = class {
+  // Class extensions can push additional event
+  // types into this array in order to bypass
+  // the sync check (e.g. for things that just
+  // need "an answer" rather than needing to
+  // be sequentially ordered)
+  bypassSync = [`load`, `read`];
   // A list used to await content responses
   // from the server, so that users can just
   // "await" entry.load() calls.
@@ -177,7 +183,9 @@ var WebSocketInterface = class {
       if (!type.startsWith(FILE_TREE_PREFIX)) return;
       type = type.replace(FILE_TREE_PREFIX, ``);
       const handlerName = `on${type}`;
+      console.log(this);
       const handler = this[handlerName].bind(this);
+      console.log(`handlerName:`, handlerName, handler);
       if (!handler) {
         throw new Error(`Missing implementation for ${handlerName}.`);
       }
@@ -221,8 +229,7 @@ var WebSocketInterface = class {
    * @returns
    */
   checkSync(type, seqnum) {
-    if (type === `load`) return true;
-    if (type === `read`) return true;
+    if (this.bypassSync.includes(type)) return true;
     if (seqnum === this.seqnum + 1) {
       const { pending } = this;
       if (pending.length) {

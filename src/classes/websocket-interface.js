@@ -16,6 +16,13 @@ export const FILE_TREE_PREFIX = `file-tree:`;
  * actual server's running on port 8000.
  */
 export class WebSocketInterface {
+  // Class extensions can push additional event
+  // types into this array in order to bypass
+  // the sync check (e.g. for things that just
+  // need "an answer" rather than needing to
+  // be sequentially ordered)
+  bypassSync = [`load`, `read`];
+
   // A list used to await content responses
   // from the server, so that users can just
   // "await" entry.load() calls.
@@ -64,7 +71,10 @@ export class WebSocketInterface {
       if (!type.startsWith(FILE_TREE_PREFIX)) return;
       type = type.replace(FILE_TREE_PREFIX, ``);
       const handlerName = `on${type}`;
+      console.log(this);
       const handler = this[handlerName].bind(this);
+      console.log(`handlerName:`, handlerName, handler);
+
       if (!handler) {
         throw new Error(`Missing implementation for ${handlerName}.`);
       }
@@ -123,8 +133,7 @@ export class WebSocketInterface {
     // first should *set* the sequence number, and
     // the second is not a transform and so is not
     // an action that needs sequence verification.
-    if (type === `load`) return true;
-    if (type === `read`) return true;
+    if (this.bypassSync.includes(type)) return true;
 
     // Is this in-sequence?
     if (seqnum === this.seqnum + 1) {
