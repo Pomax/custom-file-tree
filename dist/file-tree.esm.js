@@ -1217,3 +1217,6 @@ var FileTree = class extends FileTreeElement {
   }
 };
 registry.define(`file-tree`, FileTree);
+export {
+  WebSocketInterface
+};

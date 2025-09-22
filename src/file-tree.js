@@ -5,6 +5,9 @@ import { FileEntry } from "./classes/file-entry.js";
 import { registry } from "./utils/utils.js";
 import { Strings } from "./utils/strings.js";
 
+// For when folks need more:
+export { WebSocketInterface };
+
 /**
  * The file tree maintains the list of path -> entry mappings,
  * and is the only place where mutations happen. If a user
