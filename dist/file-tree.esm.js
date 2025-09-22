@@ -956,7 +956,7 @@ var FileTree = class extends FileTreeElement {
    */
   async connectViaWebSocket(url, basePath = `.`, keepAliveInterval = 6e4, ConnectorClass = WebSocketInterface) {
     this.OT = new ConnectorClass(this, url, basePath, keepAliveInterval);
-    return this.OT.socket;
+    return this.OT;
   }
   /**
    * Setting files is a destructive operation, clearing whatever is already
