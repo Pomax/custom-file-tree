@@ -73,6 +73,7 @@ class FileTree extends FileTreeElement {
     ConnectorClass = WebSocketInterface
   ) {
     this.OT = new ConnectorClass(this, url, basePath, keepAliveInterval);
+    return this.OT.socket;
   }
 
   /**
