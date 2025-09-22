@@ -1,3 +1,5 @@
+export const FILE_TREE_PREFIX = `file-tree:`;
+
 /**
  * This is the superclass that the file tree element expects if
  * you want to take advantage of OT-over-websocket functionaliy.
@@ -59,8 +61,8 @@ export class WebSocketInterface {
 
       // Is this something we know how to handle?
       let { type, detail } = data;
-      if (!type.startsWith(`file-tree:`)) return;
-      type = type.replace(`file-tree:`, ``);
+      if (!type.startsWith(FILE_TREE_PREFIX)) return;
+      type = type.replace(FILE_TREE_PREFIX, ``);
       const handlerName = `on${type}`;
       const handler = this[handlerName].bind(this);
       if (!handler) {
@@ -74,7 +76,7 @@ export class WebSocketInterface {
     // Set up keep-alive functionality
     let keepAliveTimer;
     const keepAlive = () => {
-      this.send(`file-tree:keepalive`, { basePath });
+      this.send(`keepalive`, { basePath });
       keepAliveTimer = setTimeout(keepAlive, this.keepAliveInterval);
     };
 
@@ -84,7 +86,7 @@ export class WebSocketInterface {
 
     // And as last step, request the dir list and start the keepalive
     socket.addEventListener(`open`, () => {
-      this.send(`file-tree:load`, { basePath });
+      this.send(`load`, { basePath });
       keepAlive();
     });
   }
@@ -100,7 +102,7 @@ export class WebSocketInterface {
    * Send a message to the server
    */
   async send(type, detail = {}) {
-    const action = { type, detail };
+    const action = { type: `${FILE_TREE_PREFIX}${type}`, detail };
     this.pending.push(action);
     this.socket.send(JSON.stringify(action));
   }
@@ -143,7 +145,7 @@ export class WebSocketInterface {
     // We're desynced, which means we'll need to ask the
     // server for everything that's happened since our
     // own sequence number, so we can apply those changes
-    this.send(`file-tree:sync`, { seqnum: this.seqnum });
+    this.send(`sync`, { seqnum: this.seqnum });
   }
 
   /**
@@ -176,21 +178,21 @@ export class WebSocketInterface {
    * OT operation from file tree: inform the server of a file or dir creation.
    */
   async create(path, isFile, content) {
-    this.send(`file-tree:create`, { path, isFile, content });
+    this.send(`create`, { path, isFile, content });
   }
 
   /**
    * OT operation from file tree: inform the server of a deletion.
    */
   async delete(path) {
-    this.send(`file-tree:delete`, { path });
+    this.send(`delete`, { path });
   }
 
   /**
    * OT operation from file tree: inform the server of a path change.
    */
   async move(isFile, oldPath, newPath) {
-    this.send(`file-tree:move`, { isFile, oldPath, newPath });
+    this.send(`move`, { isFile, oldPath, newPath });
   }
 
   /**
@@ -205,7 +207,7 @@ export class WebSocketInterface {
   async read(path) {
     return new Promise((resolve) => {
       this.markWaiting(path, resolve);
-      this.send(`file-tree:read`, { path });
+      this.send(`read`, { path });
     });
   }
 
@@ -213,7 +215,7 @@ export class WebSocketInterface {
    * OT operation from file tree: inform the server of a content update.
    */
   async update(path, type, update) {
-    this.send(`file-tree:update`, { path, type, update });
+    this.send(`update`, { path, type, update });
   }
 
   // ==========================================================================

@@ -136,6 +136,7 @@ var EntryHeading = class extends HTMLElement {
 registry.define(`entry-heading`, EntryHeading);
 
 // src/classes/websocket-interface.js
+var FILE_TREE_PREFIX = `file-tree:`;
 var WebSocketInterface = class {
   // A list used to await content responses
   // from the server, so that users can just
@@ -172,8 +173,8 @@ var WebSocketInterface = class {
     socket.addEventListener(`message`, ({ data }) => {
       data = JSON.parse(data);
       let { type, detail } = data;
-      if (!type.startsWith(`file-tree:`)) return;
-      type = type.replace(`file-tree:`, ``);
+      if (!type.startsWith(FILE_TREE_PREFIX)) return;
+      type = type.replace(FILE_TREE_PREFIX, ``);
       const handlerName = `on${type}`;
       const handler = this[handlerName].bind(this);
       if (!handler) {
@@ -183,14 +184,14 @@ var WebSocketInterface = class {
     });
     let keepAliveTimer;
     const keepAlive = () => {
-      this.send(`file-tree:keepalive`, { basePath });
+      this.send(`keepalive`, { basePath });
       keepAliveTimer = setTimeout(keepAlive, this.keepAliveInterval);
     };
     socket.addEventListener(`close`, () => {
       clearTimeout(keepAliveTimer);
     });
     socket.addEventListener(`open`, () => {
-      this.send(`file-tree:load`, { basePath });
+      this.send(`load`, { basePath });
       keepAlive();
     });
   }
@@ -204,7 +205,7 @@ var WebSocketInterface = class {
    * Send a message to the server
    */
   async send(type, detail = {}) {
-    const action = { type, detail };
+    const action = { type: `${FILE_TREE_PREFIX}${type}`, detail };
     this.pending.push(action);
     this.socket.send(JSON.stringify(action));
   }
@@ -232,7 +233,7 @@ var WebSocketInterface = class {
       }
       return this.seqnum = seqnum;
     }
-    this.send(`file-tree:sync`, { seqnum: this.seqnum });
+    this.send(`sync`, { seqnum: this.seqnum });
   }
   /**
    * Do we need to roll back any optimistic changes?
@@ -260,19 +261,19 @@ var WebSocketInterface = class {
    * OT operation from file tree: inform the server of a file or dir creation.
    */
   async create(path2, isFile, content) {
-    this.send(`file-tree:create`, { path: path2, isFile, content });
+    this.send(`create`, { path: path2, isFile, content });
   }
   /**
    * OT operation from file tree: inform the server of a deletion.
    */
   async delete(path2) {
-    this.send(`file-tree:delete`, { path: path2 });
+    this.send(`delete`, { path: path2 });
   }
   /**
    * OT operation from file tree: inform the server of a path change.
    */
   async move(isFile, oldPath, newPath) {
-    this.send(`file-tree:move`, { isFile, oldPath, newPath });
+    this.send(`move`, { isFile, oldPath, newPath });
   }
   /**
    * This is a special one time (well, ideally) operation for
@@ -286,14 +287,14 @@ var WebSocketInterface = class {
   async read(path2) {
     return new Promise((resolve) => {
       this.markWaiting(path2, resolve);
-      this.send(`file-tree:read`, { path: path2 });
+      this.send(`read`, { path: path2 });
     });
   }
   /**
    * OT operation from file tree: inform the server of a content update.
    */
   async update(path2, type, update) {
-    this.send(`file-tree:update`, { path: path2, type, update });
+    this.send(`update`, { path: path2, type, update });
   }
   // ==========================================================================
   /**
@@ -1218,5 +1219,6 @@ var FileTree = class extends FileTreeElement {
 };
 registry.define(`file-tree`, FileTree);
 export {
+  FILE_TREE_PREFIX,
   WebSocketInterface
 };

@@ -1,12 +1,12 @@
 import { FileTreeElement } from "./classes/file-tree-element.js";
-import { WebSocketInterface } from "./classes/websocket-interface.js";
+import { FILE_TREE_PREFIX, WebSocketInterface } from "./classes/websocket-interface.js";
 import { DirEntry } from "./classes/dir-entry.js";
 import { FileEntry } from "./classes/file-entry.js";
 import { registry } from "./utils/utils.js";
 import { Strings } from "./utils/strings.js";
 
 // For when folks need more:
-export { WebSocketInterface };
+export { FILE_TREE_PREFIX, WebSocketInterface };
 
 /**
  * The file tree maintains the list of path -> entry mappings,
