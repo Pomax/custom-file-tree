@@ -183,9 +183,7 @@ var WebSocketInterface = class {
       if (!type.startsWith(FILE_TREE_PREFIX)) return;
       type = type.replace(FILE_TREE_PREFIX, ``);
       const handlerName = `on${type}`;
-      console.log(this);
       const handler = this[handlerName].bind(this);
-      console.log(`handlerName:`, handlerName, handler);
       if (!handler) {
         throw new Error(`Missing implementation for ${handlerName}.`);
       }
