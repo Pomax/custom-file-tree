@@ -10,12 +10,9 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Pending Version
 
-## v6.0.1
-
-Selecting a file entry in a closed folder chain will open all folders to that file entry.
-
 ## v6.0.0
 
+- Selecting a file entry in a closed folder chain will open all folders to that file entry.
 - `file:create` events now have a `bulk` flag that indicates whether this was a single file create/upload or whether this was a multi-file operations.
 - added websocket support to allow for real time, collaborative file system work by letting you connect the `<file-tree>` to a websocket server (as long as it speaks the correct "protocol").
 - added support for empty dirs by rewriting how `setContent` works, which now takes an object `{ dirs: [...], files: [...]}`. Technically both are optional, and the `dirs` list is only required if you need to bootstrap the file tree with empty directories (dirs with files in them will automatically get added in order to correctly place those files in the tree). **This is a breaking change.**
