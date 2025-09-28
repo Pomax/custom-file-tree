@@ -248,6 +248,9 @@ export class DirEntry extends FileTreeElement {
 
   toggle(state) {
     this.classList.toggle(`closed`, state);
+    // if we can interact with this dir, its parent
+    // should be open, even if we're closing this one.
+    this.parentNode?.toggle?.(false);
   }
 
   toJSON() {

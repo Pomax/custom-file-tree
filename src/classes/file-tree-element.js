@@ -153,6 +153,8 @@ export class FileTreeElement extends HTMLElement {
   select() {
     this.root.unselect();
     this.classList.add(`selected`);
+    // If we're selecting a file, make sure that the parent dir is open.
+    this.parentNode?.toggle?.(false);
   }
 
   setState(stateUpdate) {

@@ -127,6 +127,7 @@ var FileTreeElement = class extends HTMLElement {
   select() {
     this.root.unselect();
     this.classList.add(`selected`);
+    this.parentNode?.toggle?.(false);
   }
   setState(stateUpdate) {
     Object.assign(this.state, stateUpdate);
@@ -813,6 +814,7 @@ var DirEntry = class extends FileTreeElement {
   }
   toggle(state) {
     this.classList.toggle(`closed`, state);
+    this.parentNode?.toggle?.(false);
   }
   toJSON() {
     return JSON.stringify(this.toValue());
