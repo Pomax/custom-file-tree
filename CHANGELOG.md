@@ -10,6 +10,10 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Pending Version
 
+## v6.0.1
+
+Selecting a file entry in a closed folder chain will open all folders to that file entry.
+
 ## v6.0.0
 
 - `file:create` events now have a `bulk` flag that indicates whether this was a single file create/upload or whether this was a multi-file operations.
