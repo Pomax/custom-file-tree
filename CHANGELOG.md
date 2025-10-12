@@ -8,22 +8,21 @@ This library _strictly_ adheres to [semver](https://semver.org)'s major.minor.pa
 
 Note that there may be gaps in the version history, which may happen if a release is pushed to npm but a problem is discovered fast enough to warrant an unpublish.
 
-# Pending Version
+# Current Version
 
-## v6.0.0
+## v6.0.0 (October 12, 2025)
 
-- Selecting a file entry in a closed folder chain will open all folders to that file entry.
+- Selecting a file entry in a closed folder chain will open all folders to that file entry. **This is a breaking change.**
+- File entries now have an `.extension` property for work based on file extensions.
 - `file:create` events now have a `bulk` flag that indicates whether this was a single file create/upload or whether this was a multi-file operations.
 - added websocket support to allow for real time, collaborative file system work by letting you connect the `<file-tree>` to a websocket server (as long as it speaks the correct "protocol").
 - added support for empty dirs by rewriting how `setContent` works, which now takes an object `{ dirs: [...], files: [...]}`. Technically both are optional, and the `dirs` list is only required if you need to bootstrap the file tree with empty directories (dirs with files in them will automatically get added in order to correctly place those files in the tree). **This is a breaking change.**
 
-# Current Version
+# Previous Versions
 
 ## v5.3.0 (August 21, 2025)
 
 - added an optional value to &lt;dir-entry&gt;.toggle() so that you can explicity set a dir to open (`toggle(true)`) or closed (`toggle(false)`), to align it with the standard DOM classList.toggle
-
-# Previous Versions
 
 ## v5.2.3 (August 4, 2025)
 

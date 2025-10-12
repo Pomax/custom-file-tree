@@ -74,6 +74,58 @@ If you wish to associate data with `<file-entry>` and `<dir-entry>` elements, yo
 
 While in HTML context this should be obvious: this is done synchronously, unlike the similarly named function that you might be familiar with from frameworks like React or Preact. The `<file-tree>` is a normal HTML element and updates take effect immediately.
 
+# File tree element properties
+
+There are three elements that make up a file tree, namely the `<file-tree>`, the `<dir-entry>`, and the `<file-entry>`, each with a set of JS properties and methods that you can use to "do things" with your file tree:
+
+## File tree properties and methods
+
+- `.root` returns a reference to itself
+- `.parentDir()` returns the top-level directory entry in this tree
+- `.clear()` removes everything from this tree and then adds a new top-level dir.
+- `.setContent({ dirs, files })` adds all dirs and files to this tree. Both values should be arrays of strings, and `dirs` is _only_ required for dirs that do not have any files in them. Every other dir will automatically be found based on parsing file paths.
+- `.createEntry(path, isFile, content, bulk)` adds a single entry to the file tree, where `path` is the file or dir path, `isFile` is a boolean to indicate whether this is a file (true) or dir (false), `content` is the file content, left undefined if there is no content known ahead of time, and `bulk` is a flag that you can pass to indicate whether or not this is part of a larger bulk insertion process, which gets passed along as part of the `file:create` event so your code can decide what to do in response to that.
+- `.loadEntry(path)` load a file's content if there is a websocket connection to a server available.
+- `.updateEntry(path, type, update)` notifies the server of a file content change, if there is a websocket connection to a server available. `path` is the file path, `type` is a free-form string identifier for you to make sure that your client and server both know how to work with "whatever `update` is". E.g. you could use text diffs where `update` is a string representing a diff patch, and so you use the type `"diff"` so that the server can make sure not to do anything with updates that don't use that as a type indicator.
+- `.renameEntry(entry, newname)` rename an entry.
+- `.moveEntry(entry, newpath)` moves an entry from one location in the tree to another
+- `.removeEntry(entry)` remove an entry from three
+- `.select(path)` select an entry in the tree by path
+- `.unselect()` unselect the currently selected entry (if there is one)
+- `.toggleDirectory(entry)` fold an open dir, or open a folder dir (see the `entry.closed` property to figure out which state it's in first =)
+- `.toJSON()` get a JSON-serialized representation of this tree.
+
+## Shared dir and file entry properties and methods
+
+- `.state` a convenient place to put data that you need associated with file tree entries, persistent across renames/moves.
+- `.setState(update)` _synchronously_ update the state object, based on a property copy operation.
+- `.name` the name part of this entry's path
+- `.path` the full path for this entry
+- `.root` the `<file-tree>` element that this entry is in
+- `.parentDir` the parent dir entry that this entry is nested under
+- `.dirPath` the path of the dir that this entry is nested in
+- `.select()` select this entry
+
+There are also three convenience functions akin to query selecting:
+
+- `.find(qs)` finds the first HTML element that matches the given query selector scoped to this element
+- `.findAll(qs)` finds all HTML elements that match the given query selector scoped to this element, and returns them as an array.
+- `.findAllInTree(qs)` finds all HTML elements that match the given query selector scoped to the entire tree, and returns them as an array.
+
+## Dir entry properties and methods
+
+- `.isDir` a convenient check flag, always `true` for directories.
+- `.toggle(closed)` fold or open this dir, where `closed` is a boolean value.
+- `.toJSON()` get a JSON-serialized representation of this directory.
+
+## File entry properties and methods
+
+- `.isFile` a convenient check flag, always `true` for files.
+- `.extension` the file extension part of this file's path, if there is one
+- `.load()` an convenience function that falls through to the file tree's `loadEntry` method.
+- `.updateContent(type, update)` a convenience function that falls through to the file tree's `updateEntry` method.
+- `.toJSON()` get a JSON-serialized representation of this file.
+
 # File tree events
 
 As mentioned above, events are "permission seeking", meaning that they are dispatched _before_ an action is allowed to take place. Your event listener code is responsible for deciding whether or not that action is allowed to take place given the full context of who's performing it on which file/directory.

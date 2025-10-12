@@ -98,9 +98,8 @@ function processDragMove(dirEntry, entryId) {
   entry.classList.remove(`dragging`);
   if (entry === dirEntry) return;
 
-  const oldPath = entry.path;
   let dirPath = dirEntry.path;
   let newPath = (dirPath !== `.` ? dirPath : ``) + entry.name;
   if (entry.isDir) newPath += `/`;
-  dirEntry.root.moveEntry(entry, oldPath, newPath);
+  dirEntry.root.moveEntry(entry, newPath);
 }

@@ -79,10 +79,18 @@ export class FileTreeElement extends HTMLElement {
 
     // Directories end in `/` so their name is at "index" -2, not -1.
     const pos = path.endsWith(`/`) ? -2 : -1;
-    this.name = path.split(`/`).at(pos).replace(/#.*/, ``);
+    const terms = path.split(`/`);
+    const name = (this.name = terms.at(pos).replace(/#.*/, ``));
 
     if (!this.name && path) {
       throw Error(`why? path is ${path}`);
+    }
+
+    if (this.isFile) {
+      const dot = name.indexOf(`.`);
+      if (dot >= 0 && dot < name.length - 1) {
+        this.extension = name.substring(dot + 1);
+      }
     }
 
     const heading = this.find(`& > entry-heading`);

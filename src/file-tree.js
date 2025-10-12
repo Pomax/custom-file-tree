@@ -130,20 +130,18 @@ class FileTree extends FileTreeElement {
 
   // A rename is a relocation where only the last part of the path changed.
   renameEntry(entry, newName) {
-    const isFile = !!entry.isFile;
     const oldPath = entry.path;
     const pos = oldPath.lastIndexOf(entry.name);
     let newPath = oldPath.substring(0, pos) + newName;
     if (entry.isDir) newPath += `/`;
     const eventType = (entry.isFile ? `file` : `dir`) + `:rename`;
-    this.#relocateEntry(isFile, oldPath, newPath, eventType);
+    this.#relocateEntry(entry, oldPath, newPath, eventType);
   }
 
   // A move is a relocation where everything *but* the last part of the path may have changed.
-  moveEntry(entry, oldPath, newPath) {
-    const isFile = !!entry.isFile;
+  moveEntry(entry, newPath) {
     const eventType = (entry.isFile ? `file` : `dir`) + `:move`;
-    this.#relocateEntry(isFile, oldPath, newPath, eventType);
+    this.#relocateEntry(entry, entry.path, newPath, eventType);
   }
 
   // Deletes are a DOM removal of the entry itself, and a pruning
@@ -236,7 +234,7 @@ class FileTree extends FileTreeElement {
   }
 
   // private function for initiating <file-entry> or <dir-entry> path changes
-  #relocateEntry(isFile, oldPath, newPath, eventType) {
+  #relocateEntry(entry, oldPath, newPath, eventType) {
     const { entries } = this;
     if (oldPath === newPath) return;
     if (newPath.startsWith(oldPath)) {
@@ -259,8 +257,8 @@ class FileTree extends FileTreeElement {
     const detail = { oldPath, newPath };
     this.emit(eventType, detail, () => {
       // grant: move
-      const entry = this.__move(isFile, oldPath, newPath);
-      this.OT?.move(isFile, oldPath, newPath);
+      this.__move(entry.isFile, oldPath, newPath);
+      this.OT?.move(entry.isFile, oldPath, newPath);
       detail.entry = entry;
       return entry;
     });
@@ -369,6 +367,7 @@ class FileTree extends FileTreeElement {
   }
 
   toggleDirectory(entry, detail = {}) {
+    if (entry.isFile) return;
     const eventType = `dir:toggle`;
     detail.path = entry.path;
     this.emit(eventType, detail, () => {
