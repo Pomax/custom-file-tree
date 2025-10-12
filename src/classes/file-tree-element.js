@@ -90,6 +90,7 @@ export class FileTreeElement extends HTMLElement {
       const dot = name.indexOf(`.`);
       if (dot >= 0 && dot < name.length - 1) {
         this.extension = name.substring(dot + 1);
+        this.setAttribute(`extension`, this.extension);
       }
     }
 

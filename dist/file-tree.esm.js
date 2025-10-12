@@ -76,10 +76,10 @@ var FileTreeElement = class extends HTMLElement {
       throw Error(`why? path is ${path2}`);
     }
     if (this.isFile) {
-      this.filename = name;
       const dot = name.indexOf(`.`);
       if (dot >= 0 && dot < name.length - 1) {
         this.extension = name.substring(dot + 1);
+        this.setAttribute(`extension`, this.extension);
       }
     }
     const heading = this.find(`& > entry-heading`);
