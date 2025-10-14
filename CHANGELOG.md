@@ -10,11 +10,15 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v6.1.0 (October 14, 2025)
+
+- You can now use `<file-tree readonly>`, where the `readonly` attribute prevents operations beyond selection and toggling folder state from getting bound for file tree content. Note that because of this, changing the attribute after you've loaded your file tree content will "do nothing" until you set new content.
+
+# Previous Versions
+
 ## v6.0.1 (October 12, 2025)
 
 - File entries now include their extension as an HTML element attribute, so that users can style entries based on extension (e.g. making sure to show appropriate entry header icons for different content types)
-
-# Previous Versions
 
 ## v6.0.0 (October 12, 2025)
 

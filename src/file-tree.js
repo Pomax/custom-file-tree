@@ -1,5 +1,8 @@
 import { FileTreeElement } from "./classes/file-tree-element.js";
-import { FILE_TREE_PREFIX, WebSocketInterface } from "./classes/websocket-interface.js";
+import {
+  FILE_TREE_PREFIX,
+  WebSocketInterface,
+} from "./classes/websocket-interface.js";
 import { DirEntry } from "./classes/dir-entry.js";
 import { FileEntry } from "./classes/file-entry.js";
 import { registry } from "./utils/utils.js";
@@ -34,8 +37,12 @@ class FileTree extends FileTreeElement {
     return this.rootDir;
   }
 
+  get readonly() {
+    return this.hasAttribute(`readonly`);
+  }
+
   get removeEmptyDir() {
-    return !!this.getAttribute(`remove-empty-dir`);
+    return this.hasAttribute(`remove-empty-dir`);
   }
 
   clear() {
@@ -43,7 +50,7 @@ class FileTree extends FileTreeElement {
     this.emit(`tree:clear`);
     Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = (this.rootDir = new DirEntry(true));
+    const rootDir = (this.rootDir = new DirEntry(this, true));
     rootDir.path = `.`;
     this.appendChild(rootDir);
   }
@@ -223,7 +230,7 @@ class FileTree extends FileTreeElement {
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
-        subDir = new DirEntry();
+        subDir = new DirEntry(this);
         subDir.path = subDirPath;
         dir.addEntry(subDir);
         entries[subDirPath] = subDir;
@@ -271,7 +278,7 @@ class FileTree extends FileTreeElement {
     const { entries } = this;
 
     const EntryType = isFile ? FileEntry : DirEntry;
-    const entry = (entries[path] = new EntryType());
+    const entry = (entries[path] = new EntryType(this));
     entry.path = path;
     this.#mkdir(entry).addEntry(entry);
 

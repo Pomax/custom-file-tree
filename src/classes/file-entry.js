@@ -5,11 +5,15 @@ import { Strings } from "../utils/strings.js";
 export class FileEntry extends FileTreeElement {
   isFile = true;
 
-  constructor(fileName, fullPath) {
+  constructor(root, fileName, fullPath) {
     super(fileName, fullPath);
+    if (!root.readonly) this.addButtons();
+    this.addEventHandling(root.readonly);
+  }
+
+  addButtons() {
     this.addRenameButton();
     this.addDeleteButton();
-    this.addEventHandling();
   }
 
   addRenameButton() {
@@ -53,7 +57,7 @@ export class FileEntry extends FileTreeElement {
     });
   }
 
-  addEventHandling() {
+  addEventHandling(readonly) {
     this.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
@@ -64,6 +68,7 @@ export class FileEntry extends FileTreeElement {
     this.draggable = true;
     this.addEventListener(`dragstart`, (evt) => {
       evt.stopPropagation();
+      if (readonly) return;
       this.classList.add(`dragging`);
       this.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", this.dataset.id);

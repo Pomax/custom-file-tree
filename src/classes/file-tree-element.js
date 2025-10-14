@@ -11,7 +11,10 @@ export class FileTreeElement extends HTMLElement {
 
   constructor() {
     super();
+    this.addUIElements();
+  }
 
+  addUIElements() {
     // set up our icon
     this.icon = this.find(`& > .icon`);
     if (!this.icon) {
@@ -28,11 +31,13 @@ export class FileTreeElement extends HTMLElement {
     }
 
     // set up our button container
-    this.buttons = this.find(`& > span.buttons`);
-    if (!this.buttons) {
-      const buttons = (this.buttons = create(`span`));
-      buttons.classList.add(`buttons`);
-      this.appendChild(buttons);
+    if (!this.readonly) {
+      this.buttons = this.find(`& > span.buttons`);
+      if (!this.buttons) {
+        const buttons = (this.buttons = create(`span`));
+        buttons.classList.add(`buttons`);
+        this.appendChild(buttons);
+      }
     }
   }
 

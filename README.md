@@ -81,6 +81,7 @@ There are three elements that make up a file tree, namely the `<file-tree>`, the
 ## File tree properties and methods
 
 - `.root` returns a reference to itself
+- `.readonly` is a convenience property for checking whether the `readonly` attribute is set for this file tree.
 - `.parentDir()` returns the top-level directory entry in this tree
 - `.clear()` removes everything from this tree and then adds a new top-level dir.
 - `.setContent({ dirs, files })` adds all dirs and files to this tree. Both values should be arrays of strings, and `dirs` is _only_ required for dirs that do not have any files in them. Every other dir will automatically be found based on parsing file paths.
@@ -94,6 +95,30 @@ There are three elements that make up a file tree, namely the `<file-tree>`, the
 - `.unselect()` unselect the currently selected entry (if there is one)
 - `.toggleDirectory(entry)` fold an open dir, or open a folder dir (see the `entry.closed` property to figure out which state it's in first =)
 - `.toJSON()` get a JSON-serialized representation of this tree.
+
+
+### Special attributes
+
+File tree tags may specify a "remove-empty" attribute, i.e.
+
+```html
+<file-tree remove-empty></file-tree>
+```
+
+Setting this attribute tells the file tree that it may delete directories that become empty due to file move/delete operations.
+
+By default, file trees content "normally", even though under the hood all content is wrapped by a directory entry with path "." to act as a root. File tree tags may specify a "show-top-level" attribute to show this root directory, i.e.
+
+```html
+<file-tree show-top-level></file-tree>
+```
+
+Finally, you can mark a file tree as "read only" by adding the `readonly` attribute:
+
+```html
+<file-tree readonly></file-tree>
+```
+
 
 ## Shared dir and file entry properties and methods
 
@@ -154,22 +179,6 @@ Events are listed here as `name → detail object content`, with the `grant` fun
 - `dir:rename` → `{oldPath, newPath}`,<br>Dispatched when an existing directory is renamed by the user, with `oldPath` being the current directory path, and `newPath` the desired new path.<br>Granting this action will change the directory entry's label and path values.<br><strong>Note</strong>: directory nesting cannot (currently) be effected by renaming, and should instead be effected by just moving the directory into or out of another directory.
 - `dir:move` → `{oldPath, newPath}`,<br>Dispatched when a directory gets moved to a different parent directory, with `oldPath` being the current directory path, and `newPath` the desired new path.<br>Granting this action will move the directory entry from its current location to the location indicated by `newPath`.
 - `dir:delete` → `{path}`,<br>Dispatched when a directory gets deleted, with `path` representing the full path of the directory in question.<br>Granting this action will remove the directory entry (including its associated content) from the tree.<br><strong>Note</strong>: this action is gated behind a `confirm()` dialog for the user.
-
-## Special attributes
-
-File tree tags may specify a "remove-empty" attribute, i.e.
-
-```html
-<file-tree remove-empty="true"></file-tree>
-```
-
-Setting this attribute tells the file tree that it may delete directories that become empty due to file move/delete operations.
-
-By default, file trees content "normally", even though under the hood all content is wrapped by a directory entry with path "." to act as a root. File tree tags may specify a "show-top-level" attribute to show this root directory, i.e.
-
-```html
-<file-tree show-top-level="true"></file-tree>
-```
 
 ## Connecting via Websocket
 

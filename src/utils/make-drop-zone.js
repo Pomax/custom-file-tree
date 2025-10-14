@@ -4,8 +4,8 @@ import { processUpload } from "./upload-file.js";
  * Add file and dir drop-zone functionality to the file tree
  */
 export function makeDropZone(dirEntry) {
+  const { readonly } = dirEntry.root;
   const abortController = new AbortController();
-  dirEntry.draggable = true;
 
   const unmark = () => {
     dirEntry
@@ -13,17 +13,22 @@ export function makeDropZone(dirEntry) {
       .forEach((d) => d.classList.remove(`drop-target`));
   };
 
+  dirEntry.draggable = true;
+
   // drag start: mark element as being dragged
   dirEntry.addEventListener(
     `dragstart`,
     (evt) => {
       evt.stopPropagation();
+      if (dirEntry.root.readonly) return;
       dirEntry.classList.add(`dragging`);
       dirEntry.dataset.id = `${Date.now()}-${Math.random()}`;
       evt.dataTransfer.setData("id", dirEntry.dataset.id);
     },
     { signal: abortController.signal },
   );
+
+  if (readonly) return;
 
   // drag enter: mark element as being dragged
   dirEntry.addEventListener(

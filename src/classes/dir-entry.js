@@ -10,9 +10,9 @@ import { Strings } from "../utils/strings.js";
 export class DirEntry extends FileTreeElement {
   isDir = true;
 
-  constructor(rootDir = false) {
+  constructor(root, rootDir = false) {
     super();
-    this.addButtons(rootDir);
+    if (!root.readonly) this.addButtons(rootDir);
   }
 
   get path() {
