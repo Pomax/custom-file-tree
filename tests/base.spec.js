@@ -12,6 +12,48 @@ test.describe(`Basic tests`, () => {
     fileTree = utils.fileTree;
   });
 
+  test(`file-tree can be created`, async () => {
+    const canBeCreated = await page.evaluate(() => {
+      return customElements.whenDefined(`file-tree`).then(() => {
+        try {
+          document.querySelector(`file-tree`);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+    });
+    expect(canBeCreated).toBe(true);
+  });
+
+  test(`dir-entry can be created and added`, async () => {
+    const canBeCreated = await page.evaluate(() => {
+      return customElements.whenDefined(`dir-entry`).then(() => {
+        try {
+          document.querySelector(`dir-entry`);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+    });
+    expect(canBeCreated).toBe(true);
+  });
+
+  test(`file-entry can be created and added`, async () => {
+    const canBeCreated = await page.evaluate(() => {
+      return customElements.whenDefined(`file-entry`).then(() => {
+        try {
+          document.querySelector(`file-entry`);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+    });
+    expect(canBeCreated).toBe(true);
+  });
+
   test(`file-tree can be cloned`, async () => {
     const canBeCloned = await page.evaluate(() => {
       return customElements.whenDefined(`file-tree`).then(() => {

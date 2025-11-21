@@ -17,29 +17,40 @@ var HTMLElement = globalThis.HTMLElement ?? class {
 var FileTreeElement = class extends HTMLElement {
   state = {};
   eventControllers = [];
+  isFile = false;
+  isDir = false;
+  #inserted = false;
   constructor() {
     super();
+    this.provisionElements();
+  }
+  provisionElements() {
+    const icon = this.icon = create(`span`);
+    icon.classList.add(`icon`);
+    this.heading = create(`entry-heading`);
+    const buttons = this.buttons = create(`span`);
+    buttons.classList.add(`buttons`);
+  }
+  connectedCallback() {
     this.addUIElements();
   }
-  addUIElements() {
-    this.icon = this.find(`& > .icon`);
-    if (!this.icon) {
-      const icon = this.icon = create(`span`);
-      icon.classList.add(`icon`);
-      this.appendChild(icon);
-    }
-    this.heading = this.find(`& > entry-heading`);
-    if (!this.heading) {
-      const heading = this.heading = create(`entry-heading`);
-      this.appendChild(heading);
-    }
-    if (!this.readonly) {
-      this.buttons = this.find(`& > span.buttons`);
-      if (!this.buttons) {
-        const buttons = this.buttons = create(`span`);
-        buttons.classList.add(`buttons`);
-        this.appendChild(buttons);
+  afterConnectedCallback() {
+    if (!this.#inserted) {
+      this.#inserted = true;
+      const dirPath = this.parentNode?.path;
+      if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
+        this.path = `${this.parentNode.path}${this.path}`;
       }
+      this.root.__insert(this);
+    }
+  }
+  addUIElements() {
+    const { icon, heading, buttons } = this;
+    const [first] = this.children;
+    if (!first) {
+      !icon.parentNode && this.appendChild(icon);
+      !heading.parentNode && this.appendChild(heading);
+      !this.readonly && !buttons.parentNode && this.appendChild(buttons);
     }
   }
   addExternalListener(target, eventName, handler, options = {}) {
@@ -87,8 +98,7 @@ var FileTreeElement = class extends HTMLElement {
         this.setAttribute(`extension`, this.extension);
       }
     }
-    const heading = this.find(`& > entry-heading`);
-    heading.textContent = this.name;
+    this.heading.textContent = this.name;
     this.setAttribute(`path`, path2);
   }
   updatePath(isFile, oldPath, newPath) {
@@ -625,9 +635,12 @@ function processDragMove(dirEntry, entryId) {
 // src/classes/dir-entry.js
 var DirEntry = class extends FileTreeElement {
   isDir = true;
-  constructor(root, rootDir = false) {
+  constructor() {
     super();
-    if (!root.readonly) this.addButtons(rootDir);
+    this.path = `.`;
+  }
+  get rootdir() {
+    return this.closest(`dir-entry[path="."]`);
   }
   get path() {
     return super.path;
@@ -640,6 +653,8 @@ var DirEntry = class extends FileTreeElement {
     }
   }
   connectedCallback() {
+    super.connectedCallback();
+    if (!this.root.readonly) this.addButtons();
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(
       this.icon,
@@ -648,6 +663,16 @@ var DirEntry = class extends FileTreeElement {
     );
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
+    super.afterConnectedCallback();
+  }
+  addButtons() {
+    this.createFileButton();
+    this.createDirButton();
+    this.addUploadButton();
+    if (!this.rootDir) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
   selectListener(evt) {
     evt.stopPropagation();
@@ -668,15 +693,6 @@ var DirEntry = class extends FileTreeElement {
     this.root.toggleDirectory(this, {
       currentState: closed ? `closed` : `open`
     });
-  }
-  addButtons(rootDir) {
-    this.createFileButton();
-    this.createDirButton();
-    this.addUploadButton();
-    if (!rootDir) {
-      this.addRenameButton();
-      this.addDeleteButton();
-    }
   }
   /**
    * New file in this directory
@@ -845,11 +861,17 @@ registry.define(`dir-entry`, DirEntry);
 
 // src/classes/file-entry.js
 var FileEntry = class extends FileTreeElement {
+  inserted = false;
   isFile = true;
-  constructor(root, fileName, fullPath) {
-    super(fileName, fullPath);
-    if (!root.readonly) this.addButtons();
-    this.addEventHandling(root.readonly);
+  constructor() {
+    super();
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    const { readonly } = this.root;
+    if (!readonly) this.addButtons();
+    this.addEventHandling(readonly);
+    super.afterConnectedCallback();
   }
   addButtons() {
     this.addRenameButton();
@@ -946,9 +968,6 @@ var FileTree = class extends FileTreeElement {
   get root() {
     return this;
   }
-  get parentDir() {
-    return this.rootDir;
-  }
   get readonly() {
     return this.hasAttribute(`readonly`);
   }
@@ -960,8 +979,7 @@ var FileTree = class extends FileTreeElement {
     this.emit(`tree:clear`);
     Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = this.rootDir = new DirEntry(this, true);
-    rootDir.path = `.`;
+    const rootDir = this.rootDir = new DirEntry();
     this.appendChild(rootDir);
   }
   connectedCallback() {
@@ -1109,7 +1127,7 @@ var FileTree = class extends FileTreeElement {
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
-        subDir = new DirEntry(this);
+        subDir = new DirEntry();
         subDir.path = subDirPath;
         dir.addEntry(subDir);
         entries[subDirPath] = subDir;
@@ -1150,11 +1168,20 @@ var FileTree = class extends FileTreeElement {
   // ================================================================================================
   // create notification via websocket or immediate code path:
   __create(path2, isFile) {
-    const { entries } = this;
     const EntryType = isFile ? FileEntry : DirEntry;
-    const entry = entries[path2] = new EntryType(this);
+    const entry = new EntryType();
     entry.path = path2;
-    this.#mkdir(entry).addEntry(entry);
+    return this.__insert(entry);
+  }
+  // fall-through for creation, but also used by file-entry
+  // when inserted manually, to ensure proper path recording.
+  __insert(entry) {
+    const { entries } = this;
+    if (entries[entry.path]) return;
+    entries[entry.path] = entry;
+    if (!entry.parentNode) {
+      this.#mkdir(entry).addEntry(entry);
+    }
     return entry;
   }
   // move notification via websocket or immediate code path:
@@ -1249,5 +1276,6 @@ var FileTree = class extends FileTreeElement {
 registry.define(`file-tree`, FileTree);
 export {
   FILE_TREE_PREFIX,
+  FileTree,
   WebSocketInterface
 };

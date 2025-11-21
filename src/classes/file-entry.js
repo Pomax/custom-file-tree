@@ -2,13 +2,23 @@ import { FileTreeElement } from "./file-tree-element.js";
 import { create, registry } from "../utils/utils.js";
 import { Strings } from "../utils/strings.js";
 
+/**
+ * ...
+ */
 export class FileEntry extends FileTreeElement {
+  inserted = false;
   isFile = true;
 
-  constructor(root, fileName, fullPath) {
-    super(fileName, fullPath);
-    if (!root.readonly) this.addButtons();
-    this.addEventHandling(root.readonly);
+  constructor() {
+    super();
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    const { readonly } = this.root;
+    if (!readonly) this.addButtons();
+    this.addEventHandling(readonly);
+    super.afterConnectedCallback();
   }
 
   addButtons() {
