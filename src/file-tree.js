@@ -18,8 +18,9 @@ export { FILE_TREE_PREFIX, WebSocketInterface };
  * directory, that operation gets turned into a path based
  * operation, which is then handled by the file tree.
  */
-class FileTree extends FileTreeElement {
+export class FileTree extends FileTreeElement {
   static observedAttributes = ["src"];
+
   ready = false;
   isTree = true;
   entries = {};
@@ -31,10 +32,6 @@ class FileTree extends FileTreeElement {
 
   get root() {
     return this;
-  }
-
-  get parentDir() {
-    return this.rootDir;
   }
 
   get readonly() {
@@ -50,8 +47,7 @@ class FileTree extends FileTreeElement {
     this.emit(`tree:clear`);
     Object.keys(this.entries).forEach((key) => delete this.entries[key]);
     if (this.rootDir) this.removeChild(this.rootDir);
-    const rootDir = (this.rootDir = new DirEntry(this, true));
-    rootDir.path = `.`;
+    const rootDir = (this.rootDir = new DirEntry());
     this.appendChild(rootDir);
   }
 
@@ -92,6 +88,7 @@ class FileTree extends FileTreeElement {
    */
   setContent({ dirs, files }, bypassOT = false) {
     this.clear();
+
     dirs?.forEach((path) =>
       this.#addPath(
         `${path}/`,
@@ -115,7 +112,9 @@ class FileTree extends FileTreeElement {
         bypassOT
       )
     );
+
     this.ready = true;
+
     return this.emit(`tree:ready`);
   }
 
@@ -222,21 +221,24 @@ class FileTree extends FileTreeElement {
   #mkdir({ dirPath }) {
     const { entries } = this;
     if (!dirPath) return this.rootDir;
+
     let dir = this.find(`[path="${dirPath}"`);
     if (dir) return dir;
+
     dir = this.rootDir;
     dirPath.split(`/`).forEach((fragment) => {
       if (!fragment) return;
       const subDirPath = (dir.path === `.` ? `` : dir.path) + fragment + `/`;
       let subDir = this.find(`[path="${subDirPath}"`);
       if (!subDir) {
-        subDir = new DirEntry(this);
+        subDir = new DirEntry();
         subDir.path = subDirPath;
         dir.addEntry(subDir);
         entries[subDirPath] = subDir;
       }
       dir = subDir;
     });
+
     return dir;
   }
 
@@ -275,13 +277,21 @@ class FileTree extends FileTreeElement {
 
   // create notification via websocket or immediate code path:
   __create(path, isFile) {
-    const { entries } = this;
-
     const EntryType = isFile ? FileEntry : DirEntry;
-    const entry = (entries[path] = new EntryType(this));
+    const entry = new EntryType();
     entry.path = path;
-    this.#mkdir(entry).addEntry(entry);
+    return this.__insert(entry);
+  }
 
+  // fall-through for creation, but also used by file-entry
+  // when inserted manually, to ensure proper path recording.
+  __insert(entry) {
+    const { entries } = this;
+    if (entries[entry.path]) return;
+    entries[entry.path] = entry;
+    if (!entry.parentNode) {
+      this.#mkdir(entry).addEntry(entry);
+    }
     return entry;
   }
 

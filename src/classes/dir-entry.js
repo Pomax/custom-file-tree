@@ -10,9 +10,13 @@ import { Strings } from "../utils/strings.js";
 export class DirEntry extends FileTreeElement {
   isDir = true;
 
-  constructor(root, rootDir = false) {
+  constructor() {
     super();
-    if (!root.readonly) this.addButtons(rootDir);
+    this.path = `.`;
+  }
+
+  get rootdir() {
+    return this.closest(`dir-entry[path="."]`);
   }
 
   get path() {
@@ -28,12 +32,28 @@ export class DirEntry extends FileTreeElement {
   }
 
   connectedCallback() {
+    super.connectedCallback();
+    if (!this.root.readonly) this.addButtons();
+
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(this.icon, `click`, (evt) =>
       this.foldListener(evt),
     );
+
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
+
+    super.afterConnectedCallback();
+  }
+
+  addButtons() {
+    this.createFileButton();
+    this.createDirButton();
+    this.addUploadButton();
+    if (!this.rootDir) {
+      this.addRenameButton();
+      this.addDeleteButton();
+    }
   }
 
   selectListener(evt) {
@@ -56,16 +76,6 @@ export class DirEntry extends FileTreeElement {
     this.root.toggleDirectory(this, {
       currentState: closed ? `closed` : `open`,
     });
-  }
-
-  addButtons(rootDir) {
-    this.createFileButton();
-    this.createDirButton();
-    this.addUploadButton();
-    if (!rootDir) {
-      this.addRenameButton();
-      this.addDeleteButton();
-    }
   }
 
   /**

@@ -8,36 +8,55 @@ const HTMLElement = globalThis.HTMLElement ?? class {};
 export class FileTreeElement extends HTMLElement {
   state = {};
   eventControllers = [];
+  isFile = false;
+  isDir = false;
+
+  #inserted = false;
 
   constructor() {
     super();
+    this.provisionElements();
+  }
+
+  provisionElements() {
+    // allocate now, but we'll add them to the DOM later
+    const icon = (this.icon = create(`span`));
+    icon.classList.add(`icon`);
+    this.heading = create(`entry-heading`);
+    const buttons = (this.buttons = create(`span`));
+    buttons.classList.add(`buttons`);
+  }
+
+  connectedCallback() {
     this.addUIElements();
   }
 
-  addUIElements() {
-    // set up our icon
-    this.icon = this.find(`& > .icon`);
-    if (!this.icon) {
-      const icon = (this.icon = create(`span`));
-      icon.classList.add(`icon`);
-      this.appendChild(icon);
-    }
+  afterConnectedCallback() {
+    // Make sure the file-tree knows about us part of it.
+    // Any "setContent" file entries will be guaranteed
+    // to be known of course, but if you manually create
+    // a new FileEntry() and then append that to a dir-entry
+    // we need to make sure things get recorded, too.
 
-    // set up our heading
-    this.heading = this.find(`& > entry-heading`);
-    if (!this.heading) {
-      const heading = (this.heading = create(`entry-heading`));
-      this.appendChild(heading);
-    }
-
-    // set up our button container
-    if (!this.readonly) {
-      this.buttons = this.find(`& > span.buttons`);
-      if (!this.buttons) {
-        const buttons = (this.buttons = create(`span`));
-        buttons.classList.add(`buttons`);
-        this.appendChild(buttons);
+    if (!this.#inserted) {
+      this.#inserted = true;
+      const dirPath = this.parentNode?.path;
+      if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
+        this.path = `${this.parentNode.path}${this.path}`;
       }
+      this.root.__insert(this);
+    }
+  }
+
+  addUIElements() {
+    const { icon, heading, buttons } = this;
+
+    const [first] = this.children;
+
+    if (!first) {
+      !icon.parentNode && this.appendChild(icon);
+      !heading.parentNode && this.appendChild(heading);
+      !this.readonly && !buttons.parentNode && this.appendChild(buttons);
     }
   }
 
@@ -99,8 +118,7 @@ export class FileTreeElement extends HTMLElement {
       }
     }
 
-    const heading = this.find(`& > entry-heading`);
-    heading.textContent = this.name;
+    this.heading.textContent = this.name;
     this.setAttribute(`path`, path);
   }
 
