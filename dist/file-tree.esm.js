@@ -41,7 +41,7 @@ var FileTreeElement = class extends HTMLElement {
       if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
         this.path = `${this.parentNode.path}${this.path}`;
       }
-      this.root.__insert(this);
+      this.root?.__insert(this);
     }
   }
   addUIElements() {
@@ -72,7 +72,7 @@ var FileTreeElement = class extends HTMLElement {
     }
   }
   get removeEmptyDir() {
-    return this.root.removeEmptyDir;
+    return this.root?.removeEmptyDir;
   }
   get name() {
     return this.getAttribute(`name`);
@@ -130,25 +130,25 @@ var FileTreeElement = class extends HTMLElement {
   emit(eventType, detail = {}, grant = () => {
   }) {
     detail.grant = grant;
-    this.root.dispatchEvent(new CustomEvent(eventType, { detail }));
+    this.root?.dispatchEvent(new CustomEvent(eventType, { detail }));
   }
   find(qs) {
     return this.querySelector(qs);
   }
   findInTree(qs) {
-    return this.root.querySelector(qs);
+    return this.root?.querySelector(qs);
   }
   findAll(qs) {
     return Array.from(this.querySelectorAll(qs));
   }
   findAllInTree(qs) {
-    return Array.from(this.root.querySelectorAll(qs));
+    return Array.from(this.root?.querySelectorAll(qs));
   }
   hasButton(className) {
     return this.find(`& > .buttons .${className}`);
   }
   select() {
-    this.root.unselect();
+    this.root?.unselect();
     this.classList.add(`selected`);
     this.parentNode?.toggle?.(false);
   }
@@ -654,7 +654,7 @@ var DirEntry = class extends FileTreeElement {
   }
   connectedCallback() {
     super.connectedCallback();
-    if (!this.root.readonly) this.addButtons();
+    if (!this.root?.readonly) this.addButtons();
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(
       this.icon,
@@ -680,7 +680,7 @@ var DirEntry = class extends FileTreeElement {
     if (this.path === `.`) return;
     const tag = evt.target.tagName;
     if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
-    this.root.selectEntry(this);
+    this.root?.selectEntry(this);
     if (this.classList.contains(`closed`)) {
       this.foldListener(evt);
     }
@@ -690,7 +690,7 @@ var DirEntry = class extends FileTreeElement {
     evt.preventDefault();
     if (this.path === `.`) return;
     const closed = this.classList.contains(`closed`);
-    this.root.toggleDirectory(this, {
+    this.root?.toggleDirectory(this, {
       currentState: closed ? `closed` : `open`
     });
   }
@@ -715,7 +715,7 @@ var DirEntry = class extends FileTreeElement {
       if (this.path !== `.`) {
         fileName = this.path + fileName;
       }
-      this.root.createEntry(fileName, true);
+      this.root?.createEntry(fileName, true);
     }
   }
   /**
@@ -737,7 +737,7 @@ var DirEntry = class extends FileTreeElement {
         return alert(localeStrings.CREATE_DIRECTORY_NO_NESTING);
       }
       let path2 = (this.path !== `.` ? this.path : ``) + dirName + `/`;
-      this.root.createEntry(path2, false);
+      this.root?.createEntry(path2, false);
     }
   }
   /**
@@ -771,7 +771,7 @@ var DirEntry = class extends FileTreeElement {
       if (newName.includes(`/`)) {
         return alert(localeStrings.RENAME_DIRECTORY_MOVE_INSTEAD);
       }
-      this.root.renameEntry(this, newName);
+      this.root?.renameEntry(this, newName);
     }
   }
   /**
@@ -790,7 +790,7 @@ var DirEntry = class extends FileTreeElement {
   #deleteDir() {
     const msg = localeStrings.DELETE_DIRECTORY_PROMPT(this.path);
     if (confirm(msg)) {
-      this.root.removeEntry(this);
+      this.root?.removeEntry(this);
     }
   }
   /**
@@ -810,7 +810,7 @@ var DirEntry = class extends FileTreeElement {
   checkEmpty() {
     if (!this.removeEmptyDir) return;
     if (this.find(`dir-entry, file-entry`)) return;
-    this.root.removeEntry(this);
+    this.root?.removeEntry(this);
   }
   // File tree sorting, with dirs at the top
   sort(recursive = true, separateDirs = true) {
@@ -854,7 +854,7 @@ var DirEntry = class extends FileTreeElement {
     return this.toJSON();
   }
   toValue() {
-    return this.root.toValue().filter((v) => v.startsWith(this.path));
+    return this.root?.toValue().filter((v) => v.startsWith(this.path));
   }
 };
 registry.define(`dir-entry`, DirEntry);
@@ -895,7 +895,7 @@ var FileEntry = class extends FileTreeElement {
         if (newFileName.includes(`/`)) {
           return alert(localeStrings.RENAME_FILE_MOVE_INSTEAD);
         }
-        this.root.renameEntry(this, newFileName);
+        this.root?.renameEntry(this, newFileName);
       }
     });
   }
@@ -910,7 +910,7 @@ var FileEntry = class extends FileTreeElement {
       evt.preventDefault();
       evt.stopPropagation();
       if (confirm(localeStrings.DELETE_FILE_PROMPT(this.path))) {
-        this.root.removeEntry(this);
+        this.root?.removeEntry(this);
       }
     });
   }
@@ -918,7 +918,7 @@ var FileEntry = class extends FileTreeElement {
     this.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      this.root.selectEntry(this);
+      this.root?.selectEntry(this);
     });
     this.draggable = true;
     this.addEventListener(`dragstart`, (evt) => {
@@ -935,13 +935,13 @@ var FileEntry = class extends FileTreeElement {
   //
   // The return type is { data: string|int[], when:datetime }
   async load() {
-    return this.root.loadEntry(this.path);
+    return this.root?.loadEntry(this.path);
   }
   // This function only works when connected through
   // a websocket. Note that we do NOT store the data
   // here, that's up to whoever is using this file-tree.
   async updateContent(type, update) {
-    this.root.updateEntry(this.path, type, update);
+    this.root?.updateEntry(this.path, type, update);
   }
   toJSON() {
     return JSON.stringify(this.toValue());

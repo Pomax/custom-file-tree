@@ -33,7 +33,7 @@ export class DirEntry extends FileTreeElement {
 
   connectedCallback() {
     super.connectedCallback();
-    if (!this.root.readonly) this.addButtons();
+    if (!this.root?.readonly) this.addButtons();
 
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(this.icon, `click`, (evt) =>
@@ -62,7 +62,7 @@ export class DirEntry extends FileTreeElement {
     if (this.path === `.`) return;
     const tag = evt.target.tagName;
     if (tag !== `DIR-ENTRY` && tag !== `ENTRY-HEADING`) return;
-    this.root.selectEntry(this);
+    this.root?.selectEntry(this);
     if (this.classList.contains(`closed`)) {
       this.foldListener(evt);
     }
@@ -73,7 +73,7 @@ export class DirEntry extends FileTreeElement {
     evt.preventDefault();
     if (this.path === `.`) return;
     const closed = this.classList.contains(`closed`);
-    this.root.toggleDirectory(this, {
+    this.root?.toggleDirectory(this, {
       currentState: closed ? `closed` : `open`,
     });
   }
@@ -101,7 +101,7 @@ export class DirEntry extends FileTreeElement {
       if (this.path !== `.`) {
         fileName = this.path + fileName;
       }
-      this.root.createEntry(fileName, true);
+      this.root?.createEntry(fileName, true);
     }
   }
 
@@ -126,7 +126,7 @@ export class DirEntry extends FileTreeElement {
         return alert(Strings.CREATE_DIRECTORY_NO_NESTING);
       }
       let path = (this.path !== `.` ? this.path : ``) + dirName + `/`;
-      this.root.createEntry(path, false);
+      this.root?.createEntry(path, false);
     }
   }
 
@@ -166,7 +166,7 @@ export class DirEntry extends FileTreeElement {
       if (newName.includes(`/`)) {
         return alert(Strings.RENAME_DIRECTORY_MOVE_INSTEAD);
       }
-      this.root.renameEntry(this, newName);
+      this.root?.renameEntry(this, newName);
     }
   }
 
@@ -188,7 +188,7 @@ export class DirEntry extends FileTreeElement {
   #deleteDir() {
     const msg = Strings.DELETE_DIRECTORY_PROMPT(this.path);
     if (confirm(msg)) {
-      this.root.removeEntry(this);
+      this.root?.removeEntry(this);
     }
   }
 
@@ -210,7 +210,7 @@ export class DirEntry extends FileTreeElement {
   checkEmpty() {
     if (!this.removeEmptyDir) return;
     if (this.find(`dir-entry, file-entry`)) return;
-    this.root.removeEntry(this);
+    this.root?.removeEntry(this);
   }
 
   // File tree sorting, with dirs at the top
@@ -272,7 +272,7 @@ export class DirEntry extends FileTreeElement {
   }
 
   toValue() {
-    return this.root.toValue().filter((v) => v.startsWith(this.path));
+    return this.root?.toValue().filter((v) => v.startsWith(this.path));
   }
 }
 

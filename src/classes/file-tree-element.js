@@ -44,7 +44,7 @@ export class FileTreeElement extends HTMLElement {
       if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
         this.path = `${this.parentNode.path}${this.path}`;
       }
-      this.root.__insert(this);
+      this.root?.__insert(this);
     }
   }
 
@@ -83,7 +83,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   get removeEmptyDir() {
-    return this.root.removeEmptyDir;
+    return this.root?.removeEmptyDir;
   }
 
   get name() {
@@ -159,7 +159,7 @@ export class FileTreeElement extends HTMLElement {
 
   emit(eventType, detail = {}, grant = () => {}) {
     detail.grant = grant;
-    this.root.dispatchEvent(new CustomEvent(eventType, { detail }));
+    this.root?.dispatchEvent(new CustomEvent(eventType, { detail }));
   }
 
   find(qs) {
@@ -167,7 +167,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   findInTree(qs) {
-    return this.root.querySelector(qs);
+    return this.root?.querySelector(qs);
   }
 
   findAll(qs) {
@@ -175,7 +175,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   findAllInTree(qs) {
-    return Array.from(this.root.querySelectorAll(qs));
+    return Array.from(this.root?.querySelectorAll(qs));
   }
 
   hasButton(className) {
@@ -183,7 +183,7 @@ export class FileTreeElement extends HTMLElement {
   }
 
   select() {
-    this.root.unselect();
+    this.root?.unselect();
     this.classList.add(`selected`);
     // If we're selecting a file, make sure that the parent dir is open.
     this.parentNode?.toggle?.(false);

@@ -45,7 +45,7 @@ export class FileEntry extends FileTreeElement {
         if (newFileName.includes(`/`)) {
           return alert(Strings.RENAME_FILE_MOVE_INSTEAD);
         }
-        this.root.renameEntry(this, newFileName);
+        this.root?.renameEntry(this, newFileName);
       }
     });
   }
@@ -62,7 +62,7 @@ export class FileEntry extends FileTreeElement {
       evt.preventDefault();
       evt.stopPropagation();
       if (confirm(Strings.DELETE_FILE_PROMPT(this.path))) {
-        this.root.removeEntry(this);
+        this.root?.removeEntry(this);
       }
     });
   }
@@ -71,7 +71,7 @@ export class FileEntry extends FileTreeElement {
     this.addEventListener(`click`, (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      this.root.selectEntry(this);
+      this.root?.selectEntry(this);
     });
 
     // allow this file to be moved from one dir to another
@@ -91,14 +91,14 @@ export class FileEntry extends FileTreeElement {
   //
   // The return type is { data: string|int[], when:datetime }
   async load() {
-    return this.root.loadEntry(this.path);
+    return this.root?.loadEntry(this.path);
   }
 
   // This function only works when connected through
   // a websocket. Note that we do NOT store the data
   // here, that's up to whoever is using this file-tree.
   async updateContent(type, update) {
-    this.root.updateEntry(this.path, type, update);
+    this.root?.updateEntry(this.path, type, update);
   }
 
   toJSON() {
