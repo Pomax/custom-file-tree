@@ -10,7 +10,7 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
-## v7.0.0 (November 21, 2025)
+## v7.0.1 (November 21, 2025)
 
 - The underlying way in which elements are constructed was changed so that constructors do not take any arguments, which means that `document.createElement` can be used to create individual dir and file entries, detached from any tree, and can be appended to a file tree the same way you'd append a child to any other DOM node.
 
