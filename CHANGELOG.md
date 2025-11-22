@@ -10,6 +10,10 @@ Note that there may be gaps in the version history, which may happen if a releas
 
 # Current Version
 
+## v7.0.2 (November 22, 2025)
+
+- Fixes incorrect event handling across disconnect/connect steps, which happens _a lot_ during dir.sort() operations.
+
 ## v7.0.1 (November 21, 2025)
 
 - The underlying way in which elements are constructed was changed so that constructors do not take any arguments, which means that `document.createElement` can be used to create individual dir and file entries, detached from any tree, and can be appended to a file tree the same way you'd append a child to any other DOM node.

@@ -11,8 +11,6 @@ export class FileTreeElement extends HTMLElement {
   isFile = false;
   isDir = false;
 
-  #inserted = false;
-
   constructor() {
     super();
     this.provisionElements();
@@ -28,24 +26,26 @@ export class FileTreeElement extends HTMLElement {
   }
 
   connectedCallback() {
-    this.addUIElements();
-  }
+    if (this.connected) return;
 
-  afterConnectedCallback() {
+    this.connected = true;
+
+    this.addUIElements();
+
     // Make sure the file-tree knows about us part of it.
     // Any "setContent" file entries will be guaranteed
     // to be known of course, but if you manually create
     // a new FileEntry() and then append that to a dir-entry
     // we need to make sure things get recorded, too.
 
-    if (!this.#inserted) {
-      this.#inserted = true;
-      const dirPath = this.parentNode?.path;
-      if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
-        this.path = `${this.parentNode.path}${this.path}`;
-      }
-      this.root?.__insert(this);
+    const dirPath = this.parentNode?.path;
+    if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
+      this.path = `${this.parentNode.path}${this.path}`;
     }
+
+    this.root?.__insert(this);
+
+    this.localConnectedCallback?.();
   }
 
   addUIElements() {
@@ -73,13 +73,6 @@ export class FileTreeElement extends HTMLElement {
 
   addAbortController(controller) {
     this.eventControllers.push(controller);
-  }
-
-  disconnectedCallback() {
-    const { eventControllers } = this;
-    while (eventControllers.length) {
-      eventControllers.shift().abort();
-    }
   }
 
   get removeEmptyDir() {

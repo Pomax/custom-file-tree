@@ -13,12 +13,10 @@ export class FileEntry extends FileTreeElement {
     super();
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  localConnectedCallback() {
     const { readonly } = this.root;
     if (!readonly) this.addButtons();
     this.addEventHandling(readonly);
-    super.afterConnectedCallback();
   }
 
   addButtons() {

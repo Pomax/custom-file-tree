@@ -19,7 +19,6 @@ var FileTreeElement = class extends HTMLElement {
   eventControllers = [];
   isFile = false;
   isDir = false;
-  #inserted = false;
   constructor() {
     super();
     this.provisionElements();
@@ -32,17 +31,15 @@ var FileTreeElement = class extends HTMLElement {
     buttons.classList.add(`buttons`);
   }
   connectedCallback() {
+    if (this.connected) return;
+    this.connected = true;
     this.addUIElements();
-  }
-  afterConnectedCallback() {
-    if (!this.#inserted) {
-      this.#inserted = true;
-      const dirPath = this.parentNode?.path;
-      if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
-        this.path = `${this.parentNode.path}${this.path}`;
-      }
-      this.root?.__insert(this);
+    const dirPath = this.parentNode?.path;
+    if (dirPath && dirPath !== `.` && !this.path.startsWith(dirPath)) {
+      this.path = `${this.parentNode.path}${this.path}`;
     }
+    this.root?.__insert(this);
+    this.localConnectedCallback?.();
   }
   addUIElements() {
     const { icon, heading, buttons } = this;
@@ -64,12 +61,6 @@ var FileTreeElement = class extends HTMLElement {
   }
   addAbortController(controller) {
     this.eventControllers.push(controller);
-  }
-  disconnectedCallback() {
-    const { eventControllers } = this;
-    while (eventControllers.length) {
-      eventControllers.shift().abort();
-    }
   }
   get removeEmptyDir() {
     return this.root?.removeEmptyDir;
@@ -652,8 +643,7 @@ var DirEntry = class extends FileTreeElement {
       this.find(`& > .delete-dir`)?.remove();
     }
   }
-  connectedCallback() {
-    super.connectedCallback();
+  localConnectedCallback() {
     if (!this.root?.readonly) this.addButtons();
     this.addListener(`click`, (evt) => this.selectListener(evt));
     this.addExternalListener(
@@ -663,7 +653,6 @@ var DirEntry = class extends FileTreeElement {
     );
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
-    super.afterConnectedCallback();
   }
   addButtons() {
     this.createFileButton();
@@ -866,12 +855,10 @@ var FileEntry = class extends FileTreeElement {
   constructor() {
     super();
   }
-  connectedCallback() {
-    super.connectedCallback();
+  localConnectedCallback() {
     const { readonly } = this.root;
     if (!readonly) this.addButtons();
     this.addEventHandling(readonly);
-    super.afterConnectedCallback();
   }
   addButtons() {
     this.addRenameButton();

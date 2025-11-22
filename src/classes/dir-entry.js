@@ -31,8 +31,7 @@ export class DirEntry extends FileTreeElement {
     }
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  localConnectedCallback() {
     if (!this.root?.readonly) this.addButtons();
 
     this.addListener(`click`, (evt) => this.selectListener(evt));
@@ -42,8 +41,6 @@ export class DirEntry extends FileTreeElement {
 
     const controller = makeDropZone(this);
     if (controller) this.addAbortController(controller);
-
-    super.afterConnectedCallback();
   }
 
   addButtons() {
